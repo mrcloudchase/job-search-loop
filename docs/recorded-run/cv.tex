@@ -1,0 +1,83 @@
+% CV: tailored to Brightwell Analytics, Senior Data Engineer (BW-DE-0417).
+\documentclass[10pt,a4paper]{article}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\newcommand{\entry}[3]{\textbf{#1} \hfill #3\\ \emph{#2}\vspace{-2pt}}
+
+\begin{document}
+
+{\LARGE\textbf{Alex Fernsby}}\\
+\href{mailto:alex.fernsby@example.com}{alex.fernsby@example.com} \quad +1 555 0100 \quad
+Rotterdam, Netherlands \quad \href{https://github.com/afernsby-example}{github.com/afernsby-example}
+
+\section*{Profile}
+Data engineer with 7 years of experience building batch and streaming pipelines for retail and
+logistics companies, strongest in Python, SQL and Apache Airflow. Owns pipelines end to end, from
+ingestion through dbt warehouse models and data-quality tests to the dashboards that read them.
+Experienced in mentoring engineers and leading a weekly data-modelling review.
+
+\section*{Highlights for this role}
+\begin{itemize}\setlength\itemsep{2pt}
+  \item 7 years of experience building batch and streaming pipelines for retail and logistics companies.
+  \item Strongest tools: Python, SQL and Apache Airflow; comfortable owning a pipeline from ingestion to the
+        dashboards that read it.
+  \item Mentors two junior engineers; leads the weekly data-modelling review.
+\end{itemize}
+
+\section*{Experience}
+\entry{Senior Data Engineer}{Tidewater Logistics, Rotterdam}{March 2022 -- present}
+\begin{itemize}\setlength\itemsep{2pt}
+  \item Owns the shipment-events pipeline: 40 million events per day from Kafka into a PostgreSQL and
+        BigQuery warehouse, orchestrated with Apache Airflow.
+  \item Cut the nightly rebuild of the delivery-performance mart from 6 hours to 55 minutes by moving it to
+        incremental dbt models.
+  \item Introduced data-quality tests (Great Expectations) on 30 core tables; failed loads dropped 70 percent
+        over two quarters.
+  \item Mentors two junior engineers; leads the weekly data-modelling review.
+\end{itemize}
+
+\entry{Data Engineer}{Marlow Retail Group, Utrecht}{June 2018 -- February 2022}
+\begin{itemize}\setlength\itemsep{2pt}
+  \item Built the first Airflow deployment at the company and migrated 45 cron jobs onto it.
+  \item Designed a customer-orders star schema in PostgreSQL used by 12 analysts.
+  \item Wrote Python ingestion services for partner price feeds (REST and SFTP), handling about 2 million rows
+        per day.
+  \item Supported the move of the warehouse from on-premise PostgreSQL to BigQuery.
+\end{itemize}
+
+\entry{Junior Analyst}{Delft Energy Cooperative, Delft}{September 2016 -- May 2018}
+\begin{itemize}\setlength\itemsep{2pt}
+  \item Automated monthly consumption reports with Python and SQL, saving the team about 3 days each month.
+\end{itemize}
+
+\newpage
+\section*{Education}
+\entry{MSc Computer Science (data systems)}{Delft University of Technology}{2016}
+\entry{BSc Computer Science}{Delft University of Technology}{2014}
+
+\section*{Skills}
+\textbf{Strong:} Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, BigQuery, Great Expectations, Docker\\
+\textbf{Working:} Terraform, GitHub Actions, Looker, Pandas\\
+\textbf{Languages:} English (fluent), Dutch (native), German (basic)
+
+\section*{How the stack fits together}
+\textbf{Ingestion (Kafka, Python)} \quad Kafka events for the shipment-events pipeline; Python services for
+REST and SFTP partner price feeds.\\
+\textbf{Orchestration (Apache Airflow)} \quad nightly shipments pipeline; first company Airflow deployment
+and 45 migrated cron jobs at Marlow Retail Group.\\
+\textbf{Modelling (dbt, PostgreSQL, BigQuery)} \quad incremental dbt models; customer-orders star schema used
+by 12 analysts; on-premise PostgreSQL to BigQuery migration at Marlow Retail Group.\\
+\textbf{Quality (Great Expectations)} \quad tests on 30 core tables.\par
+
+\section*{Preferences}
+Senior individual-contributor or tech-lead role on a data platform team. More than 3 days a week on site
+is a deal-breaker, and on-call only with compensation. Based in Rotterdam, open to hybrid roles in the
+Netherlands and remote roles across the EU.
+
+\end{document}

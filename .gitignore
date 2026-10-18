@@ -1,0 +1,9 @@
+# Personal data lives here, never in git: your profile, your CV, your tracker, your searches.
+me/
+out/
+__pycache__/
+.pytest_cache/
+.venv/
+*.pdf
+!fixtures/**/*.pdf
+!docs/recorded-run/*.pdf

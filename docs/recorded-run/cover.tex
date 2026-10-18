@@ -1,0 +1,54 @@
+% Cover letter: Brightwell Analytics, Senior Data Engineer (BW-DE-0417).
+\documentclass[11pt,a4paper]{article}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt}
+
+\begin{document}
+
+\textbf{Alex Fernsby}\\
+\href{mailto:alex.fernsby@example.com}{alex.fernsby@example.com} \quad +1 555 0100
+
+\vspace{6pt}
+Hiring Manager, Brightwell Analytics\\
+Reference BW-DE-0417
+
+\vspace{6pt}
+Dear Hiring Manager,
+
+I am applying for the Senior Data Engineer role in your data platform team. I have 7 years of experience
+building batch and streaming pipelines for retail and logistics companies, and two of the strongest parts
+of the job you describe are already close to what I do. You want batch pipelines over retail data; I spent
+nearly four years building them at Marlow Retail Group, including the company's first Airflow deployment.
+You want nightly pipelines that feed forecasting and analytics and are fast enough to fix when they break;
+at Tidewater Logistics I moved the nightly delivery-performance mart to incremental dbt models and cut its
+rebuild from 6 hours to 55 minutes.
+
+On the core requirements, Python and SQL are my strongest tools. At Tidewater I own a pipeline moving 40
+million Kafka events per day into PostgreSQL and BigQuery under Airflow, and Great Expectations tests on 30
+core tables cut failed loads by 70 percent over two quarters. The retail side adds a customer-orders star
+schema used by 12 analysts, Python ingestion services for partner price feeds at about 2 million rows a day,
+and support for a warehouse move to BigQuery. Your nice-to-haves fit as well: Kafka is a core part of my
+current pipeline, and I mentor two junior engineers and lead our weekly data-modelling review.
+
+I want to be straightforward about four requirements I do not meet fully. Scala and Spark are not yet
+learned; they are new to me, and I would expect a real learning curve on both in the first months. Most of
+the pipeline logic I write runs on Python and SQL today, and I do not claim any of it as Scala or Spark
+experience. Second, my testing is real but not universal: Great Expectations
+runs on 30 core tables, not every table. Third, my data-quality work is test-based; I cannot point to
+production monitoring built the way you describe it. Fourth, my deployments so far have not involved
+working with data scientists to productionise features. Each of these is work I would want to take on
+deliberately in the first months rather than assume I already do.
+
+I would welcome the chance to talk about how your team works. I am based in Rotterdam and open to hybrid
+roles in the Netherlands, which fits your two days a week on site.
+
+Kind regards,\\
+Alex Fernsby
+
+\end{document}
