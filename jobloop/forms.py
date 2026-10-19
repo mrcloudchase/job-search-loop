@@ -130,6 +130,9 @@ def render(employer: str, questions: tuple[Question, ...], answers: dict[str, st
         end = "present" if r.end is None else f"{r.end[0]}-{r.end[1]:02d}" if r.end[1] else str(r.end[0])
         start = f"{r.start[0]}-{r.start[1]:02d}" if r.start[1] else str(r.start[0])
         out.append(f"{r.title}, {r.employer}: {start} to {end}")
+    out += ["", "## NOTE TO SELF (not for pasting)",
+            "Check every date and number above against your own records before you paste. A qualification still in progress is",
+            "described as in progress in the answers; keep it that way in the form's own date fields."]
     return "\n".join(out) + "\n"
 
 

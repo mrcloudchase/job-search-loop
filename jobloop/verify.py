@@ -9,7 +9,7 @@ which fails unless the person has waived it: a tool that is missing never counts
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 
 from . import grounding, keywords, latex, latexrun, layout, letter, pdfcheck, profile as profiles, style
@@ -43,6 +43,7 @@ class Result:
     documents: latexrun.Documents | None = None
     coverage: keywords.Coverage | None = None
     findings: tuple[str, ...] = ()                  # things to act on that don't fail the checks (synonym-only terms)
+    checks: tuple[tuple[str, bool], ...] = ()       # every check that ran, in order, and whether it passed
 
     @property
     def passed(self) -> bool:
@@ -80,30 +81,50 @@ def judge(documents: latexrun.Documents, cv_tex: str, cover_tex: str, ctx: Conte
         if not rendered.ok:
             failures.append(rendered.failure_report())
     if failures:
-        return Result(tuple(failures), documents=documents)
+        return Result(tuple(failures), documents=documents, checks=(("compile", False),))
     unverified: list[str] = []
+    checks: list[tuple[str, bool]] = [("compile", True)]
+
+    def mark(label: str, before: int) -> None:
+        checks.append((label, len(failures) + len(unverified) == before))
+
     name, email, phone = contact(ctx.profile)
     headings = tuple(re.findall(r"\\section\{([^}]*)\}", cv_tex))
     cv, cover = documents.cv, documents.cover
     lone = tuple(dict.fromkeys(re.findall(r"(?:^|[\s(,])((?:19|20)\d\d)\)?\s*$", ctx.profile, re.M)))   # a year the profile gives alone
     spec = pdfcheck.TextLayerSpec(pages=ctx.cv_pages, name=name, email=email, phone=phone, headings=headings or ("Profile",),
                                   lone_years_ok=lone)
+    before = len(failures) + len(unverified)
     verdicts("cv.pdf", pdfcheck.verify_cv_text_layer(cv.pdfinfo, cv.text, spec), failures, unverified)
+    mark("CV page count and ATS text layer", before)
+    before = len(failures) + len(unverified)
     verdicts("cover.pdf", pdfcheck.verdict_of(pdfcheck.check_page_count(cover.pdfinfo, ctx.letter_pages), "pdfinfo"), failures, unverified)
+    mark("letter page count", before)
+    before = len(failures) + len(unverified)
     for label, rendered in (("cv.pdf", cv), ("cover.pdf", cover)):
         verdicts(label + " layout", layout.verify_layout(rendered.bbox, ctx.layout_profile), failures, unverified)
+    mark("page layout", before)
     reference = f"Reference: {ctx.reference}" if ctx.reference else ""
     cv_found = style.check(cv.text, (ctx.cv_language,)) + grounding.check(cv.text, [ctx.profile, reference], ctx.today)
     letter_found = (style.check(cover.text, (ctx.letter_language,)) + letter.check(
         cover.text, posting=ctx.posting, company=ctx.company, role=ctx.role, today=ctx.today, addressee=ctx.addressee,
         reference=ctx.reference, cv_text=cv.text, cv_language=ctx.cv_language)
         + grounding.check(cover.text, [ctx.profile, reference, *ctx.company_claims], ctx.today))
-    failures += [f"cv.pdf: {m}" for m in cv_found] + [f"cover.pdf: {m}" for m in letter_found]
-    coverage = keywords.cover(ctx.requirements, ctx.profile, cv.text, cover.text, ctx.cv_language)
+    before = len(failures) + len(unverified)
+    failures += [f"cv.pdf: {m}" for m in cv_found]
+    mark("CV style and grounding", before)
+    before = len(failures) + len(unverified)
+    failures += [f"cover.pdf: {m}" for m in letter_found]
+    mark("letter rules, style and grounding", before)
+    before = len(failures) + len(unverified)
+    # a phrase counts as present if either text extractor shows it: pypdf-style extractors can put spaces around punctuation
+    cv_text = cv.text if cv.text_raw in ("", cv.text) else cv.text + "\n" + cv.text_raw
+    coverage = keywords.cover(ctx.requirements, ctx.profile, cv_text, cover.text, ctx.cv_language)
     failures += [f"keywords: {m}" for m in coverage.failures]
+    mark("keyword coverage", before)
     if unverified and not ctx.waive_unverified:
         failures += [f"{m}\n(this check could not run, so it is not a pass)" for m in unverified]
-    return Result(tuple(failures), tuple(unverified), documents, coverage, tuple(coverage.findings))
+    return Result(tuple(failures), tuple(unverified), documents, coverage, tuple(coverage.findings), tuple(checks))
 
 
 def verify(cv_tex: str, cover_tex: str, ctx: Context, *, compile_documents=latexrun.compile_documents,
@@ -112,4 +133,5 @@ def verify(cv_tex: str, cover_tex: str, ctx: Context, *, compile_documents=latex
     early = source_findings(cv_tex, cover_tex, ctx.cv_language)
     if early:
         return Result(tuple(early))
-    return judge(compile_documents(cv_tex, cover_tex, image, **templates), cv_tex, cover_tex, ctx)
+    result = judge(compile_documents(cv_tex, cover_tex, image, **templates), cv_tex, cover_tex, ctx)
+    return replace(result, checks=(("LaTeX source", True), *result.checks))

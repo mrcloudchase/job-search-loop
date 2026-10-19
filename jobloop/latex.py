@@ -132,13 +132,18 @@ def unsafe(tex: str) -> list[str]:
 _SHRINKING = (
     (r"\\(?:new)?geometry\b", "changes the page geometry"),
     (r"\\enlargethispage\b", "enlarges the page instead of cutting content"),
-    (r"\\vspace\*?\{\s*-", "uses a negative \\vspace"),
 )
+_NEGATIVE_VSPACE = re.compile(r"\\vspace\*?\{\s*-")
 _BODY_LENGTHS = re.compile(r"\\setlength\{\\(?:textheight|textwidth|topmargin|oddsidemargin|evensidemargin|hoffset|voffset|parskip|"
                            r"baselineskip|footskip|headheight|headsep)\}")
 _STRETCH = re.compile(r"\\(?:linespread|setstretch|renewcommand\{\\baselinestretch\})\{\s*([0-9.]+)\s*\}")
 _ENGLISH_HEADINGS = ("profile", "core competencies", "professional experience", "education", "languages", "publications",
                      "honors and awards", "honours and awards", "references")
+
+
+def _uncommented(tex: str) -> str:
+    """The same text with every comment blanked out (same length, so positions still line up)."""
+    return re.sub(r"(?<!\\)%[^\n]*", lambda m: " " * len(m.group()), tex)
 
 
 def layout_rules(tex: str) -> list[str]:
@@ -147,10 +152,13 @@ def layout_rules(tex: str) -> list[str]:
     and a \\cventry date written with `--` or a Unicode dash. Fit is reached by cutting content, so a draft that tries
     another way is sent back."""
     found = []
+    tex = _uncommented(tex)
     for pattern, why in _SHRINKING:
         found += [f"{locate(tex, m.start(), m.end())} {why}: cut content to fit instead" for m in re.finditer(pattern, tex)]
     body, _ = _body(tex)
     start = tex.find(body) if body else 0
+    for m in _NEGATIVE_VSPACE.finditer(body):
+        found.append(f"{locate(tex, start + m.start(), start + m.end())} uses a negative \\vspace: cut content to fit instead")
     for m in _BODY_LENGTHS.finditer(body):
         found.append(f"{locate(tex, start + m.start(), start + m.end())} resets a page length: cut content to fit instead")
     for m in _STRETCH.finditer(body):
@@ -175,6 +183,7 @@ def cv_rules(tex: str, language: str = "en") -> list[str]:
     """The CV-only structure rules: a bold-labelled competency list has 5 to 7 entries, and the section headings are
     translated whenever the CV is not in English."""
     found = []
+    tex = _uncommented(tex)
     for m in re.finditer(r"\\begin\{itemize\}(.*?)\\end\{itemize\}", tex, re.S):
         items = [i for i in re.split(r"\\item\b", m.group(1))[1:]]
         if items and all(i.lstrip().startswith(r"\textbf{") for i in items) and not 5 <= len(items) <= 7:
