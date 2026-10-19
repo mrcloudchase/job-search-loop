@@ -1,0 +1,48 @@
+{
+  "key": "a_p_moller_maersk__senior_data_engineer",
+  "company": "A.P. Moller - Maersk",
+  "role": "Senior Data Engineer",
+  "url": "https://dk.linkedin.com/jobs/view/senior-data-engineer-at-a-p-moller-maersk-4462863386",
+  "fit": 81,
+  "deadline": null,
+  "host_kind": "portal",
+  "gaps": [
+    "PySpark",
+    "distributed data processing",
+    "data engineering experience",
+    "AI/ML engineering",
+    "LLM-based applications"
+  ],
+  "claims": [],
+  "posting_key": "a-p-moller-maersk_senior-data-engineer",
+  "judge": {
+    "mean": 6.0,
+    "judges": [
+      {
+        "judge": "claude-reviewer/deepseek-chat",
+        "overall": 6.0,
+        "failed": [
+          [
+            7,
+            "PySpark is a required skill but is acknowledged only in the letter and never mentioned in the CV, and the AI/ML gap is stated only in the letter."
+          ]
+        ]
+      }
+    ]
+  },
+  "first_pass": false,
+  "harnesses": {
+    "drafter": "codex",
+    "reviewer": "claude-reviewer/deepseek-chat"
+  },
+  "best_of": 2,
+  "notes": [
+    "1 of 2 drafts passed every check",
+    "judge means: codex 6.0; picked codex",
+    "judge revision discarded: its score dropped",
+    "no verified company research: the letter makes no company claims",
+    "the reviewer sent 8 edits; the loop applied 7 and rejected 1",
+    "posting archived verbatim",
+    "tracker: added a_p_moller_maersk__senior_data_engineer as drafted"
+  ]
+}

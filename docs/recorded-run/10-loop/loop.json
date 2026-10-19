@@ -1,0 +1,64 @@
+{
+  "server": "http://127.0.0.1:8000",
+  "pass_minutes": 170,
+  "pass_budget_usd": 8,
+  "pass_max_tokens": 2000000,
+  "unpriced_usd_per_mtok": 1.0,
+  "action_budget_usd": 7.0,
+  "action_minutes": 45,
+  "max_new_drafts": 2,
+  "min_fit": 55,
+  "best_of": 2,
+  "judge_drafts": true,
+  "judge_triage": true,
+  "followups": true,
+  "ladders": {
+    "drafter": [
+      "claude-deepseek/deepseek-chat",
+      "codex"
+    ],
+    "reviewer": [
+      "codex",
+      "claude-reviewer/deepseek-chat"
+    ],
+    "researcher": [
+      "claude-research/deepseek-chat"
+    ],
+    "judge": [
+      "codex",
+      "claude-reviewer/deepseek-chat"
+    ],
+    "builder": [
+      "claude-portal/deepseek-chat"
+    ],
+    "planner": [
+      "claude-deepseek/deepseek-chat",
+      "codex"
+    ]
+  },
+  "company_domains": {
+    "Falck": "falck.com",
+    "A.P. Moller - Maersk": "maersk.com",
+    "Maersk": "maersk.com",
+    "Valcon": "valcon.com",
+    "Too Good To Go": "toogoodtogo.com"
+  },
+  "form_questions": "",
+  "discover_every_hours": 0.001,
+  "maintain_every_hours": 1,
+  "learn_every_hours": 0.001,
+  "upskill_every_hours": 0.001,
+  "recency_days": 14,
+  "search_limit": 10,
+  "acknowledge_terms": true,
+  "self_improve": true,
+  "rollback_margin": 0.15,
+  "rollback_after": 5,
+  "disabled_stages": [],
+  "enrich_github": "",
+  "enrich_site": "",
+  "enrich_every_hours": 168.0,
+  "new_boards": [],
+  "min_boards": 2,
+  "notify_file": ""
+}

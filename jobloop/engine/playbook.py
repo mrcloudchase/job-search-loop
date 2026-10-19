@@ -23,6 +23,12 @@ MAX_RULES, MAX_RULE_CHARS = 12, 160
 MAX_QUERIES, MAX_QUERY_CHARS = 12, 60
 STRATEGY_BOUNDS = {"best_of": (1, 4), "min_fit": (30, 90)}
 _FORBIDDEN_IN_RULE = re.compile(r"\d|https?://|www\.|@|—|–")
+# a rule that tells the drafter to do what a verifier forbids (gaps on the CV, claims the profile does not back, padding, hiding
+# a gap) only makes drafts stall: refused here, because the code checks are the authority and a rule cannot outvote them
+_CONTRADICTS_A_CHECK = re.compile(
+    r"\bgaps?\b[^.]*\b(?:cv|resume|r[eé]sum[eé])\b|\b(?:cv|resume|r[eé]sum[eé])\b[^.]*\bgaps?\b|invent|fabricat|exaggerat|"
+    r"\bpad(?:ding)?\b|even if (?:the )?profile|not in (?:the )?profile|ignore (?:the )?(?:check|verif|profile)|keyword stuff|stuff(?:ing)? keywords|"
+    r"hide (?:a |any |the )?gaps?|shrink (?:the )?(?:margin|font)|enlargethispage", re.I)
 
 
 @dataclass
@@ -98,6 +104,9 @@ def validate(change: object, current: Playbook) -> list[str]:
             problems.append(f"a style rule is one sentence of at most {MAX_RULE_CHARS} characters")
         elif _FORBIDDEN_IN_RULE.search(rule):
             problems.append(f"style rule {rule[:40]!r} holds a number, link, address or dash: rules carry no facts")
+        elif _CONTRADICTS_A_CHECK.search(rule):
+            problems.append(f"style rule {rule[:60]!r} would contradict a verification the loop enforces (a gap is never put on the CV, "
+                            "nothing the profile does not back, no padding or shrinking): rules shape voice, they cannot outvote the checks")
     if len(rules) > MAX_RULES:
         problems.append(f"at most {MAX_RULES} style rules")
     queries = [q for q in current.extra_queries if q not in change.get("queries_drop", [])] + list(change.get("queries_add", []))

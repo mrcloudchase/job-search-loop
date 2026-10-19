@@ -1,0 +1,24 @@
+# Status
+
+Last pass: #9 exhausted at 2026-10-19T18:32:55+00:00 ($5.24)
+Profile: ready · postings 87 · tracker rows 2
+Postings by state: applied 1, below_floor 6, new 9, offer 1, shortlisted 16, unreachable 46, vetoed 8
+
+## Waiting for you
+- **ready** `interview:a_p_moller_maersk__senior_data_engineer:technical` · Interview prep: A.P. Moller - Maersk, Senior Data Engineer (technical) · deadline 2026-10-26
+  a prep pack for technical; rehearse with `jobloop mock a_p_moller_maersk__senior_data_engineer` → `out/e2e/me/applications/a_p_moller_maersk__senior_data_engineer/interview_prep_technical.md`
+- **ready** `offer:a_p_moller_maersk__senior_data_engineer` · Offer terms: A.P. Moller - Maersk, Senior Data Engineer
+  analysis against your targets, questions to ask and negotiation prep: drafts for you; nothing was sent. No salary benchmark was supplied, so the prep lists what to look up. Your decision. → `out/e2e/me/applications/a_p_moller_maersk__senior_data_engineer/offer_analysis.md`
+- **ready** `upskill:2026-10-19` · Skills-gap report
+  62 gaps from 9 tracked or ranked applications; read the plan in report-2026-10-19.md → `out/e2e/me/upskill/report-2026-10-19.md`
+- **ready** `followup:flatpay__data_engineer:2026-10-19` · Follow-up draft: Flatpay, Data Engineer
+  follow-up 1 of 2, 16 days quiet; a draft only: you send it → `out/e2e/me/applications/flatpay__data_engineer/followup_2026-10-19.md`
+- **needs_decision** `adesso__cloud_native_data_engineer_all_genders` · adesso: Cloud Native Data Engineer (all genders) · fit 61
+   → `out/e2e/me/queue/adesso__cloud_native_data_engineer_all_genders`
+- **needs_decision** `adesso__dbt_architect_all_genders` · adesso: dbt Architect (all genders) · fit 61
+   → `out/e2e/me/queue/adesso__dbt_architect_all_genders`
+
+Proposals pending: 0
+
+accepted (queue-ready) 2 · cost per accepted $3.40 · first-pass rate 0% · judge mean 6.7/10 · applied 2 · interviews 1 · offers 1
+

@@ -1,0 +1,28 @@
+\documentclass{jobletter}
+\begin{document}
+\jlname{Alex Fernsby}
+\jlcontact{Copenhagen \textbullet{} +1 555 0100 \textbullet{} alex.fernsby@example.com}
+\jlreference{}
+\makeletterhead
+
+\letterdate{19 October 2026}
+\salutation{Dear Hiring Manager,}
+
+\lettercontent{I am applying for the Senior Data Engineer role at A.P. Moller - Maersk. I want to bring end-to-end pipeline ownership to this senior individual-contributor role. My current work connects shipment events, tested warehouse tables and reporting that operations planners can use independently.}
+
+\begin{letterbullets}
+  \item \textbf{Scale}: I own a Kafka pipeline that moves 40 million shipment events daily into PostgreSQL and BigQuery, orchestrated with Apache Airflow.
+  \item \textbf{Performance}: Incremental dbt models reduced a delivery-performance mart's nightly rebuild from 6 hours to 55 minutes.
+  \item \textbf{Reliability}: Great Expectations tests on 30 core tables reduced failed loads by 70\% in the first quarter; I also documented the pipeline's on-call runbook.
+\end{letterbullets}
+
+\lettercontent{I would bring practical experience defining data contracts with five producing teams so self-service consumers can trust what they query, and building a Looker explore that lets planners answer delivery-delay questions themselves. I mentor two junior engineers and lead weekly modelling reviews. These are concrete ways I help colleagues use and maintain data products, working closely with the teams that produce and consume them. At Marlow Retail Group, I trained 12 analysts on dbt and reviewed their first 40 models, helping them work with the warehouse.}
+
+\lettercontent{I have a gap against the full data engineering experience requirement: I lack PySpark and distributed data processing. My adjacent foundation is Python ingestion, Kafka pipelines and BigQuery optimization. I have no documented \mbox{AI/ML engineering or Claude Code} experience, nor experience with \mbox{LLM-based applications or Claude Code}; tested datasets and repeatable ingestion provide adjacent foundations for machine learning enablement.}
+
+\lettercontent{I live in Copenhagen and can work in the EU without sponsorship. My earliest start is 1 February 2027, following three months' notice.}
+
+\closingline{I would welcome a discussion of the role and my contribution.}
+
+\signoff{Yours sincerely,}{Alex Fernsby}
+\end{document}

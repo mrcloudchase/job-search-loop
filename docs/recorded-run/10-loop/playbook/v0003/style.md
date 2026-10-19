@@ -1,0 +1,5 @@
+- Open every gap sentence directly and keep claims complete rather than hedging with conditionals.
+- Write each bullet as a complete sentence with a concrete result and no ambiguous units.
+- Name each required skill and each acknowledged gap in both the CV and the letter.
+- Keep the CV and the letter in the same direct, evidence led tone with no senior versus junior framing.
+- Place each acknowledged gap in the CV beside the skill it concerns, not only in the letter's closing argument.
