@@ -1,0 +1,363 @@
+# C1: /apply workflow and its checklist (parity matrix slice)
+
+1. Files read completely: apply.md, add-template.md, skills 05/06/08, 04 (cache section + checklist context), CLAUDE.md, cv/main_example.tex, cover_example.tex, cover.cls, and the six named tests (host check, page count, records application, latex guidance, company research cache, add-template build dir). Paths below are relative to the original checkout; `A`=.claude/commands/apply.md, `S`=.claude/skills/job-application-assistant, `T`=tests.
+2. Row count: 272 rows.
+3. The matrix cannot express: the "spec is the implementation" markdown-wording tests (most of test_apply_records_application.py asserts that sentences exist in .md files; here they become behaviour tests of the loop); the visual Read-the-PDF inspection (kept as a model-judgement step, with code checks as the hard floor); the reviewer's web research quality.
+4. Surprises: (a) the host classifier exists ONLY as a reference implementation inside a test (T/test_apply_host_check.py:108-140), the spec is prose, so nothing enforces it at run time; (b) page count, layout holes, ASCII dates, 250-300-word budget, no-em-dash and keyword table are prose-only or tool-only, the loop must make them hard gates; (c) the spec says `\needspace` before each `\cventry` in CLAUDE.md:138 but 05:261 says only where a compile shows an orphan (contradiction); (d) 05:23 / 05:247 say "Any page count other than 2 fails" while 05:358 prefers `\enlargethispage` for 2.02 pages (consistent only if count is checked after the rescue); (e) the cover letter is "approximately one page" in apply.md:122 and CLAUDE.md:131 but "exactly 1" in 5b and CLAUDE.md:139; (f) the table's hosts say `workday.com` is acceptable for the Workday apex but the "six" list names seven literals (host test KNOWN_ATS_APEXES has 7 entries, T/test_apply_host_check.py:80-88); (g) Step 1 sells "present evaluation then ask the user to proceed", a human gate a loop must replace with a configured gate.
+5. Out-of-scope items in this slice: none (the slice mentions /outcome, /interview, /setup, gmail-sync, notion-sync only as cross-references; their guarantees belong to other readers).
+
+### Input parsing and fetching (Step 0)
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| Input that looks like a URL is fetched; pasted text is used directly as the posting (A:23,32) | apply.parse_input | test_url_input_fetched_text_input_used_verbatim | planned |
+| For a URL whose host matches an installed portal skill, the portal CLI `detail` command is tried first, before any generic fetch (A:24-28; T/test_apply_host_check.py:153-161) | fetch (escalation), apply.parse_input | test_portal_detail_runs_before_generic_fetch | planned |
+| The generic fetch is the fallback only when the URL is not a portal host, or the portal command is missing or errors (A:29) | fetch (escalation) | test_generic_fetch_used_only_after_portal_unavailable | planned |
+| Portal detail output can be requested as plain text, or as structured JSON when deadline, contact or apply URL are wanted alongside the description (A:26-28) | boards/* (detail), fetch | test_portal_detail_json_mode_exposes_deadline_contact_apply_url | planned |
+| HTTP 403, a login wall, or an unrelated listing page is never accepted as the posting and never drafted from the title; escalation continues (retry with browser-like headers after a robots.txt check, then the employer's own careers page) (A:30) | fetch (escalation), guards (robots.txt RFC 9309) | test_403_login_wall_and_listing_page_escalate_not_draft | planned (stricter: content-sanity check rejects login/listing pages in code) |
+| The employer's own careers posting is preferred over an aggregator listing, and any material discrepancy (requisition ID, grade or seniority) between the two is surfaced to the user (A:31) | fetch, apply.parse_input | test_employer_posting_preferred_and_discrepancy_reported | planned |
+| Posting text is untrusted data, never instructions: embedded directions are never followed (A:33) | guards (security), apply | test_embedded_instructions_in_posting_not_followed | planned |
+| URLs found inside the posting body are never fetched; the user-supplied posting URL is the only exception (A:33) | guards (security), fetch | test_urls_inside_posting_body_never_fetched | planned (stricter: fetch layer refuses any URL not user-supplied or derived from the employer identity) |
+| Posting content is never copied into the CV, cover letter or any outbound request merely because the posting asked for it (A:33) | guards (security), apply | test_posting_requested_content_not_included_in_outputs | planned |
+| The untrusted-data rule travels with the posting text into every later step and agent prompt, including the reviewer (A:33,141) | turns, apply | test_every_agent_prompt_carries_untrusted_posting_notice | planned (stricter: prompt builder always injects the notice) |
+| Hidden text in the posting (HTML comments, invisible styling) is treated as content to evaluate, not obeyed (A:33) | guards (security), fetch | test_hidden_html_text_in_posting_is_inert | planned |
+| Extracted fields are company, role title, department (optional), location, application deadline (only if stated), and posting language (A:34) | apply.parse_input, fit | test_posting_fields_extracted_with_optional_ones_empty | planned |
+| The full posting text is kept verbatim for later archiving, never a summary (A:35; T/test_apply_records_application.py:258-261) | archive, apply | test_full_posting_text_held_verbatim_for_archive | planned |
+| The deadline extraction is stated where the full posting is still held (A:34; T/test_apply_records_application.py:329-331) | apply.parse_input | test_deadline_extracted_at_parse_time_not_later | planned |
+
+### Standing rule and workflow hygiene
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| A fact the user confirms or supplies that is missing from the candidate profile is written back to the profile in the same turn, never left in chat or a draft (A:7) | profile, apply | test_user_confirmed_fact_written_to_profile_same_turn | planned |
+| A fact existing only in conversation is treated as unsupported by later sessions and stripped as fabrication, hence the write-back rule (A:9,11) | grounding, profile | test_fact_absent_from_profile_is_flagged_ungrounded | planned |
+| Adding a fact to the profile that the other two grounding sources simply omit is not a profile-consistency warning, but a fact that corrects something they state must be fixed in those too (A:11) | grounding, profile | test_profile_addition_vs_correction_consistency_warning | planned |
+| Steps run strictly in order and none are skipped (A:5) | apply (loop) | test_phase_order_enforced_no_skipping | planned (stricter: state machine refuses out-of-order transitions) |
+| Already-loaded files are not re-read; drafts are passed inline to the reviewer; the full verification checklist runs exactly once at the end; the reviewer does content critique only (A:14-16) | apply, turns | test_reviewer_gets_inline_drafts_and_checklist_runs_once | planned |
+| Compile-and-inspect is mandatory and non-skippable (A:17,235) | apply, layout, pdfcheck | test_apply_cannot_finish_without_compile_and_inspection | planned (stricter: completion requires recorded passing check results) |
+
+### Source host verification and fit gates (Step 1)
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| A posting URL's host is classified before drafting into exactly one of: installed portal board, official ATS, unverified (A:55-66; T/test_apply_host_check.py:108-140) | guards (source-host) | test_host_classified_into_exactly_one_tier | planned (stricter: run in code, not prose) |
+| Installed portal hosts are derived from the installed board adapters, never from a hand-copied list, so a newly added board is never flagged unverified (A:57; T/test_apply_host_check.py:10-17,74-78,204-211) | guards (source-host), boards/* | test_portal_host_set_derived_from_registered_boards | planned |
+| An installed board counts as a known host even when it is disabled for scraping, because discovery is by installation (T/test_apply_host_check.py:36-45) | guards (source-host), boards/* | test_disabled_board_still_verifies_host | planned |
+| Portal hosts are registrable names without a leading `www.`, lowercase, matched by exact-or-subdomain, so the bare apex, `www.` and regional subdomains all pass (T/test_apply_host_check.py:57-71,191-202,232-245) | guards (source-host) | test_portal_host_matches_apex_www_and_subdomains | planned |
+| The ATS list is a fixed set of apexes: greenhouse.io, lever.co, myworkdayjobs.com (or workday.com), ashbyhq.com, smartrecruiters.com, workable.com (A:58-64; T/test_apply_host_check.py:80-88) | guards (source-host) | test_each_ats_apex_and_its_subdomains_classify_official | planned |
+| An ATS host must equal the apex or end with `.<apex>` after lowercasing the parsed hostname (A:65; T/test_apply_host_check.py:136-138) | guards (source-host) | test_ats_match_is_exact_or_dot_suffix | planned |
+| Look-alike prefixes (`evil-greenhouse.io`) fail closed to unverified (A:65; T/test_apply_host_check.py:254-255) | guards (source-host) | test_prefix_lookalike_unverified | planned |
+| Suffix spoofing (`boards.greenhouse.io.evil.com`, `myworkdayjobs.com.phishing.net`, `lever.co.attacker.org`) fails closed (A:65; T/test_apply_host_check.py:256-259) | guards (source-host) | test_suffix_spoof_unverified | planned |
+| Userinfo tricks (`https://greenhouse.io@evil.com/`, `boards.greenhouse.io@evil-domain.com`) classify by the real host and fail closed (A:65; T/test_apply_host_check.py:257) | guards (source-host) | test_userinfo_trick_classifies_real_host | planned |
+| Unfamiliar subdomain-of-unknown-domain hosts are unverified (A:65; T/test_apply_host_check.py:260) | guards (source-host) | test_unknown_domain_unverified | planned |
+| An unparsable URL or empty hostname classifies as unverified with an empty host, never raises (T/test_apply_host_check.py:121-128) | guards (source-host) | test_malformed_url_unverified_no_exception | planned |
+| Pasted text with no URL has no host to verify and is reported as such, not as verified (A:55 scope "when input is a URL") | guards (source-host), apply | test_pasted_text_has_no_host_tier | planned |
+| An unverified host is named plainly in the evaluation as an unverified source host, and the user is alerted before time is spent drafting (A:66; T/test_apply_host_check.py:174-175) | guards (source-host), fit, report | test_unverified_host_named_in_evaluation_with_warning | planned |
+| The ATS apexes shared by a bare apex with no subdomain (`greenhouse.io/corp/123`) resolve to no portal skill, only to the ATS tier (T/test_apply_host_check.py:281-289) | guards (source-host) | test_bare_ats_apex_resolves_to_no_portal_skill | planned |
+| A URL resolves to the installed portal skill whose CLI built it, for the bare host and subdomains (T/test_apply_host_check.py:92-105,266-279) | boards/*, fetch | test_url_resolves_to_owning_board_adapter | planned |
+| Source-host result is item 1 of the evaluation presented to the user (A:70) | fit, report | test_evaluation_lists_source_host_first | planned |
+| The evaluation reports skills match (required vs preferred, gaps), experience match, behavioral/culture match, salary benchmark if available, and overall score with a strong/moderate/weak verdict (A:71-75) | fit | test_evaluation_has_all_six_sections | planned |
+| The evaluation uses the 04-job-evaluation framework against the candidate profile before any drafting (A:41-45) | fit | test_fit_evaluated_before_drafting | planned |
+| Drafting happens only after an explicit go decision: the user is asked whether to proceed, and a "no" stops the workflow (A:77-80) | apply (loop), fit (gates) | test_no_decision_stops_before_drafting | planned (stricter: configured score/gate threshold replaces the human prompt in unattended mode) |
+| The salary benchmark runs only if the salary tool is configured, can be narrowed by the posting's city, and a missing tool or an error skips it silently without blocking (A:45-51) | fit, apply | test_salary_benchmark_optional_and_skipped_on_error | planned |
+| The salary benchmark is looked up by company name and parsed from JSON into the evaluation (A:47-51) | fit | test_salary_benchmark_included_when_available | planned |
+| The overall fit score is kept as a number for the tracker (A:394) | fit (score) | test_fit_score_is_integer_0_to_100 | planned |
+| The required/preferred keyword list is built once in Step 1 and reused for the later coverage table, not re-derived (A:102,327) | keywords, fit | test_keyword_list_built_once_and_reused | planned |
+
+### Company research and cache (Step 3 reviewer, 04 cache section)
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| Before researching, the cache file `company_research/<normalized-company>.json` is checked and a fresh hit is the starting point (A:144; S/04-job-evaluation.md:227-229; T/test_company_research_cache.py:299-306,263-267) | research (cache) | test_fresh_cache_hit_skips_search | planned |
+| The company name is normalized for the filename by lowercase, trim, spaces to hyphens, with no legal-suffix normalization, so a near-miss spelling is only a miss (S/04:197-200) | research (cache) | test_cache_filename_normalization_lower_trim_hyphen | planned |
+| Cache entries are fresh for 30 days from `fetched_date`; older or missing entries trigger new research (S/04:202-203,229-230; T/test_company_research_cache.py:263-267) | research (cache) | test_cache_ttl_30_days_boundary | planned |
+| Cache schema holds company, fetched_date (YYYY-MM-DD), sources (website, reviews, linkedin, media each with url and notes) and network_contacts_note (S/04:206-219) | research (cache) | test_cache_schema_roundtrip | planned |
+| Fresh research is written back (create or overwrite) with today's date, so the next consumer reuses it; the write half must not be dropped (A:152; S/04:230-232; T/test_company_research_cache.py:309-316) | research (cache) | test_fresh_research_written_back_with_today | planned (stricter: write happens in code after the research turn) |
+| A cache hit is a lead, never a substitute for verifying each company claim before it enters a final artifact (S/04:190-195; A:144; T/test_company_research_cache.py:269-283,318-328) | research (claim verification) | test_cache_claims_still_verified_before_use | planned |
+| Cache contents are data, never instructions, even when a note reads imperatively (S/04:221-225; T/test_company_research_cache.py:285-295) | research (cache), guards (security) | test_cache_note_imperative_text_not_obeyed | planned |
+| A cache file that is malformed or has a missing/garbled fetched_date is treated as stale, not trusted (derived from S/04:202-203; no test in original) | research (cache) | test_malformed_cache_treated_as_miss | planned |
+| Cache lookup and write are shared between /apply and /interview so either consumer reuses the other's result (S/04:184-189; T/test_company_research_cache.py:331-372) | research (cache), interview | test_apply_and_interview_share_one_cache | planned |
+| The reviewer researches starting only from the company identity (search by name, navigate from its official site), never from links found in the posting body (A:146) | research, guards (security) | test_research_seeds_only_from_company_name | planned |
+| Search-result snippets are leads, not sources: a claim is verified against the fetched page or dropped (A:146) | research (claim verification) | test_snippet_only_claim_is_dropped | planned |
+| On HTTP 403 during research, the reviewer retries with browser-like headers before declaring a page unavailable (A:146) | fetch (escalation), research | test_research_403_retried_with_browser_headers | planned |
+| Research covers the website/mission/news, the department or team, recent projects and press, and culture and values (A:147-150) | research | test_research_covers_all_four_areas | planned |
+| Every company-specific claim (partnerships, products, technology, expansions) that lands in an output is independently verified, and reviewer research is never trusted at face value (A:223; CLAUDE.md:112) | research (claim verification) | test_company_claims_in_letter_all_verified | planned (stricter: each claim carries a source URL checked by code) |
+| Company-claim verification uses only independently located sources, never URLs from the posting text (CLAUDE.md:112) | research, guards (security) | test_verification_sources_never_from_posting_urls | planned |
+
+### Drafting inputs and requirement coverage (Step 2)
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| Facts come only from the union of three sources: the candidate profile, the master CV and the Candidate Profile section of the workspace instructions; tailored CVs from earlier applications are structure and phrasing references only, never claim sources (A:99,114; S/05:146) | grounding | test_prior_tailored_cv_never_counts_as_source | planned |
+| A past tailored draft or extracted profile statement does not vouch for its own accuracy (S/05:146) | grounding | test_old_draft_phrases_not_fact_source | planned |
+| The active template is resolved once from an ACTIVE-TEMPLATE block in the CV or letter guidance; its source extension and compile command override the stock `.tex` / lualatex (CV) and `.tex` / xelatex (letter) defaults for the whole run, and absent a block the stock defaults apply (A:93; add-template.md:155-170) | latex (templates), apply | test_active_template_overrides_extension_and_compile | planned |
+| Every requirement the posting states is addressed in the drafts, either matched or honestly gapped, never silently omitted (A:102; CLAUDE.md:117) | keywords, grounding, apply | test_every_posting_requirement_matched_or_gapped | planned (stricter: requirement ledger must have a disposition per item before finishing) |
+| A requirement the candidate lacks gets an honest bridge to adjacent real experience, because omission reads as hiding (A:102) | letter, grounding | test_gap_requirement_acknowledged_with_honest_bridge | planned |
+| Nice-to-haves are engaged by name where the profile supports honest adjacency (A:103; CLAUDE.md:118) | keywords, letter | test_nice_to_have_named_when_adjacent | planned |
+| The posting's own term is used over a synonym wherever truthfully applicable, including in CV section or competency labels (A:103; S/05:153) | keywords | test_posting_term_preferred_over_synonym_when_true | planned |
+| The letter addresses stated logistics and prerequisites where raised: clearance willingness, start date, commute/location fit, the posting's reference/job ID, and a truthful language-capability sentence for multi-country employers (A:104) | letter | test_letter_addresses_posting_logistics | planned |
+| Filenames use `<company>_<role>` derived by the shared Subfolder naming rule (lowercase, spaces to underscores, drop non letter/digit/underscore, collapse underscores, trim; Unicode letters survive) so no path character splits a name across directories (A:106; T/test_apply_records_application.py:539-548,550-558) | jobkey, archive | test_name_derivation_single_path_component | planned |
+| A derived name that would contain `/` or `..` never survives; an empty result is rejected rather than writing under the parent directory (T/test_apply_records_application.py:550-568,528-531) | jobkey, archive, guards | test_traversal_company_role_cannot_escape_dir | planned |
+| The same derivation is used for CV name, letter name, tracker file columns and the archive folder, so all agree (A:106,404; T/test_apply_records_application.py:402-441,506-510) | jobkey | test_one_derivation_for_all_artifact_names | planned |
+| Two roles at one company yield distinct filenames, so a role-specific fallback glob selects exactly one role's documents and never the whole company's (T/test_apply_records_application.py:389-478) | jobkey, archive | test_two_roles_same_company_distinct_files | planned |
+| Non-`.tex` outputs (e.g. `.typ`) are found by the same pattern, extension never hardcoded (A:93; T/test_apply_records_application.py:466-478) | jobkey, latex | test_artifact_lookup_independent_of_extension | planned |
+| Drafting writes both files to disk before the review step, and the exact draft text is retained for inline hand-off (A:125) | apply | test_drafts_on_disk_and_in_memory_before_review | planned |
+
+### CV requirements (Step 2, 05-cv-templates, main_example.tex)
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| The CV language is a profile setting (the `CV language:` line), defaults to English when unset, and is never switched per posting (A:109; CLAUDE.md:30) | profile, apply | test_cv_language_from_profile_default_english | planned |
+| The CV follows the moderncv banking format with blue colour scheme, 11pt a4paper sans (A:110; S/05:11,28-30; cv/main_example.tex:9-11) | latex (templates) | test_cv_uses_moderncv_banking_blue_11pt_a4_sans | planned |
+| The CV is tailored: profile statement and bullets are reframed per role (A:111-112; CLAUDE.md:115-116) | apply, letter | test_cv_profile_statement_differs_per_posting | planned |
+| The CV is exactly 2 pages (A:113; S/05:23,247,317; CLAUDE.md:137) | pdfcheck | test_cv_page_count_exactly_two | planned |
+| The compile engine for the stock CV is lualatex (pdflatex fails on fontawesome5 font expansion on modern MiKTeX) (A:246; S/05:14; CLAUDE.md:136) | latex (compile) | test_stock_cv_compiled_with_lualatex | planned |
+| The CV preamble forces name and section headings to moderncv blue via namefont and the three name colourlets plus a sectionstyle override; dropping these renders them black (S/05:32-42,96; cv/main_example.tex:13-23) | latex (templates) | test_cv_preamble_has_color_overrides | planned |
+| `pdfpagemode=UseNone` is kept in the CV hyperref setup so PDFs do not open fullscreen, and hypersetup lives in an AtEndPreamble (S/05:52-67; cv/main_example.tex:33-48) | latex (templates) | test_cv_hypersetup_in_atendpreamble_with_usenone | planned |
+| Geometry scale is 0.80 in both the guide and the example CV and the two must agree (S/05:68; cv/main_example.tex:49; T/test_latex_guidance.py:179-194) | latex (templates) | test_guide_and_example_geometry_scale_match | planned |
+| T1 font encoding is loaded only under pdflatex (`\ifpdftex ... \fi`), never unguarded, so accents stay precomposed in the text layer and lualatex output is unchanged (S/05:44-51; cv/main_example.tex:25-32; T/test_latex_guidance.py:139-176) | latex (templates), pdfcheck | test_fontenc_only_inside_ifpdftex_guard | planned |
+| An address line with no address is deleted entirely, because an empty `\address{}{}{}` fails to compile (S/05:73-75; cv/main_example.tex:54-56) | latex (templates) | test_empty_address_line_removed | planned |
+| The CV contact block carries name, address, mobile, email and LinkedIn/GitHub links (S/05:71-78; cv/main_example.tex:52-59) | latex (templates), profile | test_cv_contact_block_populated_from_profile | planned |
+| Section order: for technical roles profile, competencies, experience, education, languages, publications and awards, references; for specialist roles education before experience (S/05:360-379) | latex (templates), apply | test_section_order_by_role_type | planned |
+| Core competencies list 5-7 bold-labelled bullets; the posting's core term appears in the matching label when truthful (S/05:148-153,319-325) | keywords, latex | test_competency_count_and_posting_term_in_label | planned |
+| The master CV skeleton has sections for profile, competencies, experience (three role tiers), education, languages, publications, honors, references, using cventry-in-itemize blocks (cv/main_example.tex:65-188) | latex (templates) | test_cv_skeleton_sections_present_in_order | planned |
+| Page budget per section (profile 3-4 lines, skills 5 items, newest role 4-5 bullets, previous 2-3, older 2 one-liners, education 2-3, publications 2-3, awards 3, references one line) is a guide; bullet counts by recency are 4-6 / 3-4 / 2-3 in the section guidance (S/05:180,317-329) | layout, latex | test_section_budgets_within_declared_limits | planned |
+| When in doubt, content is cut rather than squeezed; spacing and geometry are never reduced to force-fit (S/05:331,267; A:294) | layout, apply | test_fit_by_cutting_never_by_shrinking_geometry | planned (stricter: geometry/vspace edits that shrink are rejected by diff check) |
+| Cutting is relevance-weighted: score each candidate line on relevance to this posting, uniqueness and narrative load for the letter, then cut lowest total first regardless of section (A:292; S/05:333-343) | layout, edits | test_cut_order_by_relevance_not_section | planned |
+| Cut order is redundancy, profile fluff, low-relevance bullets, low-relevance supporting content, low-relevance publications, then structural cuts last (S/05:345-352) | layout | test_cut_order_ladder | planned |
+| A line the cover letter depends on is not cut; borderline overflow (about 2.02 pages) is rescued by enlarging the page, not cutting (S/05:356-358) | layout, apply | test_borderline_overflow_rescued_not_cut | planned |
+| A CV ending mid-page-2 gets the highest-relevance previously cut item restored (S/05:269-270) | layout | test_thin_page_two_restores_best_cut_item | planned |
+| In-progress degrees, certifications and courses state "in progress, expected <Month Year>" (or "present"), never a bare closed year range, and profile statement, education entry and availability note agree on the completion date (S/05:160-176; 08:266) | grounding, style | test_in_progress_qualification_marked_and_dates_agree | planned |
+| A credential not yet held is never claimed (S/05:174) | grounding | test_unfinished_credential_not_claimed_as_complete | planned |
+| Role tenure is checked against visible output; fixes are surfacing real work, making phases explicit, naming what made the cycle long; never invented projects and never shortened dates (S/05:183-197) | grounding, apply | test_tenure_dates_never_shortened_or_padded | planned |
+| A long role with little visible output yields a prepared interview answer recorded in interview prep (S/05:197) | interview | test_tenure_gap_answer_in_prep_pack | planned |
+| Employment gaps are explained matter-of-factly with continued development, never hidden (S/05:199-203) | letter | test_gap_framed_without_fabrication | planned |
+| Nameable artifacts (public projects, hackathon entries, publications) carry an `\href` evidence link (S/05:210-211) | latex, grounding | test_named_artifact_has_link | planned |
+| Publications: 3-4 most relevant, brief for non-academic roles; honors one line each; references 2-4 or "available upon request" line (S/05:205-219,328-329) | latex | test_publications_awards_references_limits | planned |
+| Never place `\vspace` between `\item` entries in an itemize list (inter-item vspace causes an oversized gap); vspace after a section heading and between top-level cventries is fine (S/05:98-122) | latex, layout | test_no_vspace_between_items | planned |
+| Date argument of a `\cventry` is a single ASCII hyphen, not `--` (S/05:296-303) | latex, pdfcheck | test_cventry_date_uses_single_hyphen | planned |
+| A role written as a lone year (a short contract) gets an explicit range with months; a genuine range is preferred over a single year; no start date is invented (S/05:305-311; A:323) | pdfcheck, grounding | test_bare_single_year_role_date_flagged | planned |
+| Section headings (`Core Competencies`, `Professional Experience`, `Education`, `Languages`, `Publications`, `Honors and Awards`, `References`) and the references boilerplate line are translated whenever the CV language is not English (S/05:124-126; CLAUDE.md:132) | latex (templates), style | test_non_english_cv_headings_and_references_translated | planned |
+| A bullet beginning with a literal `[` is braced (`\item {[text]}`), because `\item [x]` swallows it as an optional label and clips it off the page and out of the text layer; the example CV and both guides never teach the unbraced form (S/05:240; S/06:149; T/test_latex_guidance.py:29-77) | latex (escaping) | test_bracket_leading_item_is_braced | planned |
+
+### Cover letter requirements (Step 2, 06-cover-letter-templates, cover_example.tex, cover.cls)
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| The letter is written in the language of the posting (Danish posting gives Danish letter), independent of the CV language (A:117; S/06:158-161) | letter, apply | test_letter_language_follows_posting_not_cv | planned |
+| Letter structure follows the guide: name header, date, salutation, opening, body with bullet list, company connection, personal fit, closing line, closing and signature (S/06:60-114; cover_letters/cover_example.tex:213-250) | letter, latex (templates) | test_letter_has_all_structural_blocks_in_order | planned |
+| The letter uses the `cover` class, compiled with xelatex because it needs fontspec (A:118-119,247; S/06:9-12; CLAUDE.md:122,136; cover.cls:11,16) | latex (compile), letter | test_letter_uses_cover_class_and_xelatex | planned |
+| The look the letter must match: A4 article base with 2.3cm margins on all sides, colour-muted text (#2b2b2b body, #6A6A6A headings), Lato Light main font, Raleway for body paragraphs at 11/13pt, centred 40pt Lato name header with a 11/14pt contact line in grey beneath, no header rule, no page number (cover.cls:9-48,70-75; cover_example.tex:205-211) | latex (templates), layout | test_letter_geometry_fonts_colors_match_cover_cls | planned |
+| Letter body paragraphs are set in Raleway-Medium 11pt/13pt; paragraph command appends its own line breaks (cover.cls:93-100) | latex (templates) | test_lettercontent_font_and_spacing | planned |
+| Opening paragraph is tailored to the role and company, not generic (A:119; CLAUDE.md:115) | letter, style | test_opening_names_role_and_company | planned |
+| The salutation names a person if the posting names one, otherwise "Dear Hiring Manager" (or its equivalent in the posting's language) (A:120; S/06:128-131; CLAUDE.md:130) | letter | test_salutation_named_person_else_generic_in_language | planned |
+| The letter is exactly one page, signature block included and never overflowing (A:121; S/06:21,133-135; CLAUDE.md:131,139) | pdfcheck | test_letter_page_count_exactly_one | planned |
+| Letter body is 250-300 words (markup excluded), 350 words overflows; structure is opening + bullet-list paragraph + closing, with a fourth block only when the rest are short (S/06:136-137) | letter (word count), style | test_letter_body_word_count_250_to_300 | planned (stricter: counted in code and enforced as a hard gate) |
+| Adding company-specific content is offset by trimming, never net growth (S/06:138) | letter, edits | test_letter_edit_does_not_net_grow_beyond_budget | planned |
+| Bullet lists sit outside the `\lettercontent` command (its trailing line break errors on `\end{itemize}`), wrapped in a Raleway-Medium 11/13pt group so the bullet font matches the body; unwrapped bullets render in Lato (S/06:31-56; A:293; CLAUDE.md:140; cover_example.tex:197-199,230-236) | latex (templates), layout | test_itemize_outside_lettercontent_with_raleway_wrapper | planned |
+| The closing macro has no trailing line break inside it (the class adds its own), or the compile errors with "no line here to end" (S/06:107-109; cover_example.tex:245-247) | latex (templates) | test_closing_has_no_trailing_linebreak | planned |
+| 3-5 bullets, each starting with a bold label or action verb (S/06:146-148) | letter | test_bullet_count_3_to_5_with_labels | planned |
+| Any mention of agentic coding or AI tooling names Claude Code explicitly (A:123; CLAUDE.md:103,129) | style, grounding | test_ai_tooling_mentions_name_claude_code | planned |
+| Letter uses forward-looking framing and every claim is backed by a specific example (S/06:166-167) | style, letter | test_letter_claims_have_examples_and_forward_framing | planned |
+| Motivation paragraph references this company's specific verified mission, product or priority, never generic (S/06:168; cover_example.tex:238) | research, letter | test_motivation_has_verified_company_specific | planned |
+| Company name, role, and date are correct throughout, and the date is current (S/06:169-170) | letter, grounding | test_company_role_and_date_correct | planned |
+| Non-English letters adjust date format and closing to local convention (e.g. "Med venlig hilsen,") (S/06:158-161) | letter | test_local_closing_and_date_format | planned |
+| Letter spacing may add `setspace` stretch 1.0 only if long; page margin and line spacing are never reduced to fit (S/06:140-142; A:294) | layout, apply | test_letter_fit_never_by_geometry | planned |
+| Letter overflow is cut by relevance: restated sentences first, then non-keyword bullets, then keyword bullets last (A:294) | layout, edits | test_letter_overflow_cut_order | planned |
+| Letter tone is consistent with the CV and the two documents do not contradict each other (CLAUDE.md:123-124) | grounding, style | test_cv_and_letter_facts_consistent | planned |
+| File submission names are clear (CV and cover letter) and only requested documents are submitted (S/06:176-180) | apply | test_output_files_named_per_pattern | not ported, because it is submission advice with no mechanical check |
+
+### Writing-style rules and LaTeX escaping
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| No em-dashes anywhere in drafted text (use commas or periods) (A:225; S/06:164) | style | test_no_emdash_in_cv_or_letter | planned (stricter: regex over the .tex body, hard gate) |
+| No cliches or empty filler, no apologetic hedging, consistent first-person active voice (A:225; S/06:165) | style | test_cliche_phrases_rejected | planned (stricter: listed-cliche matcher with a configurable list) |
+| The reviewer checks letter voice against the behavioral profile (e.g. a collaborative profile is not given a combative solo-hero tone) (A:157,205) | style, turns | test_reviewer_prompt_includes_behavioral_register_check | planned |
+| No spelling or grammar errors in either document (CLAUDE.md:128) | style | test_spelling_check_flags_typos | planned |
+| An unescaped `%` is a silent failure (compile succeeds, rest of the line vanishes); every `%` in body text must be written `\%` (S/05:237; S/06:154; T/test_latex_guidance.py:101-112) | latex (escaping) | test_unescaped_percent_in_body_rejected | planned (stricter: lint rejects an unescaped percent that is not a deliberate comment line) |
+| `&`, `$`, `#`, `_`, `~`, `^`, backslash are escaped in body text, including company names like Bang \& Olufsen and numbers like 40\% (S/05:223-233; S/06:151-156; T/test_latex_guidance.py:35-99) | latex (escaping) | test_all_special_characters_escaped_in_company_and_bullets | planned |
+| `&` unescaped fails loudly in cventry, but employer names are still escaped up front (S/05:238) | latex (escaping) | test_ampersand_in_employer_name_escaped | planned |
+| Both guides document the required escape set (`\&`, `\%`, `\$`, `\#`, `\_`) in a "LaTeX Special Characters" section (T/test_latex_guidance.py:35-99) | latex | test_guides_list_required_escapes | not ported, because it tests markdown wording; the escaping function itself is covered by the rows above |
+| LaTeX syntax is clean: balanced braces, valid commands, compile has no errors (CLAUDE.md:127; A:250) | latex (compile) | test_compile_error_loops_to_clean | planned |
+| Untrusted text (posting-derived or reviewer-derived) inserted into LaTeX is escaped, never raw (S/05:223; derived, no test in original) | latex (escaping), guards | test_untrusted_text_cannot_inject_latex_commands | planned (stricter: write-shell-escape off, `\input`/`\write18` rejected) |
+
+### Reviewer (Step 3)
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| The reviewer is a separate agent with a fresh context, so it does not see the drafter's reasoning (A:131) | turns, apply | test_reviewer_runs_in_fresh_context | planned |
+| Drafts and posting are passed to the reviewer inline in the prompt, with placeholders replaced by real values and a trust-boundary notice first (A:131-133,141,168-182) | turns | test_reviewer_prompt_has_inline_drafts_and_trust_notice | planned |
+| The reviewer reads only content-critique references: profile, behavioral profile, writing style, job evaluation, master CV and the workspace Candidate Profile; not the template-structure guides (A:154-163) | turns, apply | test_reviewer_reference_set_excludes_template_guides | planned |
+| The reviewer audits grounding of every date, employer, job title and quantitative metric against the union of the three sources; a claim is grounded if any source supports it (A:165-166) | grounding | test_grounding_union_any_source_supports | planned |
+| Mismatches among the three sources themselves are reported as a profile-consistency warning, not as draft drift (A:166) | grounding, profile | test_source_disagreement_reported_not_draft_drift | planned |
+| Draft-vs-source mismatches are returned as structured edits with reason "grounding", distinct from style changes (A:166,195) | grounding, edits | test_grounding_edits_carry_grounding_reason | planned |
+| Tolerance is honest: reframed emphasis is allowed, changed facts and escalated numbers are not (A:166) | grounding | test_escalated_number_flagged_reframe_allowed | planned |
+| Part A is a JSON array of edits, each with file, old_string, new_string, reason (reason: keyword match / company angle / reframing / style / grounding) (A:188-198) | edits | test_edit_schema_has_four_fields | planned |
+| An edit's file is one of the two draft paths, and old_string must be exact text from the draft and unique within that file (A:192,198) | edits | test_edit_rejected_if_old_string_missing_or_not_unique | planned (stricter: code validates before applying) |
+| Part B narrative covers four categories, each always present even if "no issues": missed keywords/requirements, company/department angles, action-oriented reframing, tone and style (A:200-205) | edits, turns | test_review_has_all_four_narrative_categories | planned (stricter: response rejected and re-asked if a category is missing) |
+| The reviewer must not suggest fabricating skills, experience or achievements; a gap is stated as a gap with adjacent experience as the framing (A:207) | grounding, turns | test_review_suggestion_fabricating_skill_rejected | planned |
+| The reviewer does not run the verification checklist (the drafter does it once at the end) (A:209) | apply, turns | test_reviewer_prompt_forbids_checklist | planned |
+| The reviewer returns Part A and Part B together as one structured message (A:211) | turns, edits | test_review_response_parses_into_edits_and_narrative | planned |
+
+### Revision (Step 4)
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| Part A edits are applied directly, mechanically, without re-reading draft files (A:220) | edits | test_part_a_edits_applied_in_order_without_reread | planned |
+| An edit whose rationale would require fabricating content is skipped (A:220,227) | edits, grounding | test_fabricating_edit_skipped | planned |
+| Every Part B category is walked and addressed: missed keywords go into experience bullets in preference to the profile statement; company angles woven into letter opening or motivation; passive phrasing rewritten; style fixes applied (A:221-225) | apply, edits | test_each_part_b_category_has_recorded_disposition | planned |
+| Reviewer company research is re-verified through independent fetch/search before inclusion, not trusted (A:223) | research (claim verification) | test_reviewer_claim_reverified_before_inclusion | planned |
+| Edits stay targeted; a file is re-read only if an edit fails because the text has shifted (A:226) | edits | test_failed_edit_triggers_reread_then_retry | planned |
+| After revision the files on disk are the final drafts; no suggestion that would fabricate is incorporated, a real gap is acknowledged and reframed (A:227-229) | apply, grounding | test_final_drafts_free_of_ungrounded_claims | planned |
+
+### Compile and inspect (Step 5)
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| Both documents are compiled with the resolved compile commands (stock: lualatex for the CV, xelatex for the letter, both with nonstop mode) and a compile failure is fixed and re-run until clean (A:239-250) | latex (compile), apply | test_compile_failure_loops_until_clean | planned |
+| A custom template's declared compile command is used verbatim; the engine is never silently replaced by lualatex/xelatex (A:248; add-template.md:151-170) | latex (compile) | test_custom_template_compile_command_used | planned |
+| Page count is checked on the CV (exactly 2) and letter (exactly 1) by a dedicated invocation before layout measurement; a custom template uses its declared page limit (A:257-263; T/test_apply_page_count.py:41-62) | pdfcheck | test_page_count_gate_cv_2_letter_1_custom_limit | planned |
+| The page-count check runs before the layout measurement because layout deliberately leaves page count to it (T/test_apply_page_count.py:57-62) | pdfcheck, layout | test_page_count_runs_before_layout | planned |
+| No step defers the page-count check to another step that does not run it (T/test_apply_page_count.py:64-73) | apply | test_page_count_actually_executed_in_every_run | planned (stricter: enforced by the loop's gate list, not wording) |
+| Layout is measured per page: where text starts and stops, bottom whitespace share, and largest vertical gap between lines (A:265) | layout | test_layout_measures_page_extents_and_gaps | planned |
+| Layout fails on a vertical hole over 100pt (about 7 blank lines) (A:265) | layout | test_hole_over_100pt_fails | planned |
+| Layout fails when a non-final page ends more than 25% early (A:265) | layout | test_nonfinal_page_ending_over_25_percent_early_fails | planned |
+| Layout fails when body text collides with the page-number footer band (A:265; the footer band is 90pt per A:271) | layout | test_text_in_footer_band_fails | planned |
+| Layout fails when the final page is more than 35% empty (A:265) | layout | test_last_page_over_35_percent_empty_fails | planned |
+| Layout fails when an entry header or section heading is stranded at a page break (A:265,277-278) | layout | test_orphaned_entry_header_or_heading_fails | planned |
+| A `cventry` is an unbreakable block, so one that does not fit jumps whole to the next page leaving a hole while compile and page count stay fine; the fix is shortening the following entry, not stretching the page (A:267) | layout, edits | test_unbreakable_entry_hole_fix_shortens_following_entry | planned |
+| If the PDF text tool is missing or lacks bbox support, layout is skipped with a distinct "skipped" exit code that is never a verdict, and the degraded mode is reported (A:269) | layout | test_layout_tool_missing_is_skipped_not_pass | planned (stricter: the loop uses a pure-python extractor so skip is rare) |
+| Layout thresholds are calibrated for the stock geometry and may false-positive a hole above the footer on custom templates; this is noted rather than silently relaxed (A:271) | layout | test_custom_template_footer_band_override | planned |
+| Visual inspection of both PDFs is performed after the measured checks (A:273) | apply, layout | test_pdf_rendered_images_inspected_by_model | planned |
+| CV visual checks: exactly 2 pages, no orphaned `cventry` title at page-1 bottom, no section heading isolated at top of page 2 with 1-2 lines, no awkward whitespace (A:275-279; CLAUDE.md:138) | layout | test_cv_visual_checklist_items | planned |
+| Letter visual checks: exactly 1 page, signature visible and not pushed to a second page, bullet font matches body (Raleway-Medium) (A:281-284; CLAUDE.md:139-140) | layout, pdfcheck | test_letter_visual_checklist_items | planned (stricter: bullet font checked via embedded font names) |
+| Orphaned CV entry fix: add `\needspace{5\baselineskip}` before the problem `cventry` and load the needspace package (A:290; S/05:253-259; CLAUDE.md:138) | edits, latex | test_needspace_added_before_orphaned_cventry | planned |
+| `\needspace` is used before entries, never before `\section` headings (a section-level one strands empty space and tends to add a page); only after a compile shows an orphan (S/05:261; contradicts CLAUDE.md:138 "before each cventry") | layout, edits | test_needspace_never_before_section | planned |
+| A trailing section spilling to page 3 is rescued with `\enlargethispage` of 2-3 baselines before a late section (A:291; S/05:263-264) | edits, layout | test_trailing_section_overflow_rescued_by_enlargethispage | planned |
+| Substantial content on page 3 triggers relevance-weighted cutting, not a static section order (A:292) | layout, edits | test_page3_overflow_cuts_lowest_scoring_lines | planned |
+| The compile-fix loop continues until both PDFs pass; Step 6 is not reached otherwise (A:296) | apply | test_step6_blocked_until_both_pdfs_pass | planned (stricter: bounded iteration with failure report) |
+| After the final clean compile and checks, intermediate files (aux, log, out, fls, fdb_latexmk, synctex.gz) are deleted for both documents; source, PDF and every template asset (cover.cls, OpenFonts, custom template files) are kept (A:346-350) | archive, latex (compile) | test_build_artifacts_removed_assets_kept | planned |
+| If a custom compile redirects to `build/`, the `build/` folders are removed too; zero-artifact toolchains delete nothing (A:352-353; add-template.md:166) | archive, latex | test_build_dir_removed_for_redirecting_templates | planned |
+
+### ATS text layer and keywords (Step 5d)
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| The ATS check applies to the CV only, not the letter (A:300) | pdfcheck | test_ats_check_runs_on_cv_only | planned |
+| The text layer is extracted with a pure-python reader first (pypdf) then Poppler `pdftotext`; if neither exists, the mechanical check is skipped with a one-line warning and keyword coverage uses the visual read, and the degraded mode is reported (A:302; S/05:280) | pdfcheck | test_extractor_fallback_and_degraded_notice | planned |
+| The extractor name used is recorded in the final report (A:312) | pdfcheck, report | test_extractor_name_in_report | planned |
+| Any documented `pdftotext -layout` fallback pins `-enc UTF-8`, because Xpdf-based builds default to Latin-1 and a correct non-ASCII CV would show replacement characters (A:302,315; S/05:280; T/test_latex_guidance.py:115-136) | pdfcheck | test_pdftotext_invocation_pins_utf8 | planned |
+| The extracted text is dumped before the checks run so a failure still leaves the text file for diagnosis (A:310) | pdfcheck | test_dump_written_even_when_check_fails | planned |
+| Extraction must produce text at all, with no `(cid:NNN)` markers, no U+FFFD replacement characters, and no stretches visible in the PDF but missing from the text (A:320; CLAUDE.md:144; S/05:285) | pdfcheck | test_no_cid_no_replacement_char_text_present | planned |
+| Email and phone appear as literal text in the extraction; icon-glyph names like `MOBILE-ALT` / `Envelope` are harmless noise but a contact detail carried only by an icon or hyperlink target is a failure (A:321; CLAUDE.md:145; S/05:284) | pdfcheck | test_email_and_phone_literal_in_text_layer | planned |
+| Reading order of the extracted text matches the visual order of section headings and lines from different sections are not interleaved; a custom multi-column template that scrambles is reported prominently to the user (A:322,325; CLAUDE.md:146; S/05:286) | pdfcheck | test_section_heading_order_matches_expected | planned |
+| Each role and degree has a start and end year in the extraction; a bare single year is flagged because it imports as a start with no end (A:323; S/05:305-311) | pdfcheck | test_every_entry_has_start_and_end_date | planned |
+| A year joined to a Unicode dash (en-dash from `--`, any dash code point) in the raw text layer fails the ASCII-date check, naming each hit and its code point; a year on either side suffices (`Mar 2016 – Jul 2016`, `2016 – Present`); a numeric range without a year (`EUR 600k–1M`) is left alone (A:310; S/05:313) | pdfcheck | test_ascii_dates_flags_unicode_dash_between_years | planned |
+| The ASCII-date check reads the raw layer, not the folded comparison text, because the fold maps the en-dash back to `-` and could never see it (A:310; S/05:287,313) | pdfcheck | test_ascii_dates_reads_raw_layer_not_folded | planned |
+| Keyword and phrase matching folds whitespace, Unicode normalization (NFC) and LaTeX typographic substitutions (U+2019 for `'`, U+2013 for `--`) so `Master's degree` matches; the dump itself is never folded (S/05:287) | pdfcheck, text | test_contains_folds_nfc_whitespace_and_typography | planned |
+| A multi-word phrase reported missing is re-checked against the other extractor before concluding it is absent, since pypdf can insert spaces around punctuation (A:339) | pdfcheck, keywords | test_missing_phrase_rechecked_with_second_extractor | planned |
+| Under pdflatex without T1, accents are stored decomposed and keywords like "Genève" fail to match; the guarded fontenc line keeps accents precomposed (S/05:44-51,288) | pdfcheck, latex | test_accented_keyword_matches_precomposed | planned |
+| Keyword coverage uses the Step 1 required/preferred list and matches in the posting's language; when the posting language differs from the CV language, a concept the CV covers in its own language counts as synonym-only with the language difference noted (A:327) | keywords | test_cross_language_coverage_is_synonym_only | planned |
+| Coverage is reported as a table with columns Keyword, Priority (required/preferred), Status, Note (A:329-331) | keywords, report | test_coverage_table_columns | planned |
+| Status "covered" means the term appears verbatim or as a trivial inflection (A:333) | keywords | test_covered_verbatim_or_inflection | planned |
+| Status "synonym-only" means the concept is present under another term; if the posting's exact term is truthful per the profile, the CV is tightened to the posting's term (A:334) | keywords, edits | test_synonym_only_tightened_when_truthful | planned |
+| Status "missing (have it)" means the profile shows the skill but the CV lacks it; it is added in experience bullets in preference to the profile statement, then compile and checks are re-run (A:335; CLAUDE.md:147) | keywords, edits | test_missing_have_added_to_bullet_then_recompiled | planned |
+| Status "missing (gap)" is a genuine gap left missing; keywords are never stuffed, and the gap is acknowledged in the letter framing instead (A:336; CLAUDE.md:147) | keywords, grounding | test_missing_gap_never_added_to_cv | planned (stricter: a diff check rejects any added keyword not in the profile) |
+| A failure in the ATS parseability checks is a template-level problem fixed in the source, then compile and layout are re-run and the text re-extracted (A:325) | apply, latex | test_ats_failure_triggers_fix_and_reverify | planned |
+| The extracted `.txt` is deleted after the check (A:342) | archive, pdfcheck | test_dump_text_deleted_after_check | planned |
+
+### Final verification checklist (Step 6, CLAUDE.md)
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| The full verification checklist runs once at the end, re-reading both files on disk, and reports pass or fail for every item (A:359-362; CLAUDE.md:106) | apply, report | test_final_checklist_reports_every_item_pass_or_fail | planned |
+| Checklist: all claims match the actual profile with no fabricated skills, experience or achievements (CLAUDE.md:109) | grounding | test_no_ungrounded_claim_in_final_files | planned |
+| Checklist: job titles, dates, company names and locations are correct (CLAUDE.md:110) | grounding | test_titles_dates_companies_locations_match_sources | planned |
+| Checklist: contact details are correct (CLAUDE.md:111) | grounding, profile | test_contact_details_match_profile | planned |
+| Checklist: company-specific claims are independently verified (see research rows) (CLAUDE.md:112) | research (claim verification) | test_all_company_claims_have_verified_source | planned |
+| Checklist: profile statement / opening is tailored to the role, bullets reframed to the requirements, key requirements addressed with gaps acknowledged, nice-to-haves highlighted (CLAUDE.md:115-118) | keywords, letter | test_targeting_items_all_satisfied | planned |
+| Checklist: CV follows the standard 2-page moderncv banking format; letter uses cover.cls and the established structure; tone consistent; no CV/letter contradictions (CLAUDE.md:121-124) | latex (templates), grounding | test_consistency_items_all_satisfied | planned |
+| Checklist: cover letter is addressed to the correct person or "Dear Hiring Manager" if unknown (CLAUDE.md:130) | letter | test_salutation_matches_posting_contact | planned |
+| Checklist: cover letter fits approximately one page (CLAUDE.md:131; tightened to exactly 1 by 139) | pdfcheck | test_letter_one_page | planned |
+| Checklist: CV compiled with lualatex, letter with xelatex (or the custom template's command) (CLAUDE.md:136) | latex (compile) | test_engine_recorded_matches_template | planned |
+| Checklist: PDFs were actually inspected, not just the source ("looks fine in the .tex" is unacceptable because page breaks are unpredictable) (CLAUDE.md:135) | layout, pdfcheck | test_pdf_inspected_not_source_only | planned |
+| Checklist: ATS items (clean text layer, literal email/phone, reading order, keyword coverage with synonym tightening and no stuffing) (CLAUDE.md:142-147) | pdfcheck, keywords | test_ats_checklist_items_each_reported | planned |
+| The final report summarises 3-5 key tailoring decisions: what was emphasised, company angles, most impactful reviewer suggestion, gaps acknowledged or reframed (A:364-369) | report | test_final_report_has_tailoring_decisions | planned |
+| The final report lists the created files, the tracker row, and the archived posting, saying explicitly when an existing `job_posting.md` was left in place (A:371-376,406) | report, archive | test_report_lists_files_tracker_row_and_archive_status | planned |
+| The user is told both files are ready for review (A:376) | report | test_final_message_points_to_files | not ported, because it is chat phrasing; the loop's report carries the paths |
+| The "Next steps" pointer: /outcome moves drafted to applied; /interview builds a prep pack (A:417-418) | report | test_report_mentions_next_commands | not ported, because it is a pointer line with no guarantee |
+| The workflow prose in CLAUDE.md requires evaluating fit before drafting and presenting it first, then drafting only for a good fit, then verifying, then interview talking points (CLAUDE.md:96-103) | apply, fit | test_fit_precedes_drafting_precedes_verification | planned |
+
+### Tracker recording (Step 6b) and archive
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| Recording the application happens before the optional application-form offer and before ending the turn for any reason (A:380; T/test_apply_records_application.py:140-153) | apply, tracker | test_tracker_row_written_before_optional_offer | planned (stricter: recording is a code phase, not skippable by a pending question) |
+| A missing tracker is created with the exact standard header `date,company,sector,role,role_type,channel,status,contact_person,fit_rating,notes,cv_file,cover_letter_file,source,deadline` (A:382-385; T/test_apply_records_application.py:39-42,72-103) | tracker | test_missing_tracker_created_with_canonical_header | planned |
+| The header is byte-identical between /apply and /outcome, checked by exact equality because a shorter header is a substring of a longer one (T/test_apply_records_application.py:72-103) | tracker | test_one_canonical_header_constant_shared | planned (stricter: single constant imported by both writers) |
+| `deadline` is the last column so adding it never shifts existing values (T/test_apply_records_application.py:105-113) | tracker | test_deadline_is_last_column | planned |
+| If an existing header does not end in `,deadline`, `,deadline` is appended to the header line only, no data row is touched, and legacy rows read as an empty deadline; the migration appends the header's own last column, derived not hardcoded (A:386; T/test_apply_records_application.py:115-139,324-370) | tracker | test_legacy_header_migrated_header_line_only | planned |
+| Existing rows are matched case-insensitively on company and role (A:387) | tracker, jobkey | test_match_is_case_insensitive_company_and_role | planned |
+| On no match, or when every match is final, a new row is appended; on a still-open match the row is updated; "final" and "open" come from the tracker status vocabulary, with legacy space spellings `no response` / `offer declined` counted as final (A:387; T/test_apply_records_application.py:230-232) | tracker (vocab) | test_open_row_updated_final_row_gets_new_row | planned |
+| When appending alongside a final row, the report says so; the earlier application keeps its own row and outcome and is never overwritten (A:387) | tracker, report | test_reapplication_after_final_does_not_touch_old_row | planned |
+| New row values: date is today, status is `drafted`, cv_file and cover_letter_file are the two created paths (A:390-393; T/test_apply_records_application.py:60-70) | tracker | test_new_row_status_drafted_with_document_paths | planned |
+| fit_rating is a bare number 0-100, never `72/100` or a verdict word, because /upskill does arithmetic on it (A:394; T/test_apply_records_application.py:228-229) | tracker, fit | test_fit_rating_is_bare_number | planned |
+| `source` is the posting URL, empty when the posting was pasted text (A:396) | tracker | test_source_empty_for_pasted_text | planned |
+| `channel` is `portal` for a job-portal posting, `online` for a company careers page, empty when unknown (A:397) | tracker | test_channel_classification | planned |
+| sector, role_type, contact_person come from the posting when it states them, otherwise stay empty, never guessed (A:398) | tracker | test_unstated_optional_fields_left_empty | planned |
+| `deadline` is the Step 0 deadline as `YYYY-MM-DD`, empty when the posting states none; never guessed from "apply soon" or the posting date, and never carried from a different posting (A:399; T/test_apply_records_application.py:332-334) | tracker | test_deadline_iso_or_empty_never_inferred | planned |
+| Updating an open row never moves it backwards: refresh cv_file, cover_letter_file, fit_rating, source, deadline; leave status alone; leave date alone unless status is still `drafted`, then set date to today (A:401; T/test_apply_records_application.py:155-161) | tracker (never backwards) | test_open_row_status_never_regresses_on_redraft | planned |
+| An existing deadline is left alone when the new run extracted none, since absence is not a correction (A:401; T/test_apply_records_application.py:335-337) | tracker | test_missing_new_deadline_preserves_old | planned |
+| A redraft appends an undated `redrafted` marker to notes, undated deliberately so it does not reset /outcome's days-quiet clock (A:401; T/test_apply_records_application.py:163-170) | tracker | test_redraft_marker_has_no_date | planned |
+| The CSV is never restructured, rows never reordered, other rows never touched (A:402) | tracker | test_other_rows_byte_identical_after_write | planned |
+| Notes and any free-text written to the CSV are CSV-safe (formula-injection and quoting) (derived from test name test_tracker_notes_csv_safe, outside C1; A:401 writes notes) | tracker, guards (CSV safety) | test_notes_written_are_csv_safe | planned |
+| The scraper's seen-jobs file is never modified by /apply; dedup is driven by the tracker's company+role instead (A:403; T/test_apply_records_application.py:172-177) | tracker, search | test_apply_does_not_touch_seen_jobs | planned |
+| A `drafted` row is non-final and means not submitted; readers that mean "submitted" (report stats, follow-up, stale checks) exclude it, while any email-sync reader must keep it (T/test_apply_records_application.py:190-238) | tracker (vocab), report, followup, stale | test_drafted_excluded_from_submitted_statistics_and_followup | planned |
+| The posting is archived at `documents/applications/<company>_<role>/job_posting.md`, folder created if absent, using the company and role values the tracker row ends up holding (A:404; T/test_apply_records_application.py:262-273) | archive | test_posting_archived_under_derived_folder | planned |
+| The archived text is the verbatim text held from Step 0, never a fresh fetch (A:404; T/test_apply_records_application.py:266-269) | archive | test_archive_content_is_verbatim_held_text | planned |
+| If `job_posting.md` already exists it is left untouched (what was actually submitted wins; a same-role reapplication keeps the older posting) and the report says it was left in place rather than written (A:404,406; T/test_apply_records_application.py:278-289) | archive | test_existing_archived_posting_not_overwritten | planned |
+| If the posting text is no longer held, nothing is written, the report says so, and nothing is reconstructed from memory (A:404; T/test_apply_records_application.py:290-293) | archive | test_no_posting_text_means_no_archive_write | planned (stricter: loop always holds the text, so a missing text is a hard error) |
+| The /scrape-path skill defers to the same recording and archive rules rather than restating them (T/test_apply_records_application.py:179-187,294-301) | tracker, archive | test_both_entry_paths_use_same_recording_code | planned |
+| The outcome step's archive copy also leaves an existing posting alone, so a re-fetch never overwrites /apply's archive (T/test_apply_records_application.py:302-305) | archive | test_later_archive_step_does_not_overwrite_posting | planned |
+
+### Optional application-form answers (08)
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| The posting is checked for free-text fields the CV and letter do not cover (self-introduction, structured project entries, character-limited pitch, motivation or competency question under a word cap) (A:410; S/08:193-199) | forms | test_form_fields_detected_from_posting | planned |
+| The form-field artifact is offered, never produced unasked; on no or when the posting has none, nothing more is said and the default two-document output is unchanged (A:412-414) | forms, apply | test_forms_only_on_yes | planned |
+| Every claim in a form field is defensible from the same three-source union as the CV and letter; the form selects from what is true, never adds claims or inflates scope (A:414; S/08:203-205,262) | grounding, forms | test_form_claims_grounded_in_three_sources | planned |
+| No form claim contradicts the CV or letter submitted for the same role (S/08:263) | grounding, forms | test_form_vs_documents_consistency | planned |
+| A self-introduction is one paragraph of roughly 100-200 words with no formatting, ordered status, strongest evidence with number and scale, trajectory, next step tied to this employer; leads with strongest evidence, not chronology; one version per role type; the final sentence ties to this employer (S/08:209-221) | forms | test_self_intro_structure_and_length | planned |
+| Word counts are measured and stated, and a trimmed variant names which sentence to cut first (S/08:221,265) | forms | test_word_counts_computed_in_code | planned (stricter: counted in code) |
+| Project entries have a descriptive project name (not the employer), the candidate's role on that project not upgraded, project-specific dates not automatic employment dates, and never an invented boundary (S/08:225-231) | forms, grounding | test_project_entry_role_and_dates_not_inflated | planned |
+| A project description is 100-150 words (system and users, hardest problem and fix, outcome with number) plus a ~60-word short version; contributory work states that it was contributory (S/08:233-235,264) | forms | test_project_description_lengths_and_scope | planned |
+| Hard-character-limit pitches use a specific situation over an adjective; 4-6 candidates are drafted at different angles, characters are counted programmatically not estimated, all candidates are presented with counts and one is recommended with a reason; over-limit text would be truncated mid-word (S/08:239-247) | forms | test_char_limited_candidates_counted_and_under_limit | planned (stricter: over-limit candidates rejected by code) |
+| The output is one plain `.txt` per employer with a header naming employer and roles, each field labelled with counts, short variants, a dates quick-reference, and `NOTE TO SELF` blocks clearly marked not for pasting (S/08:251-258,267) | forms, archive | test_form_file_layout_and_internal_notes_marked | planned |
+| In-progress qualifications in form fields are described as in progress, and accuracy and writing-style rules from the CV apply unchanged (S/08:205,266) | forms, style | test_form_in_progress_and_style_rules_apply | planned |
+
+### Template registration (/add-template)
+
+| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |
+|---|---|---|---|
+| Registration needs a successful test compile before a template is registered, never skipped (add-template.md:134,145,202) | latex (templates) | test_template_not_registered_without_passing_compile | planned |
+| The LaTeX compile command redirects intermediates to `build/`, creates the dir, and moves the PDF back beside the source; a leading `rm -f <file>.pdf` ensures a failed compile never leaves a stale PDF for /apply to inspect; without the `mv` no PDF would sit next to the source (add-template.md:78,82; T/test_add_template_build_dir.py:12-26) | latex (compile) | test_latex_compile_command_redirects_build_and_returns_fresh_pdf | planned |
+| If the toolchain cannot redirect (typst compile) or the redirect itself breaks the compile, the redirect is dropped but the leading remove is kept and the reason recorded under known pitfalls; registration is never blocked by this rule (add-template.md:82) | latex (templates) | test_redirect_dropped_when_unsupported_keeps_rm | planned |
+| A `.tex` source needing fontspec or font files by path requires xelatex or lualatex; the user is told rather than allowed to pick pdflatex (add-template.md:78) | latex (templates) | test_fontspec_template_rejects_pdflatex | planned |
+| `.typ` defaults to `typst compile <file>.typ <file>.pdf`; any other toolchain requires the user's explicit compile command (add-template.md:79-80) | latex (templates) | test_template_toolchain_defaults | planned |
+| A template name is kebab-case and must not collide with an existing folder in `templates/` (add-template.md:75) | latex (templates) | test_template_name_unique_kebab_case | planned |
+| Template folders are `templates/cv/<name>/` or `templates/cover_letters/<name>/` holding a `template<ext>` skeleton, companion class/style files, bundled fonts under `fonts/`, and a `TEMPLATE.md` manifest with type, source extension, engine label, page limit, fonts, class/packages, compile command, style rules, known pitfalls (add-template.md:94-128) | latex (templates) | test_template_folder_and_manifest_schema | planned |
+| Stored skeletons replace all personal data with `[PLACEHOLDER]` tokens so a template is shareable and profile-agnostic (add-template.md:101,201) | latex (templates), guards | test_registered_template_has_no_personal_data | planned |
+| A page limit defaults to 2 for a CV and 1 for a letter and is what /apply enforces (add-template.md:87) | pdfcheck, latex | test_template_page_limit_default_and_enforced | planned |
+| The compile check fills placeholders with dummy data, runs the declared command on a scratch file, checks the page count matches the declared limit, and afterwards deletes the scratch source, scratch PDF, any `build/` directory and any `_compile_test.*` byproducts (add-template.md:136-143) | latex (templates) | test_compile_test_cleans_up_scratch_files | planned |
+| Activation inserts exactly one ACTIVE-TEMPLATE managed block immediately after the H1 of the guidance file, replaced not stacked, and `--use default` removes it entirely without touching anything outside the markers (add-template.md:155-177) | latex (templates) | test_one_managed_block_replaced_or_removed_cleanly | planned |
+| Activation carries skeleton path, manifest path, source extension, compile command (run from the output directory), fonts, exact page limit, and output file pattern; where it conflicts with stock guidance, the block wins (add-template.md:158-169) | latex (templates), apply | test_active_block_fields_and_precedence | planned |
+| `--use <name>` requires exactly one manifest whose folder name matches, and the skeleton `template<ext>` must exist, else stop (add-template.md:34-47) | latex (templates) | test_use_name_ambiguity_and_missing_skeleton_stop | planned |
+| `--list` shows each registered template with type, source, toolchain, fonts and whether active (active = named by a managed block) (add-template.md:18-30) | latex (templates) | test_list_marks_active_template | planned |
+| Re-registering the same name updates rather than duplicates (idempotent) (add-template.md:200) | latex (templates) | test_reregistration_is_idempotent | planned |
+| Third-party includes the toolchain does not ship (custom class/style, local Typst packages) must be supplied by the user or registration cannot compile (add-template.md:65) | latex (templates) | test_missing_custom_include_blocks_registration | planned |
+
+## Row count
+
+Rows: 272.
