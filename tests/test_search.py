@@ -532,6 +532,11 @@ def test_the_detail_check_reports_a_refusal_as_one_not_as_unreadable_and_a_gone_
     assert h.status == "ok" and "not checked" in h.message
 
 
+def test_a_result_that_is_an_external_ad_is_skipped_and_the_board_is_not_called_broken():
+    h = health(board("alpha", lambda q, c: [dict(ROWS[6])], fails("invalid", "may only use https on the board's host")), check_detail=True)
+    assert h.status == "ok" and "external ad" in h.message
+
+
 def test_the_probe_budget_per_portal_covers_the_detail_check_too():
     def detail(ref, c):
         for _ in range(9):

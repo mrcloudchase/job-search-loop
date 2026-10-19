@@ -59,9 +59,11 @@ def contact(profile_md: str) -> tuple[str, str, str]:
     return name, (re.search(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+", body) or [""])[0], (re.search(r"\+\d[\d ()./-]{5,}\d", body) or [""])[0]
 
 
-def source_findings(cv_tex: str, cover_tex: str) -> list[str]:
-    """What is wrong in the sources before anything is compiled: unsafe commands and unescaped specials."""
-    return [f"{name}: {finding}" for name, tex in (("cv.tex", cv_tex), ("cover.tex", cover_tex)) for finding in latex.check(tex)]
+def source_findings(cv_tex: str, cover_tex: str, cv_language: str = "en") -> list[str]:
+    """What is wrong in the sources before anything is compiled: unsafe commands, unescaped specials, a way of fitting
+    that is not cutting content, and the CV's structure rules."""
+    found = [("cv.tex", f) for f in latex.check(cv_tex) + latex.cv_rules(cv_tex, cv_language)]
+    return [f"{name}: {finding}" for name, finding in found + [("cover.tex", f) for f in latex.check(cover_tex)]]
 
 
 def verdicts(name: str, verdict: pdfcheck.Verdict, failures: list[str], unverified: list[str]) -> None:
@@ -107,7 +109,7 @@ def judge(documents: latexrun.Documents, cv_tex: str, cover_tex: str, ctx: Conte
 def verify(cv_tex: str, cover_tex: str, ctx: Context, *, compile_documents=latexrun.compile_documents,
            image: str = latexrun.DEFAULT_IMAGE, **templates) -> Result:
     """The whole gate. Source problems stop it before the (slow) compile; a compile failure stops it before the PDF checks."""
-    early = source_findings(cv_tex, cover_tex)
+    early = source_findings(cv_tex, cover_tex, ctx.cv_language)
     if early:
         return Result(tuple(early))
     return judge(compile_documents(cv_tex, cover_tex, image, **templates), cv_tex, cover_tex, ctx)

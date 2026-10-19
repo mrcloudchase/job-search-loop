@@ -129,9 +129,66 @@ def unsafe(tex: str) -> list[str]:
     return found
 
 
+_SHRINKING = (
+    (r"\\(?:new)?geometry\b", "changes the page geometry"),
+    (r"\\enlargethispage\b", "enlarges the page instead of cutting content"),
+    (r"\\vspace\*?\{\s*-", "uses a negative \\vspace"),
+)
+_BODY_LENGTHS = re.compile(r"\\setlength\{\\(?:textheight|textwidth|topmargin|oddsidemargin|evensidemargin|hoffset|voffset|parskip|"
+                           r"baselineskip|footskip|headheight|headsep)\}")
+_STRETCH = re.compile(r"\\(?:linespread|setstretch|renewcommand\{\\baselinestretch\})\{\s*([0-9.]+)\s*\}")
+_ENGLISH_HEADINGS = ("profile", "core competencies", "professional experience", "education", "languages", "publications",
+                     "honors and awards", "honours and awards", "references")
+
+
+def layout_rules(tex: str) -> list[str]:
+    """What a drafted document may never do to make itself fit (shrink or enlarge the page, squeeze spacing), and the layout
+    mistakes the CV guidance names: a \\vspace between \\item lines, \\needspace in front of a \\section, an empty \\address,
+    and a \\cventry date written with `--` or a Unicode dash. Fit is reached by cutting content, so a draft that tries
+    another way is sent back."""
+    found = []
+    for pattern, why in _SHRINKING:
+        found += [f"{locate(tex, m.start(), m.end())} {why}: cut content to fit instead" for m in re.finditer(pattern, tex)]
+    body, _ = _body(tex)
+    start = tex.find(body) if body else 0
+    for m in _BODY_LENGTHS.finditer(body):
+        found.append(f"{locate(tex, start + m.start(), start + m.end())} resets a page length: cut content to fit instead")
+    for m in _STRETCH.finditer(body):
+        if float(m.group(1)) < 1:
+            found.append(f"{locate(tex, start + m.start(), start + m.end())} squeezes the line spacing below 1: cut content to fit instead")
+    for m in re.finditer(r"\\begin\{(itemize|enumerate)\}(.*?)\\end\{\1\}", tex, re.S):
+        gap = re.search(r"\\item\b.*?(\\vspace\b)", m.group(2), re.S)
+        if gap:
+            at = m.start(2) + gap.start(1)
+            found.append(f"{locate(tex, at, at + 7)} puts \\vspace inside a list: it makes an oversized gap between items; remove it")
+    for m in re.finditer(r"\\needspace\{[^{}]*\}\s*(?:%[^\n]*\n\s*)*\\section\b", tex):
+        found.append(f"{locate(tex, m.start(), m.start() + 10)} sits before a \\section: use \\needspace before an entry only")
+    for m in re.finditer(r"\\address\s*\{\s*\}", tex):
+        found.append(f"{locate(tex, m.start(), m.end())} is an empty address line, which does not compile: delete the line")
+    for m in re.finditer(r"\\cventry\{([^{}]*)\}", tex):
+        if re.search(r"--|[\u2010-\u2015\u2212]", m.group(1)):
+            found.append(f"{locate(tex, m.start(), m.end())} has a date range that is not one ASCII hyphen: write 2021 - 2023")
+    return found
+
+
+def cv_rules(tex: str, language: str = "en") -> list[str]:
+    """The CV-only structure rules: a bold-labelled competency list has 5 to 7 entries, and the section headings are
+    translated whenever the CV is not in English."""
+    found = []
+    for m in re.finditer(r"\\begin\{itemize\}(.*?)\\end\{itemize\}", tex, re.S):
+        items = [i for i in re.split(r"\\item\b", m.group(1))[1:]]
+        if items and all(i.lstrip().startswith(r"\textbf{") for i in items) and not 5 <= len(items) <= 7:
+            found.append(f"{locate(tex, m.start(), m.start() + 20)} the competency list has {len(items)} bold-labelled items; it needs 5 to 7")
+    if language != "en":
+        for m in re.finditer(r"\\section\*?\{([^{}]*)\}", tex):
+            if m.group(1).strip().casefold() in _ENGLISH_HEADINGS:
+                found.append(f"{locate(tex, m.start(), m.end())} is an English heading in a CV written in {language}: translate it")
+    return found
+
+
 def check(tex: str) -> list[str]:
-    """Every escaping and safety finding in a drafted .tex body."""
-    return specials(tex) + unsafe(tex)
+    """Every escaping, safety and layout-rule finding in a drafted .tex body."""
+    return specials(tex) + unsafe(tex) + layout_rules(tex)
 
 
 def to_text(tex: str, keep_links: bool = False) -> str:

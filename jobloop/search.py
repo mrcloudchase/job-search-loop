@@ -367,12 +367,19 @@ def health(module, *, client_factory: Callable[..., Client] = make_client, max_r
             else:
                 return Health(module.NAME, "broken", "two tiny searches came back empty", budgeted.used)
             if check_detail:
-                try:
-                    posting = result(module.detail(rows[0]["id"], budgeted))
-                except BoardError as e:
-                    if e.kind != "not_found":
-                        raise
-                    return Health(module.NAME, "ok", "the first posting has gone, so its detail page was not checked", budgeted.used)
+                posting = None
+                for row in rows:
+                    try:
+                        posting = result(module.detail(row["id"], budgeted))
+                        break
+                    except BoardError as e:
+                        if e.kind == "invalid":         # an external ad the board links to: its page is not the board's
+                            continue
+                        if e.kind != "not_found":
+                            raise
+                        return Health(module.NAME, "ok", "the first posting has gone, so its detail page was not checked", budgeted.used)
+                else:
+                    return Health(module.NAME, "ok", "every result was an external ad, so no detail page was checked", budgeted.used)
                 if not posting or not readable(posting["description"]) or not readable(posting["title"]):
                     return Health(module.NAME, "broken", "a detail page did not hold readable decoded text", budgeted.used)
             return Health(module.NAME, "ok", "", budgeted.used)

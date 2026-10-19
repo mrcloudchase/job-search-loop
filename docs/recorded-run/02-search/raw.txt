@@ -1,0 +1,44 @@
+=== freehire
+[32mfreehire     ok  5 found  [0m
+5 new, 0 updated, 0 closed, 0 duplicates, 0 already in the tracker
+  team-eiffel_data-engineer  Data Engineer at Team EIFFEL (Netherlands)
+  eiffel_data-engineer  Data Engineer at EIFFEL (Netherlands)
+  rwa-people_data-engineer  Data Engineer at RWA People (Hamilton, Canada)
+  unisystech-consulting-inc_data-engineer  Data Engineer at Unisystech Consulting Inc. (Toronto, Canada)
+  places-for-people_data-engineer  Data Engineer at Places for People (?)
+=== linkedin
+[31mlinkedin has terms: LinkedIn's terms restrict automated access and its robots.txt disallows these pages. Personal use only: your own job search, at low volume, never for bulk or commercial use; the responsibility is yours. Run `boards enable linkedin --acknowledge-terms` first.[0m
+=== jobindex
+[32mjobindex     ok  2 found  [0m
+2 new, 0 updated, 0 closed, 0 duplicates, 0 already in the tracker
+  nordic-rcc_data-engineer-for-analytics-platform-with-bi-expertise-and-a-c7aae2  Data engineer for analytics platform with BI expertise and an interest in the green energy transition at Nordic RCC (Copenhagen)
+  nordic-rcc_student-assistant-data-analytics-bluepool-and-data-governanc-776663  Student Assistant - Data & Analytics (BluePool and Data Governance) at Nordic RCC (Copenhagen)
+=== jobnet
+[32mjobnet       ok  0 found  [0m
+0 new, 0 updated, 0 closed, 0 duplicates, 0 already in the tracker
+=== jobbank
+[33mjobbank      robots  0 found  robots.txt does not allow jobbank to fetch https://jobbank.dk/job/rss[0m
+0 new, 0 updated, 0 closed, 0 duplicates, 0 already in the tracker
+=== jobdanmark
+[33mjobdanmark   invalid  0 found  jobdanmark knows no place called 'Copenhagen'; try a municipality name or a postcode[0m
+0 new, 0 updated, 0 closed, 0 duplicates, 0 already in the tracker
+=== jobnet
+[32mjobnet       ok  4 found  [0m
+4 new, 0 updated, 0 closed, 0 duplicates, 0 already in the tracker
+  cip-fund-solutions_forward-deployed-engineer-cto-area  Forward Deployed Engineer, CTO Area at CIP Fund Solutions (København K)
+  ku-science-nbi-jagtvej-155a_platform-engineer  Platform engineer at KU - SCIENCE - NBI, Jagtvej 155A (København N)
+  nordic-rcc-a-s_data-engineer-for-analytics-platform-with-bi-expertise-and-a-c7aae2  Data engineer for analytics platform with BI expertise and an interest in the green energy transition at Nordic RCC A/S (København S)
+  spirii_cloud-engineer  Cloud Engineer at Spirii (København K)
+=== jobdanmark
+[32mjobdanmark   ok  5 found  [0m
+4 new, 1 updated, 0 closed, 0 duplicates, 0 already in the tracker
+  triton-depth-aps_senior-signal-processing-engineer-acoustics-dsp  Senior Signal Processing Engineer – Acoustics & DSP at Triton Depth ApS (København S)
+  nordic-rcc-a-s_student-assistant-in-our-control-center-night-shift-position  Student Assistant in our Control Center - night shift position at Nordic RCC A/S (København S)
+  geus-hovedkontor_postdoc-in-peatland-hydrology-with-focus-on-groundwater-and-b4cb54  Postdoc in Peatland Hydrology with Focus on Groundwater and Machine Learning at GEUS Hovedkontor (København K)
+  aalborg-universitet_postdoc-in-service-systems-design  Postdoc in Service Systems Design at Aalborg Universitet (København SV)
+[32mfreehire     ok  [0m
+[31mjobindex     broken  invalid: jobindex may only use https on www.jobindex.dk, not https://photonics.wd103.myworkdayjobs.com/Job_Index/job/Birkerd-Capital-Region-D[0m
+jobnet: no detail page for 88963f7b-378b-4809-a82d-d79268db8280; taking it from search (an external ad)
+[32mjobnet       ok  [0m
+[31mjobbank      robots  robots: robots.txt does not allow jobbank to fetch https://jobbank.dk/job/rss[0m
+[32mjobdanmark   ok  [0m

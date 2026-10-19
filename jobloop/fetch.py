@@ -89,6 +89,19 @@ def installed_hosts() -> tuple[str, ...]:
     return tuple(h for name in boards.BUILT_IN for h in boards.load(name).HOSTS)
 
 
+def board_for(url: str) -> str:
+    """The built-in board whose host (or a subdomain of it) the URL is on, else "": the board's own `detail` is tried first."""
+    host, why_not = hosts.split_url(url)
+    if why_not:
+        return ""
+    for name in boards.BUILT_IN:
+        for apex in boards.load(name).HOSTS:
+            apex = apex.removeprefix("www.")
+            if host == apex or host.endswith("." + apex):
+                return name
+    return ""
+
+
 def describe(verdict: hosts.HostVerdict) -> str:
     return {"portal": "aggregator: a job board, not the employer",
             "ats": "employer's applicant-tracking system (an official ATS host)",
@@ -126,6 +139,7 @@ def fetch_posting(url: str, *, board: str = "", title: str = "", careers: tuple[
     """Climb the ladder for one posting and return Fetched, Closed or Unreachable (see the module docstring). `title`
     gates the careers rung; `acknowledged` waives robots only for a board whose terms allow it, as the board CLI does."""
     installed = installed_hosts() if installed is None else installed
+    board = board or board_for(url)
     host, why_not = hosts.split_url(url)
     if why_not:
         return Unreachable(f"not a fetchable posting URL: {why_not}")
