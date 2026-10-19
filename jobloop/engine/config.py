@@ -8,6 +8,8 @@ import json
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
+from ..guards import hosts as host_check
+
 NAME = "loop.json"
 DEFAULT_LADDERS = {
     "drafter": ["claude-deepseek/deepseek-chat", "codex"],
@@ -57,6 +59,7 @@ class Config:
     enrich_every_hours: float = 168.0       # how often `onboard` re-reads those pages (proposals only: the profile is never written by a pass)
     new_boards: list = field(default_factory=list)          # boards to build and register switched off: [{name, url, hosts: [..], query}]
     min_boards: int = 2                     # fewer enabled, healthy boards than this for the candidate's market -> a suggestion to the person
+    trusted_hosts: list = field(default_factory=list)       # hosts you trust as a posting's source (`whatjobs.com` also covers `nl.whatjobs.com`)
     notify_file: str = ""                   # if set, the digest is also copied here
 
     def validate(self) -> "Config":
@@ -74,6 +77,11 @@ class Config:
         if not isinstance(self.new_boards, list) or not all(
                 isinstance(b, dict) and {"name", "url", "hosts", "query"} <= set(b) and isinstance(b["hosts"], list) for b in self.new_boards):
             raise ConfigError("new_boards is a list of {name, url, hosts: [..], query}")
+        if not isinstance(self.trusted_hosts, list):
+            raise ConfigError("trusted_hosts is a list of host names such as ['whatjobs.com']")
+        for entry in self.trusted_hosts:
+            if (problem := host_check.trusted_entry_problem(entry)):
+                raise ConfigError(f"trusted_hosts entry {entry!r}: {problem}")
         for role, ladder in self.ladders.items():
             if not isinstance(ladder, list) or not ladder or not all(isinstance(h, str) and h for h in ladder):
                 raise ConfigError(f"ladders.{role} must be a non-empty list of harness names")

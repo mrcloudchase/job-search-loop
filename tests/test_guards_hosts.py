@@ -151,3 +151,57 @@ def test_a_verdict_cannot_be_built_inconsistent():
         HostVerdict("unverified", "x.example", "x.example", "r")
     with pytest.raises(ValueError):
         HostVerdict("trusted", "x.example", "x.example", "r")
+
+
+# ── trust: the employer's own site, trusted_hosts, an approval; never a look-alike ──
+def trust(url, company="DPG Media", domains=None, trusted=(), approved=False):
+    return hosts.trust(url, company, domains or {}, trusted, approved)
+
+
+@pytest.mark.parametrize("url", ["https://vacatures.dpgmedia.nl/v/1", "https://www.dpgmedia.nl/", "https://careers.dpgmedia.nl/1",
+                                 "https://jobs.dpgmedia.nl/1", "https://karriere.dpgmedia.nl/1", "https://a.b.dpgmedia.nl/1"])
+def test_the_employers_own_site_is_the_employer(url):
+    assert trust(url)[0] == "employer"
+
+
+@pytest.mark.parametrize("url", ["https://dpgmedia-jobs.evil.io/1", "https://dpgmedia.evil.io/1", "https://evil-dpgmedia.nl/1",
+                                 "https://evil.io/dpgmedia", "https://it.whatjobs.com/1", "https://startup.jobs/1",
+                                 "https://u@dpgmedia.nl/1", "http://dpgmedia.nl:8080/1", "https://127.0.0.1/dpgmedia", "ftp://dpgmedia.nl/1", ""])
+def test_look_alikes_and_aggregators_are_not_trusted(url):
+    assert trust(url)[0] == ""
+
+
+def test_a_company_name_that_is_too_short_never_matches():
+    assert trust("https://ab.example/1", "AB Corp")[0] == "" and trust("https://x.example/1", "")[0] == ""
+
+
+def test_a_configured_company_domain_is_the_employers_on_a_label_boundary_and_only_for_that_company():
+    domains = {"Northwind Analytics": "nw-group.example"}
+    assert trust("https://apply.nw-group.example/1", "northwind analytics", domains)[0] == "employer"
+    assert trust("https://nw-group.example/1", "Northwind Analytics", domains)[0] == "employer"
+    for url in ("https://evil-nw-group.example/1", "https://nw-group.example.evil.io/1"):
+        assert trust(url, "Northwind Analytics", domains)[0] == ""
+    assert trust("https://apply.nw-group.example/1", "Other Corp", domains)[0] == ""
+
+
+def test_trusted_hosts_match_the_host_or_a_subdomain_on_a_label_boundary():
+    t = ("whatjobs.com",)
+    assert trust("https://whatjobs.com/1", trusted=t)[0] == "trusted" and trust("https://NL.WhatJobs.com/1", trusted=t)[0] == "trusted"
+    for url in ("https://evil-whatjobs.com/1", "https://whatjobs.com.evil.io/1", "https://notwhatjobs.com/1", "https://jobs.com/1"):
+        assert trust(url, trusted=t)[0] == ""
+
+
+def test_an_approval_is_its_own_kind_and_a_missing_one_is_not_trust():
+    assert trust("https://it.whatjobs.com/1", approved=True)[0] == "approved" and trust("https://it.whatjobs.com/1", approved=False)[0] == ""
+    kind_, why = trust("https://it.whatjobs.com/1")
+    assert kind_ == "" and why
+
+
+@pytest.mark.parametrize("entry", ["http://whatjobs.com", "whatjobs.com/jobs", "whatjobs.com:443", "10.0.0.1", "[::1]", "com", "co.uk", "*.whatjobs.com",
+                                   "", "  ", 5, None, "what jobs.com", "user@whatjobs.com"])
+def test_a_trusted_hosts_entry_that_is_not_a_plain_host_is_refused(entry):
+    assert hosts.trusted_entry_problem(entry)
+
+
+def test_plain_trusted_hosts_entries_are_accepted():
+    assert not any(hosts.trusted_entry_problem(e) for e in ("whatjobs.com", "Startup.Jobs", "jobs.example.co.uk"))

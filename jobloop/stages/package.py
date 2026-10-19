@@ -19,7 +19,8 @@ finished). A row the person marked done is never offered again.
                           orientation, disability, veteran status, age, religion, marital status, citizenship or any voluntary
                           self-identification (`forms.personal_question`, several languages) is NEVER sent to a model: it is
                           written as `FOR YOU: <original text>`.
-Status: `ready`; `needs_decision` when the source host is unverified or a check was waived in draft.json's notes; `blocked`
+Status: `ready`; `needs_decision` when the source host is unverified (and the draft has no `host_trust`: the draft stage accepted
+it as the employer's site, a trusted host or an approved application, and the README then says so) or a check was waived in draft.json's notes; `blocked`
 when a file is missing. The stage never writes a tracker status and never submits anything.
 me/queue-questions/<key>.md: one question per line (a leading -, * or number is ignored, # lines are skipped); an optional
 `(limit 300 words)` / `[limit 1200 characters]` at the end sets that question's limit.
@@ -185,6 +186,17 @@ def _host_kind(draft: dict, url: str) -> str:
         return "unverified"
 
 
+def _accepted(draft: dict) -> tuple[str, str]:
+    """(host_trust kind, why) when the draft stage accepted an unverified host (employer / trusted / approved), else ("", "")."""
+    kind = draft.get("host_trust")
+    if kind not in ("employer", "trusted", "approved"):
+        return "", ""
+    notes = draft.get("notes") if isinstance(draft.get("notes"), list) else []
+    prefix = "source host accepted: "
+    why = next((_one_line(n)[len(prefix):] for n in notes if isinstance(n, str) and n.startswith(prefix)), "")
+    return kind, why or f"{kind}"
+
+
 def _waived(draft: dict) -> list[str]:
     notes = draft.get("notes")
     return [_one_line(n) for n in notes if isinstance(n, str) and "waive" in n.casefold()] if isinstance(notes, list) else []
@@ -283,6 +295,8 @@ def readme_text(key: str, data: dict, status: str, reasons: list[str], form_file
               "disability, veteran status, age, religion, marital status, citizenship) is left for you. The loop never answers them.",
               "- If you want to change a document, edit `edit-here/cv.tex` or `edit-here/cover.tex`; the loop learns from the difference. "
               "Your edits are never overwritten."]
+    if data.get("host_trust"):
+        lines += ["", f"Source host accepted: {data['host_accepted']}. Check the employer and the link yourself before you apply."]
     if data.get("stretch"):
         lines += ["", "## Bullets that stretch your experience (keep, soften or drop?)", "",
                   "These CV bullets reframe what the profile says more than a plain restatement does. Read each; you decide.", ""]
@@ -360,13 +374,15 @@ class Package:
         strengths = [s for s in (fit_data.get("strengths") or entry.get("strengths") or []) if isinstance(s, str)]
         judge = draft.get("judge") if isinstance(draft.get("judge"), dict) else {}
         kind = _host_kind(draft, url)
-        reasons = [f"the source host ({kind}) is not a verified job board or ATS: check the link is the employer's real posting"] if kind not in VERIFIED else []
+        trust_kind, trust_why = _accepted(draft)
+        reasons = [f"the source host ({kind}) is not a verified job board or ATS: check the link is the employer's real posting"] \
+            if kind not in VERIFIED and not trust_kind else []
         reasons += [f"a check was waived when this was drafted: {w}" for w in _waived(draft)]
         notes: list[str] = []
         info = {"key": key, "url": url, "title": f"{company} — {role}".strip(" —"), "company": company, "role": role,
                 "fit": draft.get("fit", fit_data.get("total", entry.get("rank_score"))), "deadline": deadline, "host_kind": kind,
                 "why": _why(strengths), "gaps": _lines(draft.get("gaps")), "stretch": _lines(draft.get("stretch")), "claims": _claims(me, key, draft),
-                "judge_mean": judge.get("mean")}
+                "judge_mean": judge.get("mean"), "host_trust": trust_kind, "host_accepted": trust_why}
         for name, alternatives in PDFS.items():
             if (src := _first(folder, alternatives)) is not None:
                 archive.write_atomically(out / name, src.read_bytes())

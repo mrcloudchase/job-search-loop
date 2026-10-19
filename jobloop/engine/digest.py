@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from . import metrics
+from . import metrics, queue
 from .config import Config
 from .snapshot import Snapshot
 from .store import Store
@@ -29,7 +29,8 @@ def _queue_lines(store: Store, today: str) -> list[str]:
     for deadline, status, item, data, path in rows:
         due = f" · deadline {data['deadline']}" if data.get("deadline") else ""
         fit = f" · fit {data['fit']}" if data.get("fit") not in (None, "") else ""          # a follow-up draft or a report has no fit
-        out.append(f"- **{status}** `{item}` · {data.get('title', '')}{fit}{due}\n  {data.get('why', '')} → `{path}`")
+        how = queue.how_line(item, data)
+        out.append(f"- **{status}** `{item}` · {data.get('title', '')}{fit}{due}\n  " + (how if how else f"{data.get('why', '')} → `{path}`"))
     return out
 
 

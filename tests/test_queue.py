@@ -1,6 +1,8 @@
 """The person's queue helpers: list (soonest deadline first), show, and done, which never marks anything applied."""
 from __future__ import annotations
 
+import json
+
 import pytest
 
 import sim
@@ -69,3 +71,31 @@ def test_show_prints_the_checklist_and_the_files(tmp_path):
         text = queue.show_text(tmp_path, store, "acme__dev")
     assert "Acme — Dev  [ready]" in text and "Read both documents" in text and "files: README.md, cv.pdf" in text
     assert "apply:  https://x.example" in text
+
+
+def held(store, key="acme__dev", host="it.whatjobs.com"):
+    store.queue_put(key, "needs_decision", f"me/queue/{key}", {"kind": "unverified_source_host", "title": "Acme: Dev", "url": f"https://{host}/1",
+                                                              "question": "Check the link.", "host": host, "fit": 80})
+
+
+def test_approve_is_for_a_held_back_host_only_and_says_what_happens_next(tmp_path):
+    with Store(tmp_path) as store:
+        held(store)
+        put(store, "ready__dev", "ready")
+        message = queue.approve(tmp_path, store, "acme__dev")
+        assert "the next pass drafts it" in message and store.queue_item("acme__dev") is None
+        assert [json.loads(e["data"]) for e in store.events(queue.APPROVED, "acme__dev")] == [{"host": "it.whatjobs.com"}]
+        with pytest.raises(queue.QueueError, match="ready__dev is an application that is ready for you"):
+            queue.approve(tmp_path, store, "ready__dev")
+        with pytest.raises(queue.QueueError, match="no queue entry 'x__y'"):
+            queue.approve(tmp_path, store, "x__y")
+        assert store.queue_item("ready__dev") is not None and len(store.events(queue.APPROVED)) == 1
+    assert not (tmp_path / "loop.json").exists()
+
+
+def test_the_list_and_the_show_of_a_held_back_entry_name_the_command(tmp_path):
+    with Store(tmp_path) as store:
+        held(store)
+        assert "jobloop queue approve acme__dev" in queue.list_text(store)
+        shown = queue.show_text(tmp_path, store, "acme__dev")
+    assert "jobloop queue approve acme__dev" in shown and "Check the link." in shown and "checklist is missing" not in shown

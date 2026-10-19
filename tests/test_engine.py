@@ -310,3 +310,15 @@ def test_without_a_profile_only_the_onboard_stage_is_considered(tmp_path):
         (tmp_path / "profile.md").write_text("# A\n")
         snap = snapshot.take(tmp_path, store, cfg(), NOW)
         assert sorted(s.name for _, s in policy.candidates(snap, [other, onboard])) == ["draft", "onboard"]
+
+
+def test_the_digest_and_status_tell_the_person_the_exact_command_for_a_host_held_back(tmp_path):
+    import sim
+    from jobloop.engine import digest, snapshot
+    from jobloop.engine.store import Store
+    me = sim.make_me(tmp_path)
+    with Store(me) as store:
+        store.queue_put("acme__dev", "needs_decision", str(me / "queue" / "acme__dev"),
+                        {"kind": "unverified_source_host", "title": "Acme: Dev", "fit": 80, "host": "startup.jobs"})
+        text = digest.status(me, store, snapshot.take(me, store, cfgmod.Config().validate()))
+    assert "jobloop queue approve acme__dev" in text and "if you checked the employer and the link" in text

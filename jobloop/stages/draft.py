@@ -9,8 +9,12 @@ floor is the active playbook's `strategy.min_fit` (else `config.min_fit`). Best 
 action the policy would not run now (resting after failures) is not proposed, so it does not hold a slot.
 
 `run`, in order. Guards again (tracker row: `no_op`; veto or floor or no fit: `blocked`). The source host: an unverified host
-(`guards.hosts.classify`, of the posting's URL and of the URL its text was read from) writes a `needs_decision` queue entry
-and returns `blocked` with the failure `unverified source host: ...`; nothing is drafted and the host is never waived. The
+(`guards.hosts.classify`, of the posting's URL and of the URL its text was read from) is then put to `guards.hosts.trust`: the
+employer's own site, a host in `trusted_hosts`, or an application the person approved (`jobloop queue approve`, an engine event
+`human:approve_host` for this application only) continues the pipeline, with `host_trust` in draft.json and the note `source
+host accepted: <reason>` (`host_kind` stays the truthful classification; the verifiers are unchanged). Without trust it writes a
+`needs_decision` queue entry (data `host`, and `how`: the exact approve command) and returns `blocked` with the failure
+`unverified source host: ...`; nothing is drafted. The
 research record is read (a missing one with `research` enabled is `blocked`); its claims travel to the drafter as
 research.md and nowhere else, and no researcher harness is used here. The posting text is `me/postings/<fit key>.txt` (what
 triage fetched) or fetched through the library's ladder. Facts (company, role) are the posting entry's own words when they
@@ -53,13 +57,15 @@ from dataclasses import replace
 from pathlib import Path
 
 from .. import apply as applying, fetch, letter, posting as posting_facts, rank, rankstate
-from ..engine import judge, playbook as playbooks, policy
+from ..engine import judge, playbook as playbooks, policy, queue as queue_helpers
 from ..engine.spec import Action, Brakes, Outcome, Spec, Trigger
 from ..engine.stage import Context
 from ..guards import hosts as host_check
 from ..research import Claim
 from ..text import flat, visible
 
+APPROVED = queue_helpers.APPROVED   # engine event: the person approved this application's source host (item = application key)
+APPROVE_HOW = queue_helpers.APPROVE_HOW
 ROUNDS = 3                          # turns a drafter gets to fix failed checks, per verification (the apply loop's default)
 COMMITTING = "draft.committing"     # engine kv: application key -> when its archive commit began; cleared once the tracker row is written
 DEPS: applying.Deps | None = None   # tests supply stand-ins for the container verifier
@@ -197,14 +203,16 @@ class Draft:
             return pkey, entry
         return next(((k, e) for k, e in snap.postings.items() if snap.application_key(e) == action.key), ("", None))
 
-    def _needs_decision(self, ctx: Context, action: Action, entry: dict, kind: str, reason: str, question: str, total) -> Outcome:
+    def _needs_decision(self, ctx: Context, action: Action, entry: dict, kind: str, reason: str, question: str, total, extra: dict | None = None) -> Outcome:
         data = {"stage": "draft", "kind": kind, "title": f"{entry.get('company')}: {entry.get('title')}", "url": entry.get("url"),
-                "question": question, "reason": reason, "fit": total, "deadline": entry.get("deadline")}
+                "question": question, "reason": reason, "fit": total, "deadline": entry.get("deadline"), **(extra or {})}
         ctx.store.queue_put(action.key, "needs_decision", str(ctx.me / "queue" / action.key), data, ctx.now)
         return Outcome("blocked", failures=[reason], notes=[question])
 
-    def _posting(self, ctx: Context, pkey: str, entry: dict) -> tuple[str, str] | Outcome | None:
-        """(text, url the text came from) or an Outcome that ends the action."""
+    def _posting(self, ctx: Context, pkey: str, entry: dict, allow=False) -> tuple[str, str] | Outcome | None:
+        """(text, url the text came from), an Outcome that ends the action, or None when the text came from an unverified host.
+        `allow` is True when the host was already accepted, or a function (url -> (kind, reason)) that decides for the host the
+        text was fetched from; the verifiers are not involved."""
         cached = ctx.me / "postings" / f"{rank.fit_key(pkey)}.txt"
         try:
             text = cached.read_text()
@@ -218,8 +226,9 @@ class Draft:
             return Outcome("blocked", failures=[f"the posting is closed: {got.reason}"])
         if not isinstance(got, fetch.Fetched) or not visible(got.text).strip():
             return Outcome("blocked", failures=[f"the posting could not be read: {getattr(got, 'reason', 'it is empty')}"])
-        if got.host.kind == "unverified":
-            return None
+        if got.host.kind == "unverified" and allow is not True:
+            if not (callable(allow) and allow(got.url)):
+                return None
         return got.text, got.url
 
     def _facts(self, entry: dict, text: str, turns, harness: str) -> posting_facts.Facts | None:
@@ -232,6 +241,10 @@ class Draft:
         if found is not None and entry.get("deadline") and not found.deadline:
             found = replace(found, deadline=str(entry["deadline"]))
         return found
+
+    def _approved(self, store, app: str) -> bool:
+        """Did the person approve THIS application's source host (`jobloop queue approve`)? Read from the event, so it persists."""
+        return bool(store.events(APPROVED, app, limit=1))
 
     def run(self, action: Action, ctx: Context) -> Outcome:
         snap = ctx.snapshot
@@ -262,20 +275,31 @@ class Draft:
             return recovered
         url = str(entry.get("url") or "")
         verdict = host_check.classify(url, fetch.installed_hosts())
+        approved, company = self._approved(ctx.store, app), str(entry.get("company") or "")
+        accepted: list[tuple[str, str]] = []                    # (kind, reason) of each unverified host the person's rules accepted
         if verdict.kind == "unverified":
-            return self._unverified(ctx, action, entry, verdict, total)
+            kind, reason = host_check.trust(url, company, ctx.config.company_domains, ctx.config.trusted_hosts, approved)
+            if not kind:
+                return self._unverified(ctx, action, entry, verdict, total)
+            accepted.append((kind, reason))
         record = research_record(ctx.me, app)
         if record is None and "research" not in ctx.config.disabled_stages:
             return Outcome("blocked", failures=[f"no research record for {app} (me/research/{app}.json); the research stage writes one"])
         claims = claims_of(record or {})
-        got = self._posting(ctx, pkey, entry)
+        def text_host(text_url: str) -> bool:
+            kind, reason = host_check.trust(text_url, company, ctx.config.company_domains, ctx.config.trusted_hosts, approved)
+            if kind:
+                accepted.append((kind, reason))
+            return bool(kind)
+
+        got = self._posting(ctx, pkey, entry, allow=True if accepted else text_host)
         if isinstance(got, Outcome):
             return got
         if got is None:
             return self._unverified(ctx, action, entry, host_check.HostVerdict("unverified", "", None, "the posting text came from an unverified host"), total)
         text, text_url = got
         try:
-            return self._draft(ctx, action, pkey, entry, fit, stored, total, text, text_url, claims, record or {})
+            return self._draft(ctx, action, pkey, entry, fit, stored, total, text, text_url, claims, record or {}, accepted)
         except applying.NeedsDecision as question:
             return self._needs_decision(ctx, action, entry, "needs_decision", f"needs a person: {question}", str(question), total)
 
@@ -289,10 +313,13 @@ class Draft:
         return Outcome("success", notes=[f"{app}: an interrupted commit was finished from its archive; nothing was drafted again"]) if whole else None
 
     def _unverified(self, ctx, action, entry, verdict, total) -> Outcome:
-        why = f"unverified source host: {verdict.host or entry.get('url')}: {verdict.reason}"
+        host = verdict.host or host_check.split_url(str(entry.get("url") or ""))[0]
+        why = f"unverified source host: {host or entry.get('url')}: {verdict.reason}"
+        how = APPROVE_HOW.format(key=action.key)
         return self._needs_decision(ctx, action, entry, "unverified_source_host", why,
                                     f"{entry.get('company')}: {entry.get('title')} was found on a host that is not an installed job board "
-                                    f"or a known ATS ({verdict.host or entry.get('url')}). Check the employer and the link; nothing is drafted.", total)
+                                    f"or a known ATS ({host or entry.get('url')}). Check the employer and the link; nothing is drafted. {how}",
+                                    total, {"host": host, "how": how})
 
     # ── the drafting ───────────────────────────────────────────────────────────────────────────
     def _drafter_for(self, ctx: Context, app: str, first: str, i: int) -> str:
@@ -308,13 +335,13 @@ class Draft:
     def _judge(self, ctx: Context, app: str, application, attempt, subject: str) -> list:
         return judge.score(ctx, app, judge_files(application, attempt), attempt.harness, subject=subject)
 
-    def _draft(self, ctx, action, pkey, entry, fit, stored, total, text, text_url, claims, record) -> Outcome:
+    def _draft(self, ctx, action, pkey, entry, fit, stored, total, text, text_url, claims, record, accepted=()) -> Outcome:
         app = action.key
         pb = ctx.playbook
         best_of = int((pb.strategy.get("best_of") if pb is not None else None) or ctx.config.best_of)
         best_of = max(1, min(4, best_of))
         first = ctx.gateway.harness("drafter", "draft", app)
-        notes: list[str] = []
+        notes: list[str] = [f"source host accepted: {reason}" for _, reason in accepted]
         deps = replace(DEPS or applying.Deps(), today=lambda: ctx.now.date())
         with ctx.gateway.turns("draft", app) as turns:
             facts = self._facts(entry, text, turns, first)
@@ -362,7 +389,9 @@ class Draft:
         info = {"posting_key": pkey, "judge": {"mean": judge.mean(panel), "judges": [
                     {"judge": j.judge, "overall": j.overall, "failed": [[n, why] for n, why in j.failed]} for j in panel]},
                 "first_pass": first_pass, "harnesses": {"drafter": chosen.harness, "reviewer": reviewer}, "best_of": best_of, "notes": notes,
-                "stretch": list(getattr(result, "stretch", ()) or ())}          # bullets that reframe your experience: you keep, soften or drop them
+                "stretch": list(getattr(result, "stretch", ()) or ())}
+        if accepted:
+            info["host_trust"] = accepted[0][0]                 # the person's rule, recorded; host_kind stays the truthful classification          # bullets that reframe your experience: you keep, soften or drop them
         found = committing(ctx.store)
         found[app] = ctx.now.isoformat()
         ctx.store.put(COMMITTING, found)

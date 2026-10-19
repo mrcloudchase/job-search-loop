@@ -89,7 +89,7 @@ An error or a spent budget is **never** a success.
 - The loop never writes `applied` (or `interview`, `offer`, `hired`, `rejected`, `no_response`, `offer_declined`, `withdrawn`) to the tracker. It writes `drafted` only, through the archive/tracker API.
 - The loop never submits, sends or posts anything outside the harness-interface server and the boards' own read endpoints.
 - The loop never changes `profile.md` without a person's accepted proposal.
-- It never drafts a vetoed posting, a posting below the configured floor, or one whose source host is unverified (that becomes `needs_decision`).
+- It never drafts a vetoed posting, a posting below the configured floor, or one whose source host is unverified, unless the host is the employer's own site, one the person trusts (`trusted_hosts`), or the person approved that application (`jobloop queue approve <key>`); otherwise it becomes `needs_decision` and says the command.
 - It never makes a claim in a document that the candidate's sources do not back.
 - It never drafts the same application twice, and two passes never overlap.
 - A pass never starts a model turn after its deadline or budget; it still writes its digest.

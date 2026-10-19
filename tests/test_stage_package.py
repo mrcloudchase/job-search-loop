@@ -317,3 +317,28 @@ def test_stretch_bullets_from_the_draft_are_shown_to_the_person_to_keep_soften_o
     readme = (me / "queue" / KEY / "README.md").read_text()
     assert "stretch your experience" in readme and "migrated cron jobs" in readme
     assert queue_json(me)["stretch"] == ["- Built dbt models and migrated cron jobs for analysts"]
+
+
+# ── a host the draft stage accepted ──
+def test_an_accepted_host_is_not_sent_to_needs_decision_and_the_readme_says_so(tmp_path):
+    why = "vacatures.dpgmedia.nl is the employer's own site (its name is DPG Media's)"
+    ctx, _, me = setup(tmp_path, draft=draft_json(host_kind="unverified", host_trust="employer", url="https://vacatures.dpgmedia.nl/1",
+                                                  notes=[f"source host accepted: {why}"]))
+    out = stage.STAGE.run(act(ctx), ctx)
+    readme = (me / "queue" / KEY / "README.md").read_text()
+    assert out.terminal == "success" and ctx.store.queue_item(KEY)["status"] == "ready" and queue_json(me)["reasons"] == []
+    assert f"Source host accepted: {why}. Check the employer and the link yourself before you apply." in readme
+    assert queue_json(me)["host_kind"] == "unverified" and queue_json(me)["host_trust"] == "employer"
+
+
+def test_an_unverified_host_without_acceptance_and_a_bogus_host_trust_keep_today_behaviour(tmp_path):
+    for n, over in enumerate(({}, {"host_trust": "yes please"}, {"host_trust": ""})):
+        ctx, _, me = setup(tmp_path / str(n), draft=draft_json(host_kind="unverified", url="https://sketchy.example/x", **over))
+        stage.STAGE.run(act(ctx), ctx)
+        assert ctx.store.queue_item(KEY)["status"] == "needs_decision" and "Source host accepted" not in (me / "queue" / KEY / "README.md").read_text()
+
+
+def test_a_waived_check_still_needs_a_decision_even_when_the_host_was_accepted(tmp_path):
+    ctx, _, me = setup(tmp_path, draft=draft_json(host_kind="unverified", host_trust="trusted", notes=["source host accepted: x", "layout check waived"]))
+    stage.STAGE.run(act(ctx), ctx)
+    assert ctx.store.queue_item(KEY)["status"] == "needs_decision" and "waived" in queue_json(me)["reasons"][0]

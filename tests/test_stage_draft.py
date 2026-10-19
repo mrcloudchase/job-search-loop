@@ -13,7 +13,7 @@ import pytest
 
 import sim
 from jobloop import apply, archive, rank, tracker
-from jobloop.engine import config as cfgmod, playbook, runner
+from jobloop.engine import config as cfgmod, invariants, playbook, queue, runner, snapshot
 from jobloop.engine.spec import Action
 from jobloop.stages import draft as stage
 from jobloop.verify import Result
@@ -381,8 +381,8 @@ def test_a_posting_text_read_from_an_unverified_host_is_not_drafted_either(tmp_p
     from jobloop.guards import hosts
     ctx, server, _ = world(tmp_path, monkeypatch)
     (ctx.me / "postings" / f"{rank.fit_key('p1')}.txt").unlink()
-    monkeypatch.setattr(stage, "FETCH", lambda url, **kw: fetch.Fetched("Data Engineer at Northwind Analytics\nPython", "https://careers.northwind.example/1", "careers",
-                                                                       200, hosts.HostVerdict("unverified", "careers.northwind.example", None, "no"), "n"))
+    monkeypatch.setattr(stage, "FETCH", lambda url, **kw: fetch.Fetched("Data Engineer at Northwind Analytics\nPython", "https://jobs.aggregator.example/1", "careers",
+                                                                       200, hosts.HostVerdict("unverified", "jobs.aggregator.example", None, "no"), "n"))
     out = stage.STAGE.run(one(ctx), ctx)
     assert out.terminal == "blocked" and out.failures[0].startswith("unverified source host") and server.requests == []
     assert ctx.store.queue_item(APP)["status"] == "needs_decision"
@@ -450,3 +450,102 @@ def test_the_same_application_is_never_drafted_twice(tmp_path, monkeypatch):
     assert stage.STAGE.propose(ctx.snapshot) == []
     assert stage.STAGE.run(Action("draft", APP, "again", payload={"posting_key": "p1"}), ctx).terminal == "no_op"
     assert len(server.requests) == 3
+
+
+# ── an unverified host the person can resolve: the employer's own site, trusted_hosts, or an approval ──
+DPG = "dpg_media__data_engineer"
+OK_REPLIES = [draft(), REVIEW_REPLY, draft("cv final")]
+
+
+def dpg(url, **config):
+    return dict(specs=[spec(company="DPG Media", title="Data Engineer", url=url)], best_of=1, judge_drafts=False, **config)
+
+
+def test_the_employers_own_site_is_accepted_and_drafted_with_the_note_and_the_truthful_host_kind(tmp_path, monkeypatch):
+    ctx, server, checker = world(tmp_path, monkeypatch, OK_REPLIES, **dpg("https://vacatures.dpgmedia.nl/vacature/1"))
+    before = snapshot.fingerprint(ctx.me)
+    out = stage.STAGE.run(one(ctx, DPG), ctx)
+    data = draft_json(ctx, DPG)
+    assert out.terminal == "success" and statuses(ctx) == ["drafted"] and ctx.store.queue_item(DPG) is None
+    assert data["host_trust"] == "employer" and data["host_kind"] == "unverified"
+    assert any(n.startswith("source host accepted: vacatures.dpgmedia.nl is the employer's own site") for n in data["notes"])
+    assert checker.calls and invariants.violations(before, snapshot.fingerprint(ctx.me)) == []        # the verifiers ran; only `drafted` was written
+
+
+@pytest.mark.parametrize("url", ["https://www.dpgmedia.nl/x", "https://careers.dpgmedia.nl/x", "https://jobs.dpgmedia.nl/x", "https://karriere.dpgmedia.nl/x"])
+def test_careers_style_prefixes_of_the_employers_site_are_accepted(tmp_path, monkeypatch, url):
+    ctx, _, _ = world(tmp_path, monkeypatch, OK_REPLIES, **dpg(url))
+    assert stage.STAGE.run(one(ctx, DPG), ctx).terminal == "success" and draft_json(ctx, DPG)["host_trust"] == "employer"
+
+
+def test_a_configured_company_domain_makes_a_host_the_employers(tmp_path, monkeypatch):
+    ctx, _, _ = world(tmp_path, monkeypatch, OK_REPLIES, specs=[spec(url="https://apply.nw-group.example/1")], best_of=1, judge_drafts=False,
+                      company_domains={"northwind analytics": "nw-group.example"})
+    assert stage.STAGE.run(one(ctx), ctx).terminal == "success" and draft_json(ctx)["host_trust"] == "employer"
+
+
+@pytest.mark.parametrize("url", ["https://it.whatjobs.com/job/1", "https://startup.jobs/job/1", "https://dpgmedia-jobs.evil.io/1",
+                                 "https://dpgmedia.evil.io/1", "https://evil-dpgmedia.nl/1", "https://evil.io/dpgmedia"])
+def test_aggregators_and_look_alikes_stay_blocked_without_approval(tmp_path, monkeypatch, url):
+    ctx, server, _ = world(tmp_path, monkeypatch, **dpg(url))
+    out = stage.STAGE.run(one(ctx, DPG), ctx)
+    entry = ctx.store.queue_item(DPG)
+    data = json.loads(entry["data"])
+    assert out.terminal == "blocked" and out.failures[0].startswith("unverified source host")
+    assert entry["status"] == "needs_decision" and data["kind"] == "unverified_source_host" and data["host"] in url
+    assert f"jobloop queue approve {DPG}" in data["how"] and "if you checked the employer and the link" in data["how"]
+    assert server.requests == [] and statuses(ctx) == [] and not (ctx.me / "applications" / DPG).exists()
+
+
+def test_trusted_hosts_match_on_a_label_boundary_only(tmp_path, monkeypatch):
+    ctx, _, _ = world(tmp_path, monkeypatch, OK_REPLIES, **dpg("https://nl.whatjobs.com/job/1", trusted_hosts=["whatjobs.com"]))
+    assert stage.STAGE.run(one(ctx, DPG), ctx).terminal == "success"
+    data = draft_json(ctx, DPG)
+    assert data["host_trust"] == "trusted" and data["host_kind"] == "unverified" and "trusted_hosts" in " ".join(data["notes"])
+    for n, url in enumerate(["https://evil-whatjobs.com/1", "https://whatjobs.com.evil.io/1"]):
+        ctx, server, _ = world(tmp_path / f"x{n}", monkeypatch, **dpg(url, trusted_hosts=["whatjobs.com"]))
+        assert stage.STAGE.run(one(ctx, DPG), ctx).terminal == "blocked" and server.requests == [] and statuses(ctx) == []
+
+
+def test_an_approval_covers_that_application_only_and_persists_across_passes(tmp_path, monkeypatch):
+    other = spec("p2", "Other Corp", "Data Engineer", url="https://startup.jobs/job/2")
+    ctx, server, _ = world(tmp_path, monkeypatch, OK_REPLIES, specs=[spec(company="DPG Media", title="Data Engineer", url="https://it.whatjobs.com/1"), other],
+                           best_of=1, judge_drafts=False)
+    assert all(stage.STAGE.run(a, ctx).terminal == "blocked" for a in stage.STAGE.propose(ctx.snapshot))
+    assert stage.STAGE.propose(ctx.snapshot) == []                                                     # both wait for the person
+    queue.approve(ctx.me, ctx.store, DPG)
+    assert ctx.store.queue_item(DPG) is None and statuses(ctx) == [] and server.requests == []          # approval drafts nothing itself
+    ctx2 = sim.context(tmp_path, list(OK_REPLIES), me=ctx.me, config=ctx.config)[0]                     # a later pass: only the event remains
+    proposed = [a.key for a in stage.STAGE.propose(ctx2.snapshot)]
+    assert proposed == [DPG]
+    out = stage.STAGE.run(stage.STAGE.propose(ctx2.snapshot)[0], ctx2)
+    assert out.terminal == "success" and draft_json(ctx2, DPG)["host_trust"] == "approved" and statuses(ctx2) == ["drafted"]
+    assert ctx2.store.queue_item("other_corp__data_engineer")["status"] == "needs_decision"             # the other one is still not trusted
+
+
+def test_an_approved_posting_whose_text_came_from_an_unverified_host_is_drafted_with_the_note(tmp_path, monkeypatch):
+    from jobloop import fetch
+    from jobloop.guards import hosts
+    ctx, _, _ = world(tmp_path, monkeypatch, OK_REPLIES, best_of=1, judge_drafts=False)
+    (ctx.me / "postings" / f"{rank.fit_key('p1')}.txt").unlink()
+    monkeypatch.setattr(stage, "FETCH", lambda url, **kw: fetch.Fetched("Data Engineer at Northwind Analytics\nPython", "https://jobs.aggregator.example/1", "careers",
+                                                                       200, hosts.HostVerdict("unverified", "jobs.aggregator.example", None, "no"), "n"))
+    ctx.store.add_event(queue.APPROVED, APP, {"host": ""})
+    out = stage.STAGE.run(one(ctx), ctx)
+    assert out.terminal == "success" and draft_json(ctx)["host_trust"] == "approved"
+
+
+def test_the_text_host_that_is_the_employers_own_site_is_accepted(tmp_path, monkeypatch):
+    from jobloop import fetch
+    from jobloop.guards import hosts
+    ctx, _, _ = world(tmp_path, monkeypatch, OK_REPLIES, best_of=1, judge_drafts=False)
+    (ctx.me / "postings" / f"{rank.fit_key('p1')}.txt").unlink()
+    monkeypatch.setattr(stage, "FETCH", lambda url, **kw: fetch.Fetched("Data Engineer at Northwind Analytics\nPython", "https://careers.northwind.example/1", "careers",
+                                                                       200, hosts.HostVerdict("unverified", "careers.northwind.example", None, "no"), "n"))
+    assert stage.STAGE.run(one(ctx), ctx).terminal == "success" and draft_json(ctx)["host_trust"] == "employer"
+
+
+def test_an_accepted_host_does_not_waive_a_failing_verifier(tmp_path, monkeypatch):
+    ctx, _, _ = world(tmp_path, monkeypatch, [draft("BAD"), draft("BAD")], **dpg("https://vacatures.dpgmedia.nl/1"), rounds=1)
+    out = stage.STAGE.run(one(ctx, DPG), ctx)
+    assert out.terminal == "stalled" and statuses(ctx) == [] and not (ctx.me / "applications" / DPG / "draft.json").exists()

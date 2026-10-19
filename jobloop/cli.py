@@ -105,6 +105,8 @@ def cmd_queue(args) -> int:
             say(queue.list_text(store))
         elif args.action == "show":
             say(queue.show_text(me, store, args.key))
+        elif args.action == "approve":
+            say(queue.approve(me, store, args.key, host_too=args.host, now=CLOCK() if CLOCK else None))
         else:
             say(queue.done(store, args.key))
     return 0
@@ -248,6 +250,9 @@ def build_parser() -> argparse.ArgumentParser:
     qs.add_parser("list")
     qs.add_parser("show").add_argument("key")
     qs.add_parser("done", help="you handled it (this does NOT mark it applied: use tracker set)").add_argument("key")
+    ap = qs.add_parser("approve", help="you checked the employer and the link of an application held back for its source host: the next pass drafts it")
+    ap.add_argument("key")
+    ap.add_argument("--host", action="store_true", help="also trust this host from now on (adds it to trusted_hosts in loop.json)")
     p.set_defaults(fn=cmd_queue)
 
     p = sub.add_parser("tracker", help="your side of the tracker: mark what you did (applied, interview, offer, ...)")

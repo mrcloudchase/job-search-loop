@@ -37,10 +37,6 @@ def record_path(me, key: str):
     return me / "research" / f"{key}.json"
 
 
-def _squash(text: str) -> str:
-    return "".join(c for c in (text or "").lower() if c.isalnum())
-
-
 def employer_domain(entry: dict, company_domains: dict, installed: tuple[str, ...] | None = None) -> str:
     """The employer's own domain, or "": the configured one (case-insensitive), else the posting URL's host when it is
     neither a job board nor an ATS and carries the company's name."""
@@ -51,15 +47,7 @@ def employer_domain(entry: dict, company_domains: dict, installed: tuple[str, ..
     url = str(entry.get("url") or "")
     installed = installed_hosts() if installed is None else installed
     verdict = host_check.classify(url, installed)
-    host, why_not = host_check.split_url(url)
-    if verdict.kind != "unverified" or why_not or not host:
-        return ""
-    for prefix in ("www.", "careers.", "jobs."):
-        host = host.removeprefix(prefix)
-    first = _squash(company.split()[0]) if company.split() else ""
-    if len(first) < 3 or first not in _squash(host):
-        return ""
-    return host
+    return host_check.employer_host(url, company) if verdict.kind == "unverified" else ""
 
 
 def posting_text(entry: dict) -> str:

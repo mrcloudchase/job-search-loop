@@ -38,6 +38,7 @@ jobloop run                         # one pass (schedule it with cron or a Claud
 jobloop run --watch --every 60m     # or keep it running
 jobloop status                      # what the loop sees, and what is waiting for you
 jobloop queue show <key>            # an application ready for you: link, PDFs, answers, checklist
+jobloop queue approve <key> [--host] # a posting held back for its source host: you checked the employer and the link (--host trusts the host from now on)
 jobloop tracker set <key> applied   # after YOU submitted it: the loop takes over (follow-ups, interviews, offers)
 jobloop stage <key> technical ...   # log an interview stage; offers: put the terms in me/offers/<key>.md
 jobloop proposals list|accept|reject    # what only you can decide (profile additions, stale applications, new boards)

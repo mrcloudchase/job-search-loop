@@ -140,6 +140,10 @@ class Store:
                        "status=excluded.status, path=excluded.path, updated=excluded.updated, data=excluded.data",
                        (item, status, path, stamp, stamp, json.dumps(data or {})))
 
+    def queue_delete(self, item: str) -> None:
+        with self.tx() as db:
+            db.execute("DELETE FROM queue WHERE item=?", (item,))
+
     def queue(self, status: str | None = None) -> list[sqlite3.Row]:
         if status:
             return self.db.execute("SELECT * FROM queue WHERE status=? ORDER BY created", (status,)).fetchall()
