@@ -180,26 +180,44 @@ def _grounded_dates(doc: Facts, src: Facts, today: date | None) -> list[tuple[Fo
 def _parts(line: str, pos: list[Found]) -> list[str]:
     """The pieces of a role line once its dates are taken out: titles, employers, cities, in folded form."""
     rest = _blank(line, [(f.start, f.end) for f in pos])
-    pieces = re.split(r"\s\|\s|\s[-\u2013\u2014]+\s|--|,|;|[()]|\bto\b|\btil\b|\bbis\b|\btot\b", rest)
+    pieces = re.split(r"\s\|\s|\s{2,}|\s[-\u2013\u2014]+\s|--|,|;|[()]|\bto\b|\btil\b|\bbis\b|\btot\b", rest)
     pieces = [re.sub(r"^[-*\u2022\s]+|[-\s]+$", "", flat(p)) for p in pieces]
     return [p for p in pieces if p and not re.fullmatch(rf"(?:{PRESENT}|[-\u2013\u2014\s])+", p)]
 
 
 def _role_lines(text: str, known: tuple[Role, ...]) -> list[str]:
-    """Short lines that carry a period and look like a role heading: a range, a present, or a known employer."""
+    """Short lines that carry a period and look like a role heading: a range, a present, or a known employer. A PDF
+    sets the title, employer and city on the line above or below the dates, so a short neighbour that names one of
+    them (and has no dates of its own) is read as part of the heading."""
     employers = [flat(r.employer) for r in known]
-    out, lines = [], text.split("\n")
+    terms = {flat(v) for r in known for v in (r.title, r.employer, r.city)}
+    lines = text.split("\n")
+
+    def neighbour(candidates) -> str | None:
+        line = next((l for l in candidates if l.strip()), "")
+        folded = flat(line)
+        if line and not dates(line) and len(line.split()) <= 8 and not line.lstrip().startswith(("-", "*", "\u2022")) \
+                and any(t in folded for t in terms):
+            return line.strip()
+        return None
+
+    out = []
     for i, line in enumerate(lines):
         pos = dates(line)
         if not pos or len(_blank(line, [(f.start, f.end) for f in pos]).split()) > 14:
             continue
         if len(pos) >= 2 or re.search(rf"\b(?:{PRESENT})\b", line, re.I) or any(e in flat(line) for e in employers):
-            nxt = next((l for l in lines[i + 1:] if l.strip()), "")
-            if not any(e in flat(line) for e in employers) and not dates(nxt) and len(nxt.split()) <= 8 \
-                    and any(e in flat(nxt) for e in employers):
-                line = f"{line.rstrip()} | {nxt.strip()}"     # a PDF's title and dates line, then the employer's line below it
-            out.append(line)
+            before, after = neighbour(reversed(lines[:i])), neighbour(lines[i + 1:])
+            out.append(" | ".join(p for p in (before, line.rstrip(), after) if p))
     return out
+
+
+def _made_of(part: str, vocabulary: set[str]) -> bool:
+    """True when the part is nothing but known titles, employers and cities (a PDF may set a city and a title side by side)."""
+    for term in sorted(vocabulary, key=len, reverse=True):
+        if term:
+            part = re.sub(rf"(?<!\w){re.escape(term)}(?!\w)", " ", part)
+    return not part.strip(" \t-|,;")
 
 
 def _check_roles(text: str, known: tuple[Role, ...]) -> list[str]:
@@ -209,7 +227,7 @@ def _check_roles(text: str, known: tuple[Role, ...]) -> list[str]:
         pos = dates(line)
         where = f'role line "{line.strip()}"'
         for part in _parts(line, pos):
-            if part not in vocabulary:
+            if not _made_of(part, vocabulary):
                 found.append(f'{where}: "{part}" is not a job title, employer or city in the sources')
         candidates = [r for r in known if flat(r.employer) in flat(line)]
         if not candidates:

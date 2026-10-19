@@ -59,6 +59,8 @@ THE DOCUMENTS
   filled one). Keep the document class, packages and macros. They compile with lualatex (CV) and xelatex (letter), without shell escape.
 - The CV is exactly 2 pages; the letter exactly 1, signature included. Never shrink margins, fonts or spacing to fit: cut content,
   lowest relevance first (redundancy, profile fluff, low-relevance bullets), and keep any line the letter relies on.
+  The second page must be at least two-thirds full: when the profile has the material, use every role's real bullets, the
+  Projects, Certifications, Education and Languages sections, never padding and never an invented line.
 - CV language: {cv_language}. The letter is written in the language of the posting: {letter_language}. Translate section headings
   and the closing to match.
 - Escape & % $ # _ in all text. Dates in ranges use one ASCII hyphen ("2021 - 2023", never "--" or an en-dash). No em-dashes anywhere.

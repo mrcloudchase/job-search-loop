@@ -139,6 +139,20 @@ def test_a_link_a_pdf_wrapped_at_its_hyphen_is_grounded_but_a_stranger_is_not():
     assert check("see github.com/a-", *sources)
 
 
+def test_a_pdf_heading_may_spread_title_employer_and_city_over_three_lines_or_columns():
+    above = "Senior Data Engineer\nTidewater Logistics     March 2022 - present     Rotterdam"
+    assert check(above) == []
+    assert any("exactly the profile's" in f for f in check(above.replace("March 2022", "March 2020")))
+    invented = "Principal Architect\nTidewater Logistics     March 2022 - present"
+    assert any("Principal Architect" in f or "title" in f for f in check(invented))
+    assert check("Professional Experience\nTidewater Logistics     March 2022 - present\nSenior Data Engineer") == []
+
+
+def test_a_city_and_a_title_set_side_by_side_are_known_words_but_an_invented_title_is_not():
+    assert check("Rotterdam Senior Data Engineer | Tidewater Logistics March 2022 - present") == []
+    assert check("Rotterdam Chief Wizard | Tidewater Logistics March 2022 - present")
+
+
 def test_a_letter_may_carry_today_and_nothing_else_new():
     letter = "19 October 2026\nDear Hiring Manager,"
     assert check(letter, today=date(2026, 10, 19)) == []
