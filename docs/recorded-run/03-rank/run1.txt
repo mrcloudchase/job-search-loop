@@ -290,4 +290,328 @@ Ranking 5 postings; 16 deferred to the next run.
 [32m  +    {"term": "software engineering", "kind": "required", "verdict": "gap"},[0m
 [2m       {"term": "LLM-powered systems", "kind": "required", "verdict": "gap"},[0m
 [2m       {"term": "Python", "kind": "required", "verdict": "backed", "quote": "Strongest in Python, SQL and Apache Airflow"},[0m
-[2m       {"term": "TypeSc
+[2m       {"term": "TypeScript", "kind": "required", "verdict": "gap"},[0m
+[1m  verify:[0m [32mall checks pass[0m
+
+[1m[36m━━ FIT · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 02:07 · $0.98[0m
+[2m  resp_8bdcb46e29c74b1f · claude-deepseek/deepseek-chat · streaming[0m
+  I'll read both files first.
+[33m  ⚙ Read[0m /srv/hi-data/workspaces/resp_8bdcb46e29c74b1f/profile.md
+[33m  ⚙ Read[0m /srv/hi-data/workspaces/resp_8bdcb46e29c74b1f/posting.md
+[33m  ⚙ Write[0m /srv/hi-data/workspaces/resp_8bdcb46e29c74b1f/fit.json
+[33m  ⚙ Edit[0m /srv/hi-data/workspaces/resp_8bdcb46e29c74b1f/fit.json
+  Wrote `fit.json`. Summary of the facts recorded: - **Scores**: technical 22, experience 18, behavioural 52, c…
+[1m  completed[0m · 12.658s · $0.101 · changed fit.json
+[1m  diff --git a/fit.json b/fit.json[0m
+[2m  new file mode 100644[0m
+[2m  index 0000000..df6476c[0m
+[1m  --- /dev/null[0m
+[1m  +++ b/fit.json[0m
+[36m  @@ -0,0 +1,48 @@[0m
+[32m  +{[0m
+[32m  +  "scores": {[0m
+[32m  +    "technical": 22,[0m
+[32m  +    "experience": 18,[0m
+[32m  +    "behavioural": 52,[0m
+[32m  +    "career": 15[0m
+[32m  +  },[0m
+[32m  +  "requirements": [[0m
+[32m  +    {"term": "PhD", "kind": "required", "verdict": "gap"},[0m
+[32m  +    {"term": "Hydrology", "kind": "required", "verdict": "gap"},[0m
+[32m  +    {"term": "Groundwater", "kind": "required", "verdict": "gap"},[0m
+[32m  +    {"term": "Peatland", "kind": "required", "verdict": "gap"},[0m
+[32m  +    {"term": "Machine learning", "kind": "preferred", "verdict": "gap"},[0m
+[32m  +    {"term": "GIS", "kind": "preferred", "verdict": "gap"},[0m
+[32m  +    {"term": "Remote sensing", "kind": "preferred", "verdict": "gap"},[0m
+[32m  +    {"term": "Python", "kind": "preferred", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, B[0m
+[32m  +    {"term": "numerical hydrological models", "kind": "preferred", "verdict": "gap"},[0m
+[32m  +    {"term": "peer-reviewed journals", "kind": "preferred", "verdict": "gap"},[0m
+[32m  +    {"term": "English", "kind": "required", "verdict": "backed", "quote": "English (fluent), Dutch (native), German (basic)"}[0m
+[32m  +  ],[0m
+[32m  +  "strengths": [[0m
+[32m  +    "Python is a strong candidate skill and a listed posting asset",[0m
+[32m  +    "Experience processing large environmental datasets transfers to the data-handling part of the work",[0m
+[32m  +    "Structured, collaborative working style (mentoring, leading reviews) fits the team-oriented posting"[0m
+[32m  +  ],[0m
+[32m  +  "gaps": [[0m
+[32m  +    "Holds no PhD, which is a required qualification",[0m
+[32m  +    "No Hydrology, Groundwater or Peatland domain knowledge; candidate works in retail and logistics",[0m
+[32m  +    "No Machine learning experience (only Pandas as a working skill)",[0m
+[32m  +    "No GIS, Remote sensing or numerical hydrological models experience",[0m
+[32m  +    "No peer-reviewed journals or conference publications",[0m
+[32m  +    "PhD applicant profile not met: candidate is a senior industry data engineer, not a researcher"[0m
+[32m  +  ],[0m
+[32m  +  "eligibility": [[0m
+[32m  +    {"kind": "start_date", "stance": "requires", "scope": "role", "value": "2027-02-01", "text": "The position is for 2.5 years, starting[0m
+[32m  +  ],[0m
+[32m  +  "languages": [[0m
+[32m  +    {"language": "English", "level": "excellent", "required": true, "text": "You must have an excellent command of English, both written [0m
+[32m  +    {"language": "Danish", "level": "", "required": false, "text": "If you do not speak Danish, you are encouraged to take Danish languag[0m
+[32m  +  ],[0m
+[32m  +  "location": {[0m
+[32m  +    "onsite_days": null,[0m
+[32m  +    "relocation_required": true,[0m
+[32m  +    "travel": "occasional",[0m
+[32m  +    "text": "The work location is GEUS in Copenhagen.",[0m
+[32m  +    "deal_breaker_hits": [][0m
+[32m  +  }[0m
+[32m  +}[0m
+[1m  verify:[0m [31m2 failing[0m
+[31m    ✗ strengths entry 'Experience processing large environmental datasets transfers to the data-handling part of th…[0m
+[31m    ✗ strengths entry 'Structured, collaborative working style (mentoring, leading reviews) fits the team-oriented …[0m
+
+[1m[36m━━ FIX FIT 1/3 · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 02:20 · $1.08[0m
+[2m  resp_3dd45e2c4afa47ab · claude-deepseek/deepseek-chat · streaming[0m
+[33m  ⚙ Read[0m /srv/hi-data/workspaces/resp_8bdcb46e29c74b1f/fit.json
+  I'll rewrite both entries so each names Python (the backed requirement they actually rely on). I also need to…
+[33m  ⚙ Read[0m /srv/hi-data/workspaces/resp_8bdcb46e29c74b1f/profile.md
+  The candidate's actual backed skills don't include "large environmental datasets," so I'll keep every claim t…
+[33m  ⚙ Edit[0m /srv/hi-data/workspaces/resp_8bdcb46e29c74b1f/fit.json
+  I replaced both strengths entries with ones that name Python, the backed requirement they rest on: - "Python …
+[1m  completed[0m · 11.442s · $0.098 · changed fit.json
+[1m  diff --git a/fit.json b/fit.json[0m
+[2m  index df6476c..021bfdc 100644[0m
+[1m  --- a/fit.json[0m
+[1m  +++ b/fit.json[0m
+[36m  @@ -20,8 +20,8 @@[0m
+[2m     ],[0m
+[2m     "strengths": [[0m
+[2m       "Python is a strong candidate skill and a listed posting asset",[0m
+[31m  -    "Experience processing large environmental datasets transfers to the data-handling part of the work",[0m
+[31m  -    "Structured, collaborative working style (mentoring, leading reviews) fits the team-oriented posting"[0m
+[32m  +    "Python pipelines handling about 2 million rows per day transfer to the posting's large-dataset processing",[0m
+[32m  +    "Python data-quality tests (Great Expectations) on 30 core tables suit the posting's independent, structured working style"[0m
+[2m     ],[0m
+[2m     "gaps": [[0m
+[2m       "Holds no PhD, which is a required qualification",[0m
+[1m  verify:[0m [32mall checks pass[0m
+
+[1m[36m━━ FIT · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 02:33 · $1.18[0m
+[2m  resp_8a5e8f77a4814cc9 · claude-deepseek/deepseek-chat · streaming[0m
+[33m  ⚙ Read[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/profile.md
+[33m  ⚙ Read[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/posting.md
+[33m  ⚙ Write[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+[33m  ⚙ Edit[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+[33m  ⚙ Write[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+[33m  ⚙ Write[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+[33m  ⚙ Write[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+[33m  ⚙ Edit[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+[33m  ⚙ Bash[0m python3 -m json.tool fit.json > /dev/null && echo "valid JSON"; wc -l fit.json; grep -n '"strengths"' fit.jso…
+[33m  ⚙ Write[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+[33m  ⚙ Write[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+[33m  ⚙ Bash[0m python3 -c "import json; json.load(open('fit.json')); print('valid')"
+[33m  ⚙ Edit[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+  I wrote `fit.json` in the working directory and checked that it parses as valid JSON. The summary below is my…
+[1m  completed[0m · 49.87s · $0.338 · changed fit.json
+[1m  diff --git a/fit.json b/fit.json[0m
+[2m  new file mode 100644[0m
+[2m  index 0000000..08c74b1[0m
+[1m  --- /dev/null[0m
+[1m  +++ b/fit.json[0m
+[36m  @@ -0,0 +1,52 @@[0m
+[32m  +{[0m
+[32m  +  "scores": {"technical": 72, "experience": 74, "behavioural": 76, "career": 45},[0m
+[32m  +  "requirements": [[0m
+[32m  +    {"term": "Minimum 5 years", "kind": "required", "verdict": "backed", "quote": "Data engineer with 7 years of experience building batc[0m
+[32m  +    {"term": "ETL/ELT", "kind": "required", "verdict": "backed", "quote": "Strongest in Python, SQL and Apache Airflow; comfortable ownin[0m
+[32m  +    {"term": "data architectures", "kind": "required", "verdict": "backed", "quote": "Designed a customer-orders star schema in PostgreSQ[0m
+[32m  +    {"term": "SQL", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, BigQu[0m
+[32m  +    {"term": "data warehousing", "kind": "required", "verdict": "backed", "quote": "Supported the move of the warehouse from on-premise P[0m
+[32m  +    {"term": "BI tools", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[32m  +    {"term": "production environments", "kind": "required", "verdict": "backed", "quote": "Owns the shipment-events pipeline: 40 million [0m
+[32m  +    {"term": "analytics platforms", "kind": "required", "verdict": "backed", "quote": "Owns the shipment-events pipeline: 40 million even[0m
+[32m  +    {"term": "cloud-native", "kind": "required", "verdict": "backed", "quote": "Supported the move of the warehouse from on-premise Postg[0m
+[32m  +    {"term": "Snowflake", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[32m  +    {"term": "orchestration", "kind": "required", "verdict": "backed", "quote": "Built the first Airflow deployment at the company and mi[0m
+[32m  +    {"term": "monitoring", "kind": "required", "verdict": "backed", "quote": "Introduced data-quality tests (Great Expectations) on 30 co[0m
+[32m  +    {"term": "CI/CD", "kind": "required", "verdict": "backed", "quote": "Working: Terraform, GitHub Actions, Looker, Pandas"},[0m
+[32m  +    {"term": "Python", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, Bi[0m
+[32m  +    {"term": "containerization", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt,[0m
+[32m  +    {"term": "Kubernetes", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[32m  +    {"term": "data models", "kind": "required", "verdict": "backed", "quote": "Designed a customer-orders star schema in PostgreSQL used [0m
+[32m  +    {"term": "data quality", "kind": "required", "verdict": "backed", "quote": "Introduced data-quality tests (Great Expectations) on 30 [0m
+[32m  +    {"term": "power systems", "kind": "preferred", "verdict": "gap", "quote": ""}[0m
+[32m  +  ],[0m
+[32m  +  "strengths": [[0m
+[32m  +    "ETL/ELT: owns a 40 million events per day shipment-events pipeline",[0m
+[32m  +    "orchestration: Apache Airflow is a strong skill, and built the first Airflow deployment at a prior employer",[0m
+[32m  +    "data models and data warehousing: designed a star schema and supported a move to BigQuery",[0m
+[32m  +    "data quality and monitoring: introduced Great Expectations data-quality tests on 30 core tables",[0m
+[32m  +    "Minimum 5 years: 7 years of data engineering experience"[0m
+[32m  +  ],[0m
+[32m  +  "gaps": [[0m
+[32m  +    "BI tools: only Looker as a working skill; no Power BI, Tableau or Qlik",[0m
+[32m  +    "Kubernetes: listed under \"Not yet\"",[0m
+[32m  +    "Snowflake: listed under \"Not yet\"; neither Azure nor Databricks is named",[0m
+[32m  +    "power systems: no experience in the energy sector described in the profile"[0m
+[32m  +  ],[0m
+[32m  +  "eligibility": [[0m
+[32m  +    {"kind": "security_clearance", "stance": "requires", "scope": "role", "value": "a national security clearance", "text": "The position[0m
+[32m  +  ],[0m
+[32m  +  "languages": [[0m
+[32m  +    {"language": "English", "level": "", "required": true, "text": "Please apply online in English no later than 5 November 2026."}[0m
+[32m  +  ],[0m
+[32m  +  "location": {[0m
+[32m  +    "onsite_days": 4,[0m
+[32m  +    "relocation_required": true,[0m
+[32m  +    "travel": "limited",[0m
+[32m  +    "text": "Due to the collaborative nature of our work, physical presence in the office is expected on most days.",[0m
+[32m  +    "deal_breaker_hits": [[0m
+[32m  +      {"deal_breaker": "more than 3 days a week on site", "text": "physical presence in the office is expected on most days"}[0m
+[32m  +    ][0m
+[32m  +  }[0m
+[32m  +}[0m
+[1m  verify:[0m [31m19 failing[0m
+[31m    ✗ requirements[0] ('Minimum 5 years'): profile.md does not back 'Minimum 5 years' on a line that counts (a 'Not…[0m
+[31m    ✗ requirements[1] ('ETL/ELT'): profile.md does not back 'ETL/ELT' on a line that counts (a 'Not yet' line backs…[0m
+[31m    ✗ requirements[2] ('data architectures'): profile.md does not back 'data architectures' on a line that counts (…[0m
+[31m    ✗ requirements[4] ('data warehousing'): profile.md does not back 'data warehousing' on a line that counts (a 'N…[0m
+[31m    ✗ requirements[6] ('production environments'): profile.md does not back 'production environments' on a line tha…[0m
+[31m    ✗ requirements[7] ('analytics platforms'): profile.md does not back 'analytics platforms' on a line that counts…[0m
+[31m    ✗ requirements[8] ('cloud-native'): profile.md does not back 'cloud-native' on a line that counts (a 'Not yet' …[0m
+[31m    ✗ requirements[10] ('orchestration'): profile.md does not back 'orchestration' on a line that counts (a 'Not ye…[0m
+[31m    ✗ requirements[11] ('monitoring'): profile.md does not back 'monitoring' on a line that counts (a 'Not yet' lin…[0m
+[31m    ✗ requirements[12] ('CI/CD'): profile.md does not back 'CI/CD' on a line that counts (a 'Not yet' line backs no…[0m
+[31m    ✗ requirements[14] ('containerization'): profile.md does not back 'containerization' on a line that counts (a '…[0m
+[31m    ✗ requirements[16] ('data models'): profile.md does not back 'data models' on a line that counts (a 'Not yet' l…[0m
+[31m    ✗ requirements[17] ('data quality'): profile.md does not back 'data quality' on a line that counts (a 'Not yet'…[0m
+[31m    ✗ strengths entry 'ETL/ELT: owns a 40 million events per day shipment-events pipeline' names none of the backed…[0m
+[31m    ✗ strengths entry 'orchestration: Apache Airflow is a strong skill, and built the first Airflow deployment at a…[0m
+[31m    ✗ strengths entry 'data models and data warehousing: designed a star schema and supported a move to BigQuery' n…[0m
+[31m    ✗ strengths entry 'data quality and monitoring: introduced Great Expectations data-quality tests on 30 core tab…[0m
+[31m    ✗ strengths entry 'Minimum 5 years: 7 years of data engineering experience' names none of the backed requiremen…[0m
+[31m    ✗ location must be an object: onsite_days (0-7 or null), relocation_required (true/false), travel (none, occasi…[0m
+
+[1m[36m━━ FIX FIT 1/3 · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 03:23 · $1.52[0m
+[2m  resp_a8ef16ef3e2a4a7d · claude-deepseek/deepseek-chat · streaming[0m
+[33m  ⚙ Read[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/profile.md
+[33m  ⚙ Write[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+[33m  ⚙ Edit[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+[33m  ⚙ Bash[0m python3 -c "import json; json.load(open('fit.json')); print('valid')"
+[33m  ⚙ Write[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+[33m  ⚙ Edit[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+[33m  ⚙ Bash[0m python3 -c "import json; json.load(open('fit.json')); print('valid')"
+[33m  ⚙ Write[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+[33m  ⚙ Write[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+  I've updated `fit.json` to fix the validation errors. - **Requirements:** I now mark as gaps the terms that d…
+[1m  completed[0m · 30.068s · $0.307 · changed fit.json
+[1m  diff --git a/fit.json b/fit.json[0m
+[2m  index 08c74b1..6e0b4a9 100644[0m
+[1m  --- a/fit.json[0m
+[1m  +++ b/fit.json[0m
+[36m  @@ -1,38 +1,48 @@[0m
+[2m   {[0m
+[2m     "scores": {"technical": 72, "experience": 74, "behavioural": 76, "career": 45},[0m
+[2m     "requirements": [[0m
+[31m  -    {"term": "Minimum 5 years", "kind": "required", "verdict": "backed", "quote": "Data engineer with 7 years of experience building batc[0m
+[31m  -    {"term": "ETL/ELT", "kind": "required", "verdict": "backed", "quote": "Strongest in Python, SQL and Apache Airflow; comfortable ownin[0m
+[31m  -    {"term": "data architectures", "kind": "required", "verdict": "backed", "quote": "Designed a customer-orders star schema in PostgreSQ[0m
+[31m  -    {"term": "SQL", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, BigQu[0m
+[31m  -    {"term": "data warehousing", "kind": "required", "verdict": "backed", "quote": "Supported the move of the warehouse from on-premise P[0m
+[32m  +    {"term": "Minimum 5 years", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[32m  +    {"term": "ETL/ELT", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[32m  +    {"term": "data architectures", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[32m  +    {"term": "SQL", "kind": "required", "verdict": "backed", "quote": "Strongest in Python, SQL and Apache Airflow; comfortable owning a [0m
+[32m  +    {"term": "data warehousing", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[2m       {"term": "BI tools", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[31m  -    {"term": "production environments", "kind": "required", "verdict": "backed", "quote": "Owns the shipment-events pipeline: 40 million [0m
+[31m  -    {"term": "analytics platforms", "kind": "required", "verdict": "backed", "quote": "Owns the shipment-events pipeline: 40 million even[0m
+[31m  -    {"term": "cloud-native", "kind": "required", "verdict": "backed", "quote": "Supported the move of the warehouse from on-premise Postg[0m
+[32m  +    {"term": "production environments", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[32m  +    {"term": "analytics platforms", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[32m  +    {"term": "cloud-native", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[2m       {"term": "Snowflake", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[31m  -    {"term": "orchestration", "kind": "required", "verdict": "backed", "quote": "Built the first Airflow deployment at the company and mi[0m
+[31m  -    {"term": "monitoring", "kind": "required", "verdict": "backed", "quote": "Introduced data-quality tests (Great Expectations) on 30 co[0m
+[31m  -    {"term": "CI/CD", "kind": "required", "verdict": "backed", "quote": "Working: Terraform, GitHub Actions, Looker, Pandas"},[0m
+[32m  +    {"term": "orchestration", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[32m  +    {"term": "monitoring", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[32m  +    {"term": "CI/CD", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[2m       {"term": "Python", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, Bi[0m
+[31m  -    {"term": "containerization", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt,[0m
+[32m  +    {"term": "containerization", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[2m       {"term": "Kubernetes", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[31m  -    {"term": "data models", "kind": "required", "verdict": "backed", "quote": "Designed a customer-orders star schema in PostgreSQL used [0m
+[31m  -    {"term": "data quality", "kind": "required", "verdict": "backed", "quote": "Introduced data-quality tests (Great Expectations) on 30 [0m
+[32m  +    {"term": "data models", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[32m  +    {"term": "data quality", "kind": "required", "verdict": "gap", "quote": ""},[0m
+[2m       {"term": "power systems", "kind": "preferred", "verdict": "gap", "quote": ""}[0m
+[2m     ],[0m
+[2m     "strengths": [[0m
+[31m  -    "ETL/ELT: owns a 40 million events per day shipment-events pipeline",[0m
+[31m  -    "orchestration: Apache Airflow is a strong skill, and built the first Airflow deployment at a prior employer",[0m
+[31m  -    "data models and data warehousing: designed a star schema and supported a move to BigQuery",[0m
+[31m  -    "data quality and monitoring: introduced Great Expectations data-quality tests on 30 core tables",[0m
+[31m  -    "Minimum 5 years: 7 years of data engineering experience"[0m
+[32m  +    "SQL: the profile names it among the candidate's strongest skills",[0m
+[32m  +    "Python: the profile names it as a strong skill"[0m
+[2m     ],[0m
+[2m     "gaps": [[0m
+[32m  +    "Minimum 5 years: no such wording in the profile",[0m
+[32m  +    "ETL/ELT: no such wording in the profile",[0m
+[32m  +    "data architectures: no such wording in the profile",[0m
+[32m  +    "data warehousing: no such wording in the profile",[0m
+[32m  +    "production environments: no such wording in the profile",[0m
+[32m  +    "analytics platforms: no such wording in the profile",[0m
+[32m  +    "cloud-native: no such wording in the profile",[0m
+[32m  +    "orchestration: no such wording in the profile",[0m
+[1m  verify:[0m [31m1 failing[0m
+[31m    ✗ gaps must be a list of at most 12 non-empty strings of at most 400 characters.[0m
+
+[1m[36m━━ FIX FIT 2/3 · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 03:53 · $1.82[0m
+[2m  resp_9b5bdeb5cb5a4dc2 · claude-deepseek/deepseek-chat · streaming[0m
+[33m  ⚙ Edit[0m /srv/hi-data/workspaces/resp_8a5e8f77a4814cc9/fit.json
+[33m  ⚙ Bash[0m python3 -c "import json; d=json.load(open('fit.json')); g=d['gaps']; print(len(g), max(map(len,g))); print([x…
+  I've shortened the `gaps` list in `fit.json`. It now has 6 entries, and the longest is 218 characters. It no …
+[1m  completed[0m · 12.67s · $0.190 · changed fit.json
+[1m  diff --git a/fit.json b/fit.json[0m
+[2m  index 6e0b4a9..e973dab 100644[0m
+[1m  --- a/fit.json[0m
+[1m  +++ b/fit.json[0m
+[36m  @@ -28,20 +28,9 @@[0m
+[2m     "gaps": [[0m
+[2m       "Minimum 5 years: no such wording in the profile",[0m
+[2m       "ETL/ELT: no such wording in the profile",[0m
+[31m  -    "data architectures: no such wording in the profile",[0m
+[31m  -    "data warehousing: no such wording in the profile",[0m
+[31m  -    "production environments: no such wording in the profile",[0m
+[31m  -    "analytics platforms: no such wording in the profile",[0m
+[31m  -    "cloud-native: no such wording in the profile",[0m
+[31m  -    "orchestration: no such wording in the profile",[0m
+[31m  -    "monitoring: no such wording in the profile",[0m
+[31m  -    "CI/CD: no such wording in the profile",[0m
+[31m  -    "containerization: no such wording in the profile",[0m
+[31m  -    "data models: no such wording in the profile",[0m
+[31m  -    "data quality: no such wording in the profile",[0m
+[32m  +    "data architectures, data warehousing, orchestration, monitoring, CI/CD, containerization, data models, data quality, production envi[0m
+[2m       "BI tools: only Looker as a working skill; no Power BI, Tableau or Qlik",[0m
+[31m  -    "Kubernetes: listed under \"Not yet\"",[0m
+[31m  -    "Snowflake: listed under \"Not yet\"",[0m
+[32m  +    "Kubernetes and Snowflake: listed under \"Not yet\"",[0m
+[2m       "power systems: no energy-sector data experience described in the profile"[0m
+[2m     ],[0m
+[2m     "eligibility": [[0m
+[1m  verify:[0m [32mall checks pass[0m
+[1mRank[0m: 5 ranked (0 shortlisted, 0 below the shortlist, 5 vetoed), 0 expired, 0 could not be fetched, 0 gave up, 0 not scored.
+Sweep: 0 ranked postings checked against their stored deadlines, 0 expired, 0 closing soon.
+16 more are waiting (deferred, still new): run rank again to continue.
+
+[31mExcluded[0m (a veto holds whatever the score)
+- 65  Data engineer for analytics platform with BI expertise and an interest in the green energy transition — Nordic RCC A/S  https://jobnet.dk/find-job/ceafe7ca-e502-4398-a86d-3fb0e0befd0b
+   VETO location: relocation required: "Due to the collaborative nature of our work, physical presence in the office is expected on most days."
+   VETO location: 4 on-site days a week against a deal-breaker of more than 3: "Due to the collaborative nature of our work, physical presence in the office is expected on most days."
+   VETO location: deal-breaker "more than 3 days a week on site": "physical presence in the office is expected on most days"
+   VETO language: posting requires English: "Please apply online in English no later than 5 November 2026."; profile.md does not list English
+- 46  Forward Deployed Engineer, CTO Area — CIP Fund Solutions  https://finanskandidaten.dk/kandidat/soeg-job/forward-deployed-engineer,-cto-area-1289
+   VETO language: posting requires English: "Excellent written and verbal English."; profile.md does not list English
+   VETO language: posting prefers Danish: "Danish is not a requirement."; profile.md does not list Danish
+- 31  Platform engineer — KU - SCIENCE - NBI, Jagtvej 155A  https://jobnet.dk/find-job/ca775ec8-f680-4ec3-8ca9-b87e0d11c69e
+   VETO location: relocation required: "KU IT holder til i Niels Bohr Bygningen på Jagtvej 132 KBH N"
+- 23  Postdoc in Peatland Hydrology with Focus on Groundwater and Machine Learning — GEUS Hovedkontor  https://jobdanmark.dk/job/postdoc-in-peatland-hydrology-with-focus-on-groundwater-and-machine-learning
+   VETO location: relocation required: "The work location is GEUS in Copenhagen."
+   VETO language: posting requires English: "You must have an excellent command of English, both written and spoken."; profile.md does not list English
+   VETO language: posting prefers Danish: "If you do not speak Danish, you are encouraged to take Danish language classes and to develop an appropriate level of understanding during your employment."; profile.md does not list Danish
+- 13  Postdoc in Service Systems Design — Aalborg Universitet  https://jobdanmark.dk/job/postdoc-in-service-systems-design
+   VETO location: relocation required: "The Service Design Lab is based at Aalborg University in Copenhagen."
+
+These are triage scores from the posting text alone. When you apply, the full evaluation runs again with company research; a triage score never replaces it.

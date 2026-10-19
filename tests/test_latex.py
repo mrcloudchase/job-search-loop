@@ -118,3 +118,59 @@ def test_to_text_keeps_link_addresses_on_request():
     tex = r"\href{https://github.com/x}{my code}"
     assert latex.to_text(tex) == "my code"
     assert latex.to_text(tex, keep_links=True) == "my code <https://github.com/x>"
+
+
+# ── the layout rules: fit is reached by cutting, never by shrinking ──
+def _doc(body: str, preamble: str = "") -> str:
+    return preamble + "\\begin{document}\n" + body + "\n\\end{document}\n"
+
+
+def test_an_empty_address_line_is_refused_so_the_drafter_deletes_it():
+    assert any("empty address" in f for f in latex.layout_rules(_doc("\\address{}{}{}")))
+    assert latex.layout_rules(_doc("\\address{Main St 1}{2000 City}{Denmark}")) == []
+    assert latex.layout_rules(_doc("% never leave an empty \\address{}{}{}\n\\mobile{+45 1}")) == []     # a comment is not a command
+
+
+def test_no_vspace_between_items_but_vspace_after_a_heading_is_fine():
+    bad = _doc("\\begin{itemize}\n\\item one\n\\vspace{2pt}\n\\item two\n\\end{itemize}")
+    assert any("\\vspace inside a list" in f for f in latex.layout_rules(bad))
+    fine = _doc("\\section{Experience}\\vspace{4pt}\n\\begin{itemize}\n\\item one\n\\item two\n\\end{itemize}\n\\vspace{6pt}\n\\cventry{a}{b}{c}{d}{}{}")
+    assert latex.layout_rules(fine) == []
+
+
+def test_a_cventry_date_with_a_double_hyphen_or_a_unicode_dash_is_refused():
+    for bad in ("2021 -- 2023", "2021 \u2013 2023", "2021\u20142023"):
+        assert any("one ASCII hyphen" in f for f in latex.layout_rules(_doc("\\cventry{%s}{Role}{Firm}{City}{}{}" % bad)))
+    assert latex.layout_rules(_doc("\\cventry{2021 - 2023}{Role}{Firm}{City}{}{}")) == []
+
+
+def test_fit_by_cutting_never_by_shrinking_geometry_or_spacing():
+    for bad in ("\\newgeometry{margin=1cm}", "\\geometry{margin=1cm}", "\\enlargethispage{2\\baselineskip}", "\\vspace{-8pt}",
+                "\\setlength{\\textheight}{26cm}", "\\setlength{\\parskip}{0pt}", "\\linespread{0.9}", "\\setstretch{0.95}"):
+        assert latex.check(_doc(bad)), bad
+    for fine in ("\\setstretch{1.0}", "\\linespread{1.05}", "\\vspace{6pt}", "\\needspace{5\\baselineskip}\n\\cventry{a}{b}{c}{d}{}{}"):
+        assert latex.layout_rules(_doc(fine)) == [], fine
+    # the stock templates are not flagged for the macros they define in the preamble
+    assert latex.layout_rules("\\newcommand{\\x}{\\vspace{-2pt}}\n" + _doc("text")) == []
+
+
+def test_needspace_never_before_section():
+    assert any("before a \\section" in f for f in latex.layout_rules(_doc("\\needspace{5\\baselineskip}\n\\section{Education}")))
+    assert any("before a \\section" in f for f in latex.layout_rules(_doc("\\needspace{4\\baselineskip}%\n% note\n\\section{Education}")))
+    assert latex.layout_rules(_doc("\\needspace{5\\baselineskip}\n\\cventry{a}{b}{c}{d}{}{}\n\\section{Education}")) == []
+
+
+def test_a_competency_list_outside_five_to_seven_is_refused():
+    def competencies(n):
+        return _doc("\\begin{itemize}\n" + "\n".join(f"\\item \\textbf{{Label {i}}}: text" for i in range(n)) + "\n\\end{itemize}")
+    assert latex.cv_rules(competencies(5)) == [] and latex.cv_rules(competencies(7)) == []
+    assert latex.cv_rules(competencies(4)) and latex.cv_rules(competencies(8))
+    assert latex.cv_rules(_doc("\\begin{itemize}\n\\item plain\n\\item plain\n\\end{itemize}")) == []       # ordinary bullets are not counted
+
+
+def test_non_english_cv_headings_and_references_are_translated():
+    english = _doc("\\section{Profile}\n\\section{Professional Experience}\n\\section{Education}")
+    assert latex.cv_rules(english, "en") == []
+    found = latex.cv_rules(english, "da")
+    assert len(found) == 3 and all("English heading" in f for f in found)
+    assert latex.cv_rules(_doc("\\section{Profil}\n\\section{Uddannelse}"), "da") == []

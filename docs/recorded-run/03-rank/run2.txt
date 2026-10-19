@@ -1,0 +1,12 @@
+Ranking 1 postings; 0 deferred to the next run.
+Rank: 0 ranked (0 shortlisted, 0 below the shortlist, 0 vetoed), 0 expired, 1 could not be fetched, 0 gave up, 0 not scored.
+Sweep: 5 ranked postings checked against their stored deadlines, 1 expired, 0 closing soon.
+
+Retired by the sweep (stored deadline passed)
+- Postdoc in Service Systems Design — Aalborg Universitet  https://jobdanmark.dk/job/postdoc-in-service-systems-design
+
+Could not fetch, will retry
+- Data Engineer — Dead Link Labs  https://careers.deadlink-labs.invalid/jobs/1
+   attempt 1: freehire detail: invalid: not a freehire posting slug or freehire.me/jobs/<slug> url: 'https://careers.deadlink-labs.invalid/jobs/1'; plain fetch: robots.txt does not allow it
+
+These are triage scores from the posting text alone. When you apply, the full evaluation runs again with company research; a triage score never replaces it.

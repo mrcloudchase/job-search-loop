@@ -123,3 +123,38 @@ def test_an_en_dash_in_a_cv_date_range_fails_because_it_breaks_import_into_appli
 def test_the_coverage_table_is_returned_for_the_report():
     table = judge().coverage.table()
     assert "| Airflow |" in table and "missing-gap" in table
+
+
+def test_the_source_rules_stop_a_draft_that_fits_by_shrinking_before_any_compile():
+    def never(*a, **k):
+        raise AssertionError("nothing is compiled while the source breaks a rule")
+    shrunk = CV_TEX.replace("\\section{Profile}", "\\newgeometry{margin=1cm}\n\\section{Profile}")
+    result = verify.verify(shrunk, COVER_TEX, CTX, compile_documents=never)
+    assert not result.passed and "cv.tex" in failing(result) and "page geometry" in failing(result)
+    danish = verify.verify(CV_TEX, COVER_TEX, replace(CTX, cv_language="da"), compile_documents=never)
+    assert "English heading" in failing(danish)
+
+
+def test_the_checklist_lists_every_check_with_pass_or_fail():
+    good = judge()
+    labels = [label for label, _ in good.checks]
+    assert labels == ["compile", "CV page count and ATS text layer", "letter page count", "page layout", "CV style and grounding",
+                      "letter rules, style and grounding", "keyword coverage"]
+    assert good.passed and [ok for _, ok in good.checks] == [True, True, True, False, True, True, True]   # layout was waived, not run
+    bad = judge(docs(cv_pages=3))
+    assert dict(bad.checks)["CV page count and ATS text layer"] is False and dict(bad.checks)["letter page count"] is True
+    assert dict(judge(docs(cv=CV + "\nLed 300 engineers \u2014 globally")).checks)["CV style and grounding"] is False
+    assert judge(docs(letter_pages=2)).checks[2] == ("letter page count", False)
+    assert dict(judge(documents=latexrun.Documents(cv=rendered("cv", CV, 2, ok=False), cover=rendered("cover", LETTER, 1))).checks) == {"compile": False}
+
+
+def test_a_phrase_missing_from_one_extractor_is_found_in_the_other():
+    layout_only = CV.replace("Airflow", "Orchestrator")                    # this extractor mangled the term
+    one = docs(cv=layout_only)
+    assert any("Airflow" in f for f in judge(one).failures if f.startswith("keywords"))
+    both = latexrun.Documents(cv=replace(one.cv, text_raw=CV), cover=one.cover)
+    assert not any("Airflow" in f for f in judge(both).failures if f.startswith("keywords"))
+    # negative space: a phrase in neither extractor is still missing, and a gap in the second one is still stuffing
+    assert "dbt" in failing(judge(docs(cv=CV.replace("dbt", "d b t"))))
+    stuffed = latexrun.Documents(cv=replace(one.cv, text_raw=CV + "\nScala"), cover=one.cover)
+    assert "Scala" in failing(judge(stuffed))

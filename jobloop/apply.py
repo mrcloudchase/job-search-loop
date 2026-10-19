@@ -351,6 +351,9 @@ class Application:
         for kind, name in (("cv", "cv.tex"), ("cv", "cv.pdf"), ("cover_letter", "cover.tex"), ("cover_letter", "cover.pdf")):
             archive.store_document(self.me, self.key, kind, self.folder / name)
         host = host_check.classify(run.url, fetch.installed_hosts()).kind if run.url else ""
+        domain, own = (a.company_domain or "").lower(), host_check.split_url(run.url)[0] if run.url else ""
+        if not host or host == "unverified":                       # the employer's own careers page counts as online
+            host = "ats" if domain and own and (own == domain or own.endswith("." + domain)) else host
         recorded = tracker.record_drafted(
             self.me / "tracker.csv", company=run.facts.company, role=run.facts.role, today=self.deps.today(), cv_file=str(self.folder / "cv.pdf"),
             cover_letter_file=str(self.folder / "cover.pdf"), fit_rating=run.fit.total, source=run.url or str(a.posting or ""),
