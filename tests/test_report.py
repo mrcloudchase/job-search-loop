@@ -1,7 +1,6 @@
 """report.py: one static HTML page, everything escaped, a funnel from stage history, and a read-only run."""
 from __future__ import annotations
 
-import argparse
 import ast
 import csv
 import hashlib
@@ -190,9 +189,6 @@ def test_open_flag_does_not_spawn_process():
     imported = {a.name.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
     imported |= {n.module.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module and n.level == 0}
     assert not imported & {"subprocess", "webbrowser", "os", "socket", "http", "urllib.request", "httpx", "smtplib"}
-    p = argparse.ArgumentParser()
-    report.add_arguments(p)
-    assert {o for a in p._actions for o in a.option_strings} == {"-h", "--help", "--me"}
 
 
 # ── the numbers ──

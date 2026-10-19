@@ -361,7 +361,8 @@ class Draft:
             notes.insert(0, "first pass: the chosen draft passed every check on its first verification")
         info = {"posting_key": pkey, "judge": {"mean": judge.mean(panel), "judges": [
                     {"judge": j.judge, "overall": j.overall, "failed": [[n, why] for n, why in j.failed]} for j in panel]},
-                "first_pass": first_pass, "harnesses": {"drafter": chosen.harness, "reviewer": reviewer}, "best_of": best_of, "notes": notes}
+                "first_pass": first_pass, "harnesses": {"drafter": chosen.harness, "reviewer": reviewer}, "best_of": best_of, "notes": notes,
+                "stretch": list(getattr(result, "stretch", ()) or ())}          # bullets that reframe your experience: you keep, soften or drop them
         found = committing(ctx.store)
         found[app] = ctx.now.isoformat()
         ctx.store.put(COMMITTING, found)

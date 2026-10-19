@@ -30,7 +30,6 @@ its titles being in the saved samples.
 """
 from __future__ import annotations
 
-import argparse
 import ast
 import hashlib
 import html
@@ -53,7 +52,6 @@ from jobloop.boards.contract import FIELDS, KINDS, result
 from jobloop.guards.hosts import registrable
 from jobloop.latexrun import DEFAULT_IMAGE
 from jobloop.search import readable
-from jobloop.term import BOLD, GREEN, OFF, RED, YELLOW, say
 from jobloop.turns import Api, Turns
 
 HARNESS = True
@@ -610,53 +608,3 @@ def summary(request: Request, verified: Verified, where: Path) -> list[str]:
     lines.append(f"Read {where / 'adapter.py'} before you turn it on. Then: python -m jobloop search boards enable {request.name}"
                  + (" --acknowledge-terms" if terms else ""))
     return lines
-
-
-# ── the command line ──
-def add_arguments(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--me", default="me", help="the personal-data folder")
-    p.add_argument("name", nargs="?", help="the board's name: lower-case words joined by hyphens")
-    p.add_argument("url", nargs="?", help="the board's address (https)")
-    p.add_argument("--host", action="append", default=[], help="a host the board may contact, exactly; repeat for several")
-    p.add_argument("--query", default="", help="a realistic test search")
-    p.add_argument("--list", action="store_true", help="list your own boards and stop")
-    p.add_argument("--model", default=DEFAULT_MODEL, help="the portal-builder harness")
-    p.add_argument("--server", default="http://127.0.0.1:8000")
-    p.add_argument("--rounds", type=int, default=3)
-    p.add_argument("--minutes", type=float, default=30)
-    p.add_argument("--budget", type=float, default=5.0)
-
-
-def list_boards(me: Path | str) -> list[str]:
-    registry = external.read_registry(me)
-    return [f"{name:24} {'on ' if registry[name].get('enabled') else 'off'} {external.load_board(me, name).TERMS and 'terms' or ''}".rstrip()
-            for name in external.names(me)]
-
-
-def main(args: argparse.Namespace, *, api: Api | None = None, runner=run_in_container) -> int:
-    if args.list:
-        for line in list_boards(args.me):
-            say(line)
-        return 0
-    if not (args.name and args.url and args.host and args.query):
-        say(f"{RED}give a name, the board's URL, at least one --host and a --query: python -m jobloop addboard NAME URL --host HOST --query Q{OFF}")
-        return 2
-    try:
-        request = request_for(args.me, args.name, args.url, args.host, args.query)
-    except ValueError as e:
-        say(f"{RED}{e}{OFF}")
-        return 2
-    with Turns(api or Api(args.server), Path(args.me) / "state" / "addboard-log.jsonl", args.minutes, args.budget) as turns:
-        outcome = build(turns, args.model, request, rounds=args.rounds, runner=runner)
-    if outcome.refused:
-        say(f"{YELLOW}{BOLD}The harness refused to build {request.name}:{OFF} {outcome.refused}\nNothing was added.")
-        return 1
-    if outcome.verified is None:
-        say(f"{RED}{request.name} did not pass the checks; nothing was added:{OFF}")
-        for problem in outcome.problems:
-            say(f"  - {problem.splitlines()[0]}")
-        return 1
-    where = install(args.me, request, outcome.verified)
-    for line in summary(request, outcome.verified, where):
-        say(line, GREEN if line.startswith("added") else "")
-    return 0

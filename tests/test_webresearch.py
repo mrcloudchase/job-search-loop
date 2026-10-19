@@ -3,7 +3,6 @@ client's rules plus an SSRF guard; nothing is listed or used unless a fetched pa
 from __future__ import annotations
 
 import argparse
-import functools
 import json
 from datetime import date, timedelta
 
@@ -327,40 +326,3 @@ def test_a_company_domain_that_is_not_the_employers_own_is_refused_before_any_tu
     assert I.main(args) == 2 and "applicant-tracking" in capsys.readouterr().out
 
 
-# ── the commands use it by default ──
-def parse(module, *argv):
-    parser = argparse.ArgumentParser()
-    module.add_arguments(parser)
-    return parser.parse_args(list(argv))
-
-
-def test_both_commands_default_to_the_research_harness_and_interview_takes_a_company_domain():
-    assert parse(U).researcher == "claude-research" and parse(U, "--researcher", "").researcher == ""
-    args = parse(I, "--stage", "screen", "--company-domain", "tidewater.example", "--researcher", "other")
-    assert (args.researcher, args.company_domain) == ("other", "tidewater.example") and parse(I, "--stage", "x").company_domain == ""
-
-
-def test_upskill_main_builds_the_web_researcher_unless_one_is_injected_or_it_is_turned_off(tmp_path, monkeypatch):
-    (tmp_path / "profile.md").write_text("# Profile\n")
-    seen = []
-    monkeypatch.setattr(U, "run", lambda me, model, turns, today, research, fetch, rounds: (seen.append((research, fetch)) or ("report", [])))
-    base = dict(me=str(tmp_path), model="m", server="http://fake", rounds=1, minutes=5, budget=1.0)
-    api = Api("http://fake", FakeServer([]).transport())
-    U.main(argparse.Namespace(**base, researcher="claude-research"), today=TODAY, api=api)
-    U.main(argparse.Namespace(**base, researcher=""), today=TODAY, api=api)
-    U.main(argparse.Namespace(**base, researcher="claude-research"), today=TODAY, api=api, research=lambda q: [], fetch=lambda u: None)
-    (web_research, web_fetch), (none_r, none_f), (given_r, _) = seen
-    assert web_research.__self__ is web_fetch.__self__ and isinstance(web_research.__self__, wr.WebResearch)
-    assert none_r is None and none_f is None and given_r is not web_research
-    assert (tmp_path / "upskill" / "report-2026-10-19.md").is_file()
-
-
-def test_the_researcher_model_is_the_one_the_flag_names(tmp_path, monkeypatch):
-    rig = Rig([leads()])
-    monkeypatch.setattr(wr, "WebResearch", functools.partial(wr.WebResearch, transport=httpx.MockTransport(rig.site), resolve=resolver))
-    (tmp_path / "profile.md").write_text("# Profile\n")
-    captured = []
-    monkeypatch.setattr(U, "run", lambda me, model, turns, today, research, fetch, rounds: (captured.append(research("best way to learn Flink 2026")) or ("r", [])))
-    args = argparse.Namespace(me=str(tmp_path), model="drafter", server="http://fake", rounds=1, minutes=5, budget=1.0, researcher="my-researcher")
-    U.main(args, today=TODAY, api=Api("http://x", httpx.MockTransport(rig.handle)))
-    assert rig.server.requests[0]["model"] == "my-researcher" and captured == [[]]

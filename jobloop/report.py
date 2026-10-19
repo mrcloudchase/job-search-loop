@@ -14,7 +14,6 @@ What it promises:
 """
 from __future__ import annotations
 
-import argparse
 import html
 from collections import Counter
 from dataclasses import dataclass
@@ -23,7 +22,6 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from jobloop import archive, stale, tracker
-from jobloop.term import say
 
 FUNNEL = ("Applied", "Interview", "Offer", "Hired")
 OUTCOMES = tuple(s for s in tracker.STATUSES if s in tracker.FINAL)           # the tracker owns which statuses are final
@@ -277,18 +275,3 @@ def generate(me: Path, today: date) -> tuple[Path, str]:
     path.parent.mkdir(parents=True, exist_ok=True)
     archive.write_atomically(path, render(apps, problems, today).encode("utf-8"))
     return path, summary_text(apps, path)
-
-
-# ── the command ──
-def add_arguments(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--me", default="me", help="your personal folder (default: me); the report is written to <me>/report.html")
-
-
-def main(args: argparse.Namespace, today: date | None = None) -> int:
-    try:
-        _, summary = generate(Path(args.me), today or date.today())
-    except ValueError as error:
-        say(str(error))
-        return 2
-    say(summary)
-    return 0

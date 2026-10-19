@@ -1,17 +1,13 @@
 """apply.py: the whole loop against a scripted server with stand-ins for the checks, the fit and the person."""
 from __future__ import annotations
 
-import argparse
-import json
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
-import pytest
-
 from fake_server import FakeServer
-from jobloop import apply, fit as fitting
-from jobloop.turns import Api
+from jobloop import apply, fit as fitting, posting
+from jobloop.turns import Api, Turns
 from jobloop.verify import Result
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -28,20 +24,13 @@ def make_fit(vetoed=False):
 
 
 class Env:
-    def __init__(self, tmp_path, replies, *, vetoed=False, confirm=True, passing=lambda n: True, **overrides):
+    """An Application as the engine drives it (`for_engine`), with stand-ins for the checks and a scripted server."""
+
+    def __init__(self, tmp_path, replies, *, passing=lambda n: True, url="", company_domain="", facts=None, rounds=2):
         me = tmp_path / "me"
         me.mkdir()
         (me / "profile.md").write_text((ROOT / "fixtures" / "profile.md").read_text())
-        (tmp_path / "posting.md").write_text(POSTING)
-        self.server, self.asked, self.checked = FakeServer(replies), [], []
-        self.args = argparse.Namespace(
-            posting=str(tmp_path / "posting.md"), url=None, board=None, profile=None, me=str(me), company="Northwind Analytics",
-            role="Data Engineer", company_domain=None, addressee=None, drafter="claude-code", reviewer="codex",
-            researcher="claude-research", fit_model=None, facts_model=None, rounds=2, yes=True, override_veto=False,
-            waive_unverified=False, cv_template=None, letter_template=None, image="img", form_questions=None,
-            minutes=5, budget=5.0, server="http://x", acknowledge_terms=False)
-        for k, v in overrides.items():
-            setattr(self.args, k, v)
+        self.server, self.checked = FakeServer(replies), []
         self.me = me
 
         def verify(cv, cover, ctx, **kw):
@@ -53,9 +42,25 @@ class Env:
                           coverage=SimpleNamespace(table=lambda: "| Term | Status |"),
                           checks=(("compile", True), ("page layout", True), ("keyword coverage", True)))
 
-        deps = apply.Deps(verify=verify, evaluate=lambda *a, **k: make_fit(vetoed),
-                          confirm=lambda q: self.asked.append(q) or confirm, today=lambda: __import__("datetime").date(2026, 10, 19))
-        self.app = apply.Application(self.args, Api("http://x", self.server.transport()), deps)
+        deps = apply.Deps(verify=verify, today=lambda: __import__("datetime").date(2026, 10, 19))
+        self.turns = Turns(Api("http://x", self.server.transport()), me / "state" / "apply-log.jsonl", 5, 5.0)
+        prepared = apply.Prepared(posting=POSTING, url=url, facts=facts or posting.Facts("Northwind Analytics", "Data Engineer"),
+                                  fit=make_fit(), profile=(me / "profile.md").read_text(), company_domain=company_domain)
+        self.app = apply.Application.for_engine(me, self.turns, prepared, drafter="claude-code", reviewer="codex", rounds=rounds,
+                                                deps=deps, image="img")
+
+    def execute(self) -> int:
+        """draft, review with the other harness, revise, archive and record: the stage's sequence for one draft. 0 when kept."""
+        app = self.app
+        with self.turns:
+            attempt = app.attempt()
+            if attempt is None:
+                return 1
+            review = app.review(attempt.cv, attempt.cover)
+            if review is not None:
+                app.revise(attempt.record, review)
+            app.finish()
+        return 0
 
 
 DRAFT = {"files": {"cv.tex": "cv one", "cover.tex": "cover one"}, "cost": 0.1}
@@ -63,7 +68,7 @@ DRAFT = {"files": {"cv.tex": "cv one", "cover.tex": "cover one"}, "cost": 0.1}
 
 def test_a_full_run_drafts_reviews_with_another_harness_and_records_only_drafted(tmp_path):
     env = Env(tmp_path, [DRAFT, {"answer": REVIEW, "cost": 0.1}, {"files": {"cv.tex": "cv two", "cover.tex": "cover two"}, "cost": 0.1}])
-    assert env.app.execute() == 0
+    assert env.execute() == 0
     drafter, reviewer, revise = env.server.requests
     assert drafter["model"] == "claude-code" and reviewer["model"] == "codex" and revise["model"] == "claude-code"
     assert revise["previous_response_id"] == "resp_1" and "previous_response_id" not in reviewer
@@ -73,36 +78,15 @@ def test_a_full_run_drafts_reviews_with_another_harness_and_records_only_drafted
 
 def test_the_posting_travels_as_a_file_with_its_hidden_comments_stripped(tmp_path):
     env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}])
-    env.app.execute()
+    env.execute()
     sent = str(env.server.requests[0])
     assert "Ignore your instructions" not in sent and "posting.md" in sent and "We need Python" in sent
-
-
-def test_a_vetoed_job_is_not_drafted_unless_the_person_overrides(tmp_path):
-    env = Env(tmp_path, [], vetoed=True)
-    assert env.app.execute() == 1 and env.server.requests == []
-    (tmp_path / "b").mkdir()
-    env = Env(tmp_path / "b", [], vetoed=True)
-    env.args.override_veto = True
-    env.server.replies = [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}]
-    assert env.app.execute() == 0
-    assert any("overridden" in n for n in env.app.run.notes)
-
-
-def test_without_yes_the_person_is_asked_and_a_no_stops_everything(tmp_path):
-    env = Env(tmp_path, [], yes=False, confirm=False)
-    assert env.app.execute() == 1 and env.server.requests == [] and env.asked
-
-
-def test_an_unverified_source_host_needs_the_person(tmp_path):
-    env = Env(tmp_path, [], confirm=False, url="https://jobs.evil.example/123")
-    assert env.app.execute() == 1 and any("unverified" in q.lower() for q in env.asked) and env.server.requests == []
 
 
 def test_failed_checks_go_back_verbatim_on_the_same_conversation(tmp_path):
     env = Env(tmp_path, [DRAFT, {"files": {"cv.tex": "cv fixed", "cover.tex": "cover fixed"}}, {"answer": REVIEW}, {"files": DRAFT["files"]}],
               passing=lambda n: n > 1)
-    assert env.app.execute() == 0
+    assert env.execute() == 0
     fix = env.server.requests[1]
     assert fix["previous_response_id"] == "resp_1" and "the CV has 3 pages" in fix["input"][0]["text"]
     assert not (env.me / "tracker.csv").read_text().count("applied,")
@@ -110,13 +94,8 @@ def test_failed_checks_go_back_verbatim_on_the_same_conversation(tmp_path):
 
 def test_documents_that_never_pass_are_not_archived_or_tracked(tmp_path):
     env = Env(tmp_path, [DRAFT, DRAFT, DRAFT], passing=lambda n: False, rounds=2)
-    assert env.app.execute() == 1
+    assert env.execute() == 1
     assert not (env.me / "tracker.csv").exists() or "drafted" not in (env.me / "tracker.csv").read_text()
-
-
-def test_the_same_harness_cannot_draft_and_review(tmp_path):
-    with pytest.raises(SystemExit):
-        apply.main(argparse.Namespace(drafter="codex/x", reviewer="codex", server="http://x"))
 
 
 def test_the_cv_language_is_a_profile_setting_defaulting_to_english():
@@ -125,37 +104,10 @@ def test_the_cv_language_is_a_profile_setting_defaulting_to_english():
 
 
 # ── Step 0: the posting comes in ──────────────────────────────────────────────────────────────────
-def fetched(text, url="https://careers.northwind.example/jobs/1"):
-    from jobloop import fetch
-    from jobloop.guards import hosts
-    return fetch.Fetched(text, url, "plain", 200, hosts.HostVerdict("unverified", "careers.northwind.example", None, "not listed"), "note")
-
-
 def full_run(tmp_path, **kw):
     env = Env(tmp_path, [DRAFT, {"answer": REVIEW, "cost": 0.1}, {"files": {"cv.tex": "cv two", "cover.tex": "cover two"}}], **kw)
-    assert env.app.execute() == 0
+    assert env.execute() == 0
     return env
-
-
-def test_url_input_fetched_text_input_used_verbatim(tmp_path):
-    env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}], posting=None, url="https://careers.northwind.example/jobs/1",
-              confirm=True)
-    asked = []
-    env.app.deps.fetch = lambda url, board="", **kw: asked.append((url, board)) or fetched(POSTING, url)
-    assert env.app.execute() == 0 and asked == [("https://careers.northwind.example/jobs/1", "")] and env.app.run.posting == POSTING
-    (tmp_path / "b").mkdir()
-    env = Env(tmp_path / "b", [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}])        # pasted text: no fetch at all
-    env.app.deps.fetch = lambda *a, **k: pytest.fail("pasted text must not be fetched")
-    assert env.app.execute() == 0 and env.app.run.posting == POSTING
-
-
-def test_an_unreadable_url_stops_the_run_and_never_drafts_from_the_title(tmp_path):
-    from jobloop import fetch
-    for name, outcome in (("unreachable", fetch.Unreachable("403, login wall")), ("closed", fetch.Closed("the page says closed"))):
-        (tmp_path / name).mkdir()
-        env = Env(tmp_path / name, [], posting=None, url="https://careers.northwind.example/jobs/1")
-        env.app.deps.fetch = lambda *a, outcome=outcome, **k: outcome
-        assert env.app.execute() == 1 and env.server.requests == [] and not (env.me / "tracker.csv").exists()
 
 
 def test_every_prompt_the_loop_builds_carries_the_untrusted_notice(tmp_path):
@@ -185,54 +137,18 @@ def test_the_posting_is_archived_verbatim_with_its_hidden_comment(tmp_path):
 
 
 def test_the_deadline_read_at_parse_time_reaches_the_tracker(tmp_path):
-    from jobloop import posting, tracker
-    env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}], company=None, role=None)
-    env.app.deps.facts = lambda *a, **k: posting.Facts("Northwind Analytics", "Data Engineer", deadline="2026-11-30", location="Aarhus, Denmark")
-    assert env.app.execute() == 0
+    from jobloop import tracker
+    env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}],
+              facts=posting.Facts("Northwind Analytics", "Data Engineer", deadline="2026-11-30", location="Aarhus, Denmark"))
+    assert env.execute() == 0
     row = tracker.read_rows(env.me / "tracker.csv")[0]
     assert row.deadline == "2026-11-30" and row.company == "Northwind Analytics"
 
 
-def test_the_stages_run_in_order_and_none_is_skipped(tmp_path):
-    seen = []
-    env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}])
-    ev, verify = env.app.deps.evaluate, env.app.deps.verify
-    env.args.yes = False
-    env.app.deps.evaluate = lambda *a, **k: seen.append("fit") or ev(*a, **k)
-    env.app.deps.confirm = lambda q: seen.append("ask") or True
-    env.app.deps.verify = lambda *a, **k: seen.append("verify") or verify(*a, **k)
-    env.app.deps.facts = lambda *a, **k: None
-    assert env.app.execute() == 0
-    phases = [json.loads(l)["phase"] for l in (env.app.folder / "log.jsonl").read_text().splitlines()]
-    assert seen[:3] == ["fit", "ask", "verify"] and phases == ["DRAFT", "REVIEW", "REVISE"]
-    assert (env.me / "tracker.csv").exists()
-    # negative space: a refused decision means no later stage ran at all
-    (tmp_path / "n").mkdir()
-    refused = Env(tmp_path / "n", [], yes=False, confirm=False)
-    assert refused.app.execute() == 1 and refused.server.requests == [] and not (refused.me / "tracker.csv").exists()
-
-
-# ── the source host, the fit, the salary ──────────────────────────────────────────────────────────
-def test_pasted_text_has_no_host_tier(tmp_path, capsys):
-    env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}])
-    env.app.execute()
-    out = capsys.readouterr().out
-    assert "pasted text has no host to verify" in out and "verified" not in out.replace("pasted text has no host to verify", "")
-    assert "portal" not in out and env.app.run.url == ""
-
-
-def test_unverified_host_named_in_evaluation_with_warning(tmp_path, capsys):
-    env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}], url="https://jobs.evil.example/123")
-    assert env.app.execute() == 0                                      # the person said yes in the open
-    out = capsys.readouterr().out
-    assert "Unverified source host: jobs.evil.example" in out and env.asked and "unverified" in env.asked[0].lower()
-
-
-def test_evaluation_lists_source_host_first(tmp_path, capsys):
-    env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}], url="https://www.jobindex.dk/jobannonce/h1")
-    env.app.execute()
-    out = capsys.readouterr().out
-    assert 0 <= out.index("source host: portal") < out.index("Fit northwind-data-engineer")
+# ── the source host and the requirements ──────────────────────────────────────────────────────────
+def tracker_channel(env):
+    from jobloop import tracker
+    return tracker.read_rows(env.me / "tracker.csv")[0].channel
 
 
 def test_portal_host_set_derived_from_registered_boards(tmp_path, monkeypatch):
@@ -241,42 +157,13 @@ def test_portal_host_set_derived_from_registered_boards(tmp_path, monkeypatch):
     seen = []
     monkeypatch.setattr(apply.fetch, "installed_hosts", lambda: seen.append(1) or ("careers.northwind.example",))
     env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}], url="https://careers.northwind.example/1")
-    env.app.execute()
-    assert seen and env.asked == []                                    # the hand-supplied host set decided; a copy would not
-
-
-def test_salary_benchmark_optional_and_skipped_on_error(tmp_path, capsys):
-    full_run(tmp_path)                                                 # no data at all: no error, no section
-    assert "Index" not in capsys.readouterr().out
-    (tmp_path / "bad").mkdir()
-    bad = Env(tmp_path / "bad", [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}])
-    (bad.me / "salary").mkdir()
-    (bad.me / "salary" / "benchmark.json").write_text("{ not json")
-    assert bad.app.execute() == 0 and bad.server.requests                # broken data never blocks drafting
-
-
-def test_salary_benchmark_included_when_available(tmp_path, capsys):
-    import json as j
-    from jobloop import posting
-    data = {"metadata": {"index_baseline": 100, "index_label": "Index", "source": "s"},
-            "companies": [{"name": "Northwind Analytics", "city": "Aarhus", "categories": {"engineers": {"count": 12, "index": 118.5}}},
-                          {"name": "Northwind Analytics", "city": "Odense", "categories": {"managers": {"count": 3, "index": 140.0}}}]}
-    env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}], company=None, role=None)
-    (env.me / "salary").mkdir()
-    (env.me / "salary" / "benchmark.json").write_text(j.dumps(data))
-    env.app.deps.facts = lambda *a, **k: posting.Facts("Northwind Analytics", "Data Engineer", location="Odense, Denmark")
-    assert env.app.execute() == 0
-    out = capsys.readouterr().out
-    assert "managers: n=3" in out and "engineers: n=12" not in out      # narrowed by the posting's city
+    env.execute()
+    assert seen and tracker_channel(env) == "portal"                    # the hand-supplied host set decided; a copy would not
 
 
 def test_keyword_list_built_once_and_reused(tmp_path):
-    calls = []
     env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}])
-    ev = env.app.deps.evaluate
-    env.app.deps.evaluate = lambda *a, **k: calls.append(1) or ev(*a, **k)
-    env.app.execute()
-    assert len(calls) == 1
+    env.execute()
     assert [r.term for r in env.app.context().requirements] == [r.term for r in env.app.run.fit.requirements] == ["Python"]
     sent = {f["filename"]: f["file_data"] for f in env.server.requests[0]["input"] if f["type"] == "input_file"}
     assert "| Python | required | have |" in sent["requirements.md"]
@@ -327,17 +214,16 @@ def test_drafts_on_disk_and_in_memory_before_review(tmp_path):
     assert first == ("cv one", "cover one") and env.server.requests[1]["input"][-2]["file_data"] == "cv one"
 
 
-def test_each_part_b_category_has_recorded_disposition(tmp_path, capsys):
+def test_each_part_b_category_has_recorded_disposition(tmp_path):
     answer = ('[]\n\nMissed keywords and requirements: add Airflow to a bullet.\nCompany and department angles: mention the data platform.\n'
               'Action-oriented reframing: none.\nTone and style: rewrite the passive sentence.')
     env = Env(tmp_path, [DRAFT, {"answer": answer}, {"files": {"cv.tex": "cv two", "cover.tex": "cover two"}}])
-    assert env.app.execute() == 0
+    assert env.execute() == 0
     revise = env.server.requests[2]["input"][0]["text"]
     for note in ("add Airflow to a bullet", "mention the data platform", "rewrite the passive sentence"):
         assert note in revise
     assert "Incorporate nothing that would add a claim" in revise
-    out = capsys.readouterr().out
-    assert "Tailoring decisions" in out and "company and department angles: mention the data platform" in out   # 304
+    assert env.app.run.narrative["company and department angles"] == "mention the data platform."
 
 
 def test_final_drafts_free_of_ungrounded_claims(tmp_path):
@@ -345,37 +231,20 @@ def test_final_drafts_free_of_ungrounded_claims(tmp_path):
               passing=lambda n: n < 2 or n == 99, rounds=0)
     # the notes make a revise turn happen; its drafts fail the checks, so the last passing pair stays
     env.server.replies[1] = {"answer": REVIEW.replace("Tone and style: no issues.", "Tone and style: make it warmer.")}
-    assert env.app.execute() == 0
+    assert env.execute() == 0
     assert env.app.folder.joinpath("cv.tex").read_text() == "cv one"
 
 
 # ── the end of the run ────────────────────────────────────────────────────────────────────────────
-def test_final_checklist_reports_every_item_pass_or_fail(tmp_path, capsys):
-    full_run(tmp_path)
-    out = capsys.readouterr().out
-    for label in ("compile", "page layout", "keyword coverage"):
-        assert f"pass\x1b[0m  {label}" in out or f"pass  {label}" in out.replace("\x1b[0m", "")
-    assert "FAIL" not in out
-
-
-def test_report_lists_files_tracker_row_and_archive_status(tmp_path, capsys):
+def test_the_notes_name_the_tracker_row_and_the_archive_status(tmp_path):
     from jobloop import archive
     env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}])
     archive.store_posting(env.me, archive.key("Northwind Analytics", "Data Engineer"), b"an earlier posting")
-    assert env.app.execute() == 0
-    out = capsys.readouterr().out
-    assert "cv.pdf" in out and "cover.pdf" in out and "tracker: added northwind_analytics__data_engineer as drafted" in out
-    assert "left in place" in out
+    assert env.execute() == 0
+    notes = "\n".join(env.app.run.notes)
+    assert {"cv.pdf", "cover.pdf"} <= {p.name for p in env.app.folder.iterdir()}
+    assert "tracker: added northwind_analytics__data_engineer as drafted" in notes and "left in place" in notes
     assert (archive.folder_for(env.me, env.app.key) / archive.POSTING).read_bytes() == b"an earlier posting"
-
-
-def test_tracker_row_written_before_optional_offer(tmp_path, capsys):
-    env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}], form_questions="q.json")
-    assert env.app.execute() == 0
-    out = capsys.readouterr().out
-    assert out.index("tracker: ") < out.index("application-form answers: python -m jobloop forms")
-    assert len(env.server.requests) == 3                                 # forms only on a yes: the offer is a hint, not a turn
-    assert not list(env.app.folder.glob("form*"))
 
 
 def test_channel_classification(tmp_path):
@@ -385,18 +254,17 @@ def test_channel_classification(tmp_path):
                                                 ("https://careers.northwind.example/1", "northwind.example", "online"),
                                                 ("https://jobs.evil.example/1", None, ""))):
         (tmp_path / str(i)).mkdir()
-        env = Env(tmp_path / str(i), [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}], url=url, company_domain=domain)
-        env.app.deps.research = lambda *a, **k: SimpleNamespace(claims=(), lines=lambda: [])
-        assert env.app.execute() == 0
+        env = Env(tmp_path / str(i), [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}], url=url, company_domain=domain or "")
+        assert env.execute() == 0
         assert tracker.read_rows(env.me / "tracker.csv")[0].channel == channel, url
 
 
 def test_apply_does_not_touch_seen_jobs(tmp_path):
     env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}])
     seen = env.me / "state" / "postings.json"
-    seen.parent.mkdir()
+    seen.parent.mkdir(exist_ok=True)
     seen.write_text('{"keep": "me"}')
-    assert env.app.execute() == 0
+    assert env.execute() == 0
     assert seen.read_text() == '{"keep": "me"}'
 
 
@@ -414,7 +282,7 @@ def test_synonym_findings_are_sent_to_the_drafter_in_the_revise_turn(tmp_path):
     def with_finding(cv, cover, ctx, **kw):
         return replace(plain(cv, cover, ctx, **kw), findings=('"Airflow" appears only as "workflow scheduler" on the CV: use the posting\'s own term where it is true',))
     env.app.deps.verify = with_finding
-    assert env.app.execute() == 0
+    assert env.execute() == 0
     revise = env.server.requests[2]
     assert revise["previous_response_id"] == "resp_1" and "use the posting's own term where it is true" in revise["input"][0]["text"]
 

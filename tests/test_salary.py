@@ -1,7 +1,6 @@
 """salary.py: a benchmark from data the person supplies; bad data is reported, never guessed at, and never a traceback."""
 from __future__ import annotations
 
-import argparse
 import copy
 import json
 import math
@@ -38,8 +37,6 @@ def test_missing_salary_data_skips_step_without_error(tmp_path):
     assert S.load(tmp_path / "nothing.json") is None
     got = S.benchmark(tmp_path, "Acme")
     assert got.text is None and "skipped" in got.note
-    args = argparse.Namespace(me=str(tmp_path), data=None, company="Acme", city="", validate=False, json=False, convert_to=None)
-    assert S.main(args) == 0
 
 
 def test_bom_and_plain_utf8_both_load(tmp_path):
@@ -55,12 +52,10 @@ def test_bom_does_not_mask_json_error(tmp_path):
     assert "line 2 column 12" in str(info.value) and "jobloop/salary.py" in str(info.value)
 
 
-def test_invalid_json_reports_position_without_traceback(tmp_path, capsys):
+def test_invalid_json_reports_position_without_traceback(tmp_path):
     (tmp_path / "bad.json").write_text('{"companies": [,]}')
-    args = argparse.Namespace(me=str(tmp_path), data=str(tmp_path / "bad.json"), company="x", city="", validate=False, json=False, convert_to=None)
-    assert S.main(args) == 1
-    out = capsys.readouterr().out
-    assert "invalid JSON at line 1 column 16" in out and "Traceback" not in out
+    got = S.benchmark(tmp_path, "x", path=tmp_path / "bad.json")
+    assert got.text is None and "invalid JSON at line 1 column 16" in got.note and "Traceback" not in got.note
 
 
 # ── validation ──
@@ -111,25 +106,22 @@ def test_index_label_must_be_string():
     assert "index_label must be a string" in errors({"metadata": {"index_label": ["x"]}, "companies": []})
 
 
-def test_lookup_with_bad_baseline_exits_clean(tmp_path, capsys):
+def test_lookup_with_bad_baseline_exits_clean(tmp_path):
     path = tmp_path / "b.json"
     path.write_text('{"metadata": {"index_baseline": "150"}, "companies": [{"name": "Acme", "categories": {"a": {"count": 1, "index": 120}}}]}')
-    args = argparse.Namespace(me=str(tmp_path), data=str(path), company="Acme", city="", validate=False, json=False, convert_to=None)
-    assert S.main(args) == 1
-    out = capsys.readouterr().out
-    assert "index_baseline must be a finite number" in out and "Traceback" not in out
-    assert S.benchmark(tmp_path, "Acme", path=path).text is None
+    got = S.benchmark(tmp_path, "Acme", path=path)
+    assert got.text is None and "index_baseline must be a finite number" in got.note and "Traceback" not in got.note
 
 
-def test_validate_report_exit_codes(tmp_path, capsys):
+def test_validate_reports_errors_and_warnings_separately(tmp_path):
     good, warn, bad = tmp_path / "g.json", tmp_path / "w.json", tmp_path / "b.json"
     good.write_text(json.dumps(DATA))
     warn.write_text(json.dumps({"companies": [{"name": "A"}, {"name": "a"}]}))
     bad.write_text("{\"companies\": 3}")
-    run = lambda p: S.main(argparse.Namespace(me=str(tmp_path), data=str(p), company=None, city="", validate=True, json=False, convert_to=None))
-    assert run(good) == 0 and "OK" in capsys.readouterr().out
-    assert run(warn) == 0 and "warning 1" in capsys.readouterr().out
-    assert run(bad) == 1 and "error 1" in capsys.readouterr().out
+    checked = {name: S.validate(S.load(p)) for name, p in (("good", good), ("warn", warn), ("bad", bad))}
+    assert checked["good"].errors == () and checked["good"].warnings == ()
+    assert checked["warn"].errors == () and checked["warn"].warnings
+    assert checked["bad"].errors
 
 
 # ── rendering ──
@@ -190,13 +182,6 @@ def test_empty_category_row_not_rendered():
 def test_absolute_salary_dataset_no_percent():
     d = {"metadata": {"index_baseline": 0, "index_label": "DKK"}, "companies": [{"name": "Acme", "categories": {"eng": {"count": 9, "index": 612000}}}]}
     assert S.validate(d).errors == () and "DKK 612000" in shown(d) and "%" not in shown(d)
-
-
-def test_json_output_round_trips_non_ascii():
-    matches = S.search(DATA, "腾讯")
-    out = S.as_json(DATA, matches)
-    assert "腾讯" in out and "\\u" not in out and json.loads(out)["matches"][0]["company"] == "腾讯"
-    assert json.loads(S.as_json(DATA, S.search(DATA, "Maersk")))["matches"][0]["categories"]["all"]["count"] == 0
 
 
 def test_only_the_matched_company_leaves_the_module():
@@ -292,13 +277,11 @@ def test_city_filter_variants():
     assert len(S.search(d, "Acme")) == 4 and S.search(d, "Acme", "Oslo") == []
 
 
-def test_no_match_is_reported_not_guessed(tmp_path, capsys):
+def test_no_match_is_reported_not_guessed(tmp_path):
     path = tmp_path / "b.json"
     path.write_text(json.dumps(DATA))
     got = S.benchmark(tmp_path, "Volkswagen", "Berlin", path=path)
     assert got.text is None and "no benchmark found for 'Volkswagen' in 'Berlin'" in got.note and "shorter name" in got.note
-    args = argparse.Namespace(me=str(tmp_path), data=str(path), company="Volkswagen", city="", validate=False, json=False, convert_to=None)
-    assert S.main(args) == 1 and "No benchmark found" in capsys.readouterr().out
 
 
 def test_multiple_candidates_all_returned():
@@ -391,23 +374,12 @@ def test_ragged_rows():
     assert S.validate(d).errors == ()
 
 
-def test_empty_ingest_fails_without_writing(tmp_path):
-    source, out = tmp_path / "s.csv", tmp_path / "out.json"
+def test_empty_ingest_fails(tmp_path):
     for text in ("company,city\n", "company,city\n,Oslo\n \n", ""):
-        source.write_text(text)
         with pytest.raises(S.SalaryDataError, match="No data could be parsed|needs a 'company' column"):
-            S.convert(source, out)
-    assert not out.exists()
-    source.write_text("name,count\nA,1\n")
+            S.ingest_csv(text)
     with pytest.raises(S.SalaryDataError, match="needs a 'company' column"):
-        S.convert(source, out)
-
-
-def test_convert_writes_utf8_json_that_loads_back(tmp_path):
-    source, out = tmp_path / "s.csv", tmp_path / "out.json"
-    source.write_bytes("﻿company,city,category,count,index\nÆgir Ørsted,København,staff,5,\"110,5\"\n".encode())
-    S.convert(source, out)
-    assert "Ægir Ørsted" in out.read_text(encoding="utf-8") and S.load(out)["companies"][0]["name"] == "Ægir Ørsted"
+        S.ingest_csv("name,count\nA,1\n")
 
 
 def test_metadata_defaults_and_overrides():

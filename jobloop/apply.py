@@ -15,7 +15,6 @@ every check in code has passed, for you to read and send. It never submits anyth
 - **A person decides.** Drafting starts only after the person says go; a failed gate stops it unless the person overrides it
   in the open. The loop writes only `drafted` to the tracker.
 
-Two ways to drive it. `execute()` is the command-line run (its own Turns, deadline and budget, the person on the terminal).
 `Application.for_engine(...)` is the autonomous loop's way in (stages/draft.py): the engine's `turns`, a posting, facts, fit and
 verified research that were read earlier, an explicit drafter and reviewer harness, the playbook's style rules appended to the
 drafter's brief, and no terminal: a question only the person can answer raises `NeedsDecision` (the stage turns it into a
@@ -33,16 +32,15 @@ from datetime import date
 from pathlib import Path
 from typing import Callable
 
-from . import archive, edits, fetch, keywords, latexrun, letter, posting as posting_facts, research, salary, tracker, verify
+from . import archive, edits, fetch, keywords, latexrun, posting as posting_facts, tracker, verify
 from . import fit as fitting
 from . import profile as profiles
 from .guards import hosts as host_check
-from .term import BOLD, DIM, GREEN, OFF, RED, YELLOW, clip, say
+from .term import OFF, YELLOW, say
 from .text import slug, visible
-from .turns import NOTICE, Api, Turns, answer
+from .turns import NOTICE, Turns, answer
 
 HARNESS = True
-STRETCH_BELOW = 50                          # an experience match under this warns the person before anything is drafted
 LANGUAGES = {"english": "en", "danish": "da", "dansk": "da", "german": "de", "deutsch": "de", "dutch": "nl", "nederlands": "nl"}
 
 DRAFTER = """You are the drafter in a job-application loop. You write a tailored CV (cv.tex) and cover letter (cover.tex) in LaTeX for one
@@ -114,11 +112,6 @@ the posting and so stays untrusted. Write the final cv.tex and cover.tex in the 
 
 
 # ── the person ──────────────────────────────────────────────────────────────────────────────────
-def console_confirm(question: str) -> bool:
-    """Ask the person on the terminal. Only an explicit yes counts."""
-    return input(f"{question} [y/N] ").strip().lower() in ("y", "yes")
-
-
 class NeedsDecision(RuntimeError):
     """Raised instead of asking on a terminal when the loop runs unattended: the question is for the person's queue."""
 
@@ -131,11 +124,7 @@ def refuse(question: str) -> bool:
 class Deps:
     """Everything the loop reaches outside itself for, so a test can supply stand-ins."""
     verify: Callable = verify.verify
-    fetch: Callable = fetch.fetch_posting
-    evaluate: Callable = fitting.evaluate
-    facts: Callable = posting_facts.extract
-    research: Callable = research.research
-    confirm: Callable[[str], bool] = console_confirm
+    confirm: Callable[[str], bool] = refuse
     today: Callable[[], date] = date.today
 
 
@@ -249,9 +238,9 @@ def recover_commit(me: Path, key: str, today: date) -> bool:
 
 # ── the loop ────────────────────────────────────────────────────────────────────────────────────
 class Application:
-    def __init__(self, args: argparse.Namespace, api: Api | None = None, deps: Deps | None = None, *, turns: Turns | None = None,
+    def __init__(self, args: argparse.Namespace, deps: Deps | None = None, *, turns: Turns | None = None,
                  prepared: Prepared | None = None):
-        self.args, self.api, self.deps = args, api, deps or Deps()
+        self.args, self.deps = args, deps or Deps()
         self.me = Path(args.me)
         self.profile = prepared.profile if prepared else Path(args.profile or self.me / "profile.md").read_text()
         self.cv_template = latexrun.load_template(Path(args.cv_template)) if args.cv_template else latexrun.builtin_template("cv")
@@ -285,94 +274,7 @@ class Application:
             fit_model=None, facts_model=None, rounds=rounds, yes=True, override_veto=False, waive_unverified=False,
             cv_template=None, letter_template=None, image=image, form_questions=None, minutes=0, budget=0, server="",
             acknowledge_terms=False)
-        return cls(args, None, deps, turns=turns, prepared=prepared)
-
-    # step 0 ─ the posting
-    def read_posting(self) -> bool:
-        a, run = self.args, self.run
-        if a.posting:
-            run.posting, run.url = Path(a.posting).read_text(), a.url or ""
-        else:
-            got = self.deps.fetch(a.url, board=a.board or "", acknowledged=a.acknowledge_terms)
-            if not isinstance(got, fetch.Fetched):
-                say(f"{RED}the posting could not be read: {getattr(got, 'reason', got)}{OFF}\n  Paste it into a file and pass --posting: "
-                    "a title alone is never enough to draft from.")
-                return False
-            run.posting, run.url = got.text, got.url
-            run.notes.append(f"posting read from {got.url} ({got.source}): {got.note}")
-        if not visible(run.posting).strip():
-            say(f"{RED}the posting is empty{OFF}")
-            return False
-        return True
-
-    def read_facts(self) -> bool:
-        a, run = self.args, self.run
-        facts = None if (a.company and a.role) else self.deps.facts(self.turns, a.facts_model or a.drafter, run.posting)
-        if facts is None and not (a.company and a.role):
-            say(f"{RED}no company and role could be read from the posting{OFF}; pass --company and --role")
-            return False
-        if facts is None:
-            facts = posting_facts.Facts(a.company, a.role, reference=posting_facts.reference_of(run.posting),
-                                        language=letter.detect(visible(run.posting)))
-        run.facts = replace(facts, company=a.company or facts.company, role=a.role or facts.role)
-        return True
-
-    # step 1 ─ where it came from, and whether it fits
-    def check_source(self) -> bool:
-        run = self.run
-        if not run.url:
-            say(f"  {DIM}source host: pasted text has no host to verify{OFF}")
-            return True
-        verdict = host_check.classify(run.url, fetch.installed_hosts())
-        say(f"  source host: {verdict.kind}" + (f" ({verdict.apex_or_none})" if verdict.apex_or_none else "") + f" {DIM}{verdict.reason}{OFF}")
-        if verdict.kind == "unverified":
-            say(f"{YELLOW}  ⚠ Unverified source host: {verdict.host} is not an installed job board or a known ATS. "
-                f"Check the employer and the link before spending time on this.{OFF}")
-            return self.deps.confirm("The source host is unverified. Continue anyway?")
-        return True
-
-    def gate(self) -> bool:
-        a, run = self.args, self.run
-        run.fit = self.deps.evaluate(self.turns, a.fit_model or a.drafter, self.profile, run.posting)
-        if run.fit is None:
-            say(f"{RED}no valid fit evaluation{OFF}")
-            return False
-        say("\n" + fitting.render(run.fit))
-        city = (run.facts.location or "").split(",")[0].strip()
-        benchmark = salary.benchmark(self.me, run.facts.company, city)
-        if city and not benchmark.text:
-            benchmark = salary.benchmark(self.me, run.facts.company, "")
-        if benchmark.text:
-            say(benchmark.text)
-        if run.fit.vetoes:
-            say(f"{RED}  A gate failed; nothing is drafted for a vetoed job.{OFF}")
-            if not a.override_veto:
-                return False
-            say(f"{YELLOW}  --override-veto: the person chose to continue. This is recorded in the report.{OFF}")
-            run.notes.append("a failed gate was overridden by the person (--override-veto)")
-        if run.fit.experience < STRETCH_BELOW:
-            say(f"{YELLOW}  Experience match is {run.fit.experience}, under {STRETCH_BELOW}: a strong letter would need heavy reframing, "
-                f"and the loop will not claim what the profile does not hold. Consider whether to apply.{OFF}")
-        if a.yes:
-            run.notes.append("drafting was pre-approved on the command line (--yes)")
-            return True
-        return self.deps.confirm("Draft the CV and cover letter for this role?")
-
-    # step 2 ─ research the company, on its own hosts, without the profile
-    def company_research(self) -> None:
-        a, run = self.args, self.run
-        if not a.company_domain:
-            run.notes.append("no --company-domain, so the company was not researched and the letter makes no company claims")
-            return
-        try:
-            hosts = research.employer_hosts(a.company_domain, run.url or None)
-        except ValueError as error:
-            run.notes.append(f"company research skipped: {error}")
-            return
-        found = self.deps.research(self.turns, a.researcher, run.facts.company, hosts, "company", posting=run.posting,
-                                   cache_dir=self.me / "research", today=self.deps.today())
-        run.claims = found.claims
-        run.notes += found.lines()
+        return cls(args, deps, turns=turns, prepared=prepared)
 
     # step 3 ─ draft and verify
     def context(self) -> verify.Context:
@@ -550,97 +452,3 @@ class Application:
         run.notes.append(f"tracker: {recorded.action} {recorded.key} as drafted")
         if data is not None:
             archive.write_atomically(self.folder / "draft.json", (json.dumps({**data, "notes": [*info.get("notes", []), *run.notes]}, indent=2, ensure_ascii=False) + "\n").encode())
-
-    def report(self) -> None:
-        run = self.run
-        say(f"\n{BOLD}RESULT{OFF}")
-        if not run.best:
-            say(f"  {RED}no documents were produced{OFF}" + (f" ({run.stopped})" if run.stopped else ""))
-            return
-        result = run.best[2]
-        say(f"  {GREEN}{BOLD}both PDFs pass every check{OFF}\n    {self.folder / 'cv.pdf'}\n    {self.folder / 'cover.pdf'}")
-        for label, ok in result.checks:
-            say(f"    {GREEN + 'pass' if ok else RED + 'FAIL'}{OFF}  {label}")
-        say("\n" + result.coverage.table())
-        for finding in result.findings:
-            say(f"  {YELLOW}↳ {finding}{OFF}")
-        if result.stretch:
-            say(f"\n  {BOLD}Bullets that stretch the profile{OFF}: for each, keep it (you can explain it), soften it, or drop it")
-            for item in result.stretch:
-                say(f"    {YELLOW}? {item}{OFF}")
-        if result.unverified:
-            say(f"  {YELLOW}not verified (waived by the person): " + "; ".join(clip(u, 90) for u in result.unverified) + OFF)
-        decisions = [f"{name}: {clip(' '.join(text.split()), 160)}" for name, text in run.narrative.items() if text.strip()]
-        if decisions:
-            say(f"\n  {BOLD}Tailoring decisions (the reviewer's notes){OFF}")
-            for line in decisions[:5]:
-                say(f"    - {line}")
-        say(f"\n  {BOLD}Files{OFF}: {', '.join(sorted(p.name for p in self.folder.iterdir()))} in {self.folder}")
-        for note in run.notes:
-            say(f"  {DIM}{note}{OFF}")
-        say(f"\n  {YELLOW}Read both before you send anything. Nothing has been submitted and nothing is marked applied; that is yours to do.{OFF}")
-
-    # the whole run
-    def execute(self) -> int:
-        a, run = self.args, self.run
-        self.folder = None
-        with Turns(self.api, self.me / "state" / "apply-log.jsonl", a.minutes, a.budget) as turns:
-            self.turns = turns
-            if not (self.read_posting() and self.read_facts()):
-                return 1
-            self.key = archive.key(run.facts.company, run.facts.role)
-            self.folder = archive.folder_for(self.me, self.key, create=True)
-            turns.log = self.folder / "log.jsonl"
-            say(f"\n{BOLD}{run.facts.role}{OFF} at {BOLD}{run.facts.company}{OFF}  {DIM}→ {self.folder}{OFF}")
-            if not (self.check_source() and self.gate()):
-                return 1
-            self.company_research()
-            drafted = self.draft()
-            if drafted and not turns.stopped():
-                review = self.review(*run.best[:2])
-                if review is not None:
-                    self.revise(drafted, review)
-            run.stopped = turns.stopped()
-            if run.best:
-                self.finish()
-        self.report()
-        if run.best and a.form_questions:
-            say(f"\n{DIM}application-form answers: python -m jobloop forms --questions {a.form_questions} --key {self.key}{OFF}")
-        say(f"  {turns.summary()}")
-        return 0 if run.best else 1
-
-
-def add_arguments(p: argparse.ArgumentParser) -> None:
-    src = p.add_mutually_exclusive_group(required=True)
-    src.add_argument("--posting", help="the posting as a file (text or markdown)")
-    src.add_argument("--url", help="the posting's URL (fetched through the escalation ladder)")
-    p.add_argument("--board", help="the board a URL came from, so its own detail command is tried first")
-    p.add_argument("--acknowledge-terms", action="store_true", help="a board with terms: confirm personal, low-volume use")
-    p.add_argument("--profile", help="default: <me>/profile.md")
-    p.add_argument("--me", default="me", help="your gitignored folder")
-    p.add_argument("--server", default="http://127.0.0.1:8000", help="the harness-interface server")
-    p.add_argument("--minutes", type=float, default=30)
-    p.add_argument("--budget", type=float, default=8.0, help="dollars, as the harnesses report them")
-    p.add_argument("--company", help="override the company read from the posting")
-    p.add_argument("--role", help="override the role read from the posting")
-    p.add_argument("--company-domain", help="the employer's own domain, e.g. example.com: lets the researcher read exactly its hosts")
-    p.add_argument("--addressee", help="a named person to address the letter to, if the posting names one")
-    p.add_argument("--drafter", default="claude-code", help="a harness name, optionally harness/model")
-    p.add_argument("--reviewer", default="codex", help="a DIFFERENT harness from the drafter")
-    p.add_argument("--researcher", default="claude-research", help="a harness copy on the research sandbox")
-    p.add_argument("--fit-model", help="default: the drafter")
-    p.add_argument("--facts-model", help="default: the drafter")
-    p.add_argument("--rounds", type=int, default=3, help="turns the drafter gets to fix failed checks, per verification")
-    p.add_argument("--yes", action="store_true", help="pre-approve drafting (recorded in the report); a failed gate still stops it")
-    p.add_argument("--override-veto", action="store_true", help="draft even though a gate failed (recorded in the report)")
-    p.add_argument("--waive-unverified", action="store_true", help="accept checks that could not run (recorded in the report)")
-    p.add_argument("--cv-template", help="a template folder (see docs/templates.md)")
-    p.add_argument("--letter-template", help="a template folder (see docs/templates.md)")
-    p.add_argument("--image", default=latexrun.DEFAULT_IMAGE, help="the check container image")
-    p.add_argument("--form-questions", help="a questions file for application-form answers (offered afterwards, never produced unasked)")
-
-
-def main(args: argparse.Namespace) -> int:
-    if args.drafter.split("/")[0] == args.reviewer.split("/")[0]:
-        raise SystemExit("the drafter and the reviewer must be different harnesses")
-    return Application(args, Api(args.server)).execute()

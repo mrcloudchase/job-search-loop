@@ -1,7 +1,6 @@
 """upskill.py: gaps weighted by fit, resources only from fetched pages, a plan the code has checked, a diff against the last report."""
 from __future__ import annotations
 
-import argparse
 import ast
 import csv
 import json
@@ -394,8 +393,15 @@ def scripted(world, gaps=None):
     return FakeServer([{"files": {"plan.json": json.dumps(good_plan(gaps, fetched))}}])
 
 
+def drive(world, server, today=TODAY, **kw):
+    """The stage's way: build the report with the model's turns, then save it. Returns the report text and the gaps."""
+    with Turns(Api("http://fake", server.transport()), world / "state" / "upskill-log.jsonl", 5, 5.0) as turns:
+        report, found = U.run(world, "claude-code", turns, today, rounds=2, **kw)
+    U.save(world, today, report)
+    return report, found
+
+
 def run_world(world, today=TODAY, gaps=None, **kw):
-    args = argparse.Namespace(me=str(world), model="claude-code", server="http://fake", rounds=2, minutes=5, budget=5.0)
     server = scripted(world, gaps)
     seen = []
 
@@ -404,8 +410,8 @@ def run_world(world, today=TODAY, gaps=None, **kw):
         skill = query.split("learn ")[1].rsplit(" ", 1)[0].lower()
         return [U.Candidate(f"{skill} {i}", f"https://docs.example/{skill}/{i}", "good") for i in (1, 2)]
 
-    code = U.main(args, today=today, research=research, fetch=lambda url: "page", api=Api("http://fake", server.transport()), **kw)
-    return code, server, seen
+    drive(world, server, today, research=research, fetch=lambda url: "page", **kw)
+    return 0, server, seen
 
 
 def test_run_saves_a_report_with_a_checked_plan(world):
@@ -429,37 +435,30 @@ def test_a_second_report_diffs_against_the_first(world):
 
 def test_heatmap_emitted_before_resource_search(world, capsys):
     seen_at = []
-    args = argparse.Namespace(me=str(world), model="claude-code", server="http://fake", rounds=2, minutes=5, budget=5.0)
 
     def research(query):
         seen_at.append(capsys.readouterr().out)
         return []
 
-    U.main(args, today=TODAY, research=research, fetch=lambda url: "page", api=Api("http://fake", FakeServer([{"files": {"plan.json": "{}"}}] * 3).transport()))
+    drive(world, FakeServer([{"files": {"plan.json": "{}"}}] * 3), research=research, fetch=lambda url: "page")
     assert "| Gap | Priority | Score | Gap source |" in seen_at[0]
 
 
 def test_run_without_research_lists_no_links(world):
-    args = argparse.Namespace(me=str(world), model="claude-code", server="http://fake", rounds=2, minutes=5, budget=5.0)
     gaps, _ = targets_and_fetched()
     plan = good_plan(gaps, {g.skill: {} for g in gaps})
     for e in plan["entries"]:
         e["resources"] = []
     server = FakeServer([{"files": {"plan.json": json.dumps(plan)}}])
-    assert U.main(args, today=TODAY, api=Api("http://fake", server.transport())) == 0
+    drive(world, server)
     assert "http" not in (world / "upskill" / "report-2026-10-19.md").read_text()
 
 
 def test_with_no_gaps_the_report_is_still_written_and_no_turn_is_spent(me):
-    args = argparse.Namespace(me=str(me), model="claude-code", server="http://fake", rounds=2, minutes=5, budget=5.0)
     server = FakeServer([])
-    assert U.main(args, today=TODAY, api=Api("http://fake", server.transport())) == 0 and server.requests == []
+    drive(me, server)
+    assert server.requests == []
     assert "No plan: no top gaps." in (me / "upskill" / "report-2026-10-19.md").read_text()
-
-
-def test_main_refuses_without_a_profile(tmp_path, capsys):
-    args = argparse.Namespace(me=str(tmp_path), model="x", server="http://fake", rounds=1, minutes=1, budget=1.0)
-    assert U.main(args, today=TODAY) == 2 and "no profile" in capsys.readouterr().out
 
 
 def test_upskill_has_no_send_or_shell_capabilities():

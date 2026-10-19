@@ -1,7 +1,6 @@
 """followup.py: drafts only, never sent; who is offered one; and that every claim in a draft is in the submitted documents."""
 from __future__ import annotations
 
-import argparse
 import ast
 import csv
 import inspect
@@ -12,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from fake_server import FakeServer
-from jobloop import archive, calibrate, followup, report, stale, tracker
+from jobloop import archive, followup, tracker
 from jobloop.turns import Api, Turns
 
 TODAY = date(2026, 10, 19)
@@ -467,51 +466,3 @@ def test_the_only_thing_followup_talks_to_is_the_turns_api_and_it_is_given_text_
     assert [r["input"][0]["text"] for r in server.requests] == ["Write the follow-up described in application.md."]
 
 
-# ── the command ──
-def parse(*argv):
-    p = argparse.ArgumentParser()
-    followup.add_arguments(p)
-    return p.parse_args(argv)
-
-
-def test_argument_forms_parse_to_expected_branches(tmp_path):
-    a = parse()
-    assert (a.keys, a.all, a.days) == ([], False, 10)
-    assert parse("--days", "14").days == 14
-    assert parse("acme__data_engineer", "beta__ml").keys == ["acme__data_engineer", "beta__ml"]
-    assert parse("--all").all is True
-    s = argparse.ArgumentParser()
-    stale.add_arguments(s)
-    assert (s.parse_args([]).days, s.parse_args(["--days", "90"]).days) == (60, 90)
-    c = argparse.ArgumentParser()
-    calibrate.add_arguments(c)
-    assert (c.parse_args([]).list, c.parse_args(["--list"]).list) == (False, True)
-    r = argparse.ArgumentParser()
-    report.add_arguments(r)
-    assert r.parse_args(["--me", str(tmp_path)]).me == str(tmp_path)
-    for module in (followup, stale, calibrate, report):
-        assert callable(module.main)
-    assert followup.HARNESS is True and not hasattr(stale, "HARNESS") and not hasattr(report, "HARNESS")
-
-
-def test_with_no_key_the_command_only_lists_what_is_due_and_starts_no_turn(me, capsys):
-    ready(me)
-    server = FakeServer([])
-    assert followup.main(parse("--me", str(me)), TODAY, Api("http://x", server.transport())) == 0
-    assert "follow-up 1 of 2" in capsys.readouterr().out and server.requests == []
-
-
-def test_naming_a_key_drafts_it_and_the_person_sends_it(me, capsys):
-    ready(me)
-    server = FakeServer([{"files": {"draft.md": GOOD}}])
-    code = followup.main(parse("--me", str(me), "acme__data_engineer"), TODAY, Api("http://x", server.transport()))
-    out = capsys.readouterr().out
-    assert code == 0 and "a draft only: you send it" in out
-    assert (archive.folder_for(me, "acme__data_engineer") / f"followup_{TODAY.isoformat()}.md").is_file()
-
-
-def test_the_command_exits_nonzero_when_no_draft_passed(me, capsys):
-    ready(me)
-    server = FakeServer([{"files": {"draft.md": "no greeting"}}] * 4)
-    code = followup.main(parse("--me", str(me), "--all"), TODAY, Api("http://x", server.transport()))
-    assert code == 1 and not list(archive.folder_for(me, "acme__data_engineer").glob("followup_*"))

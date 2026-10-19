@@ -17,7 +17,6 @@ high score can never outvote it (`Fit.shortlisted` is False, and nothing is draf
 """
 from __future__ import annotations
 
-import argparse
 import json
 import re
 from dataclasses import dataclass, field
@@ -25,9 +24,8 @@ from datetime import date
 from pathlib import Path
 
 from .keywords import mentions
-from .term import GREEN, OFF, RED, YELLOW, say
 from .text import claimed, flat, slug, visible
-from .turns import Api, Turns
+from .turns import Turns
 
 HARNESS = True
 
@@ -637,28 +635,3 @@ def evaluate(turns: Turns, model: str, profile: str, posting: str, key: str = ""
     if record and turns.settle(record, validate, rounds, ROLE, "FIX FIT"):
         return best[0]
     return None
-
-
-# ── the command ─────────────────────────────────────────────────────────────────────────────────
-def add_arguments(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--profile", required=True, help="the candidate's profile (markdown)")
-    p.add_argument("--posting", required=True, help="the job posting (text or markdown)")
-    p.add_argument("--model", default="claude-code", help="a harness name, optionally harness/model")
-    p.add_argument("--me", default="me", help="the personal-data folder; the fit is saved in <me>/fit/")
-    p.add_argument("--key", default="", help="the file name stem for the saved fit (default: from the posting title)")
-    p.add_argument("--server", default="http://127.0.0.1:8000", help="the harness-interface server")
-    p.add_argument("--rounds", type=int, default=3, help="turns the harness gets to fix failed checks")
-    p.add_argument("--minutes", type=float, default=20)
-    p.add_argument("--budget", type=float, default=5.0, help="dollars, as the harnesses report them")
-
-
-def main(args: argparse.Namespace) -> int:
-    profile, posting = Path(args.profile).read_text(), Path(args.posting).read_text()
-    with Turns(Api(args.server), Path(args.me) / "state" / "fit-log.jsonl", args.minutes, args.budget) as turns:
-        fit = evaluate(turns, args.model, profile, posting, args.key, args.rounds)
-    if fit is None:
-        say(f"{RED}no fit passed the checks{OFF}")
-        return 1
-    say(render(fit), RED if fit.vetoes else YELLOW if fit.flags else GREEN)
-    say(f"saved {save(fit, Path(args.me) / 'fit')}")
-    return 0

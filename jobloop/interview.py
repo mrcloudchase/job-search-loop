@@ -36,7 +36,7 @@ from . import archive, grounding, tracker
 from .latex import to_text
 from .profile import fields, pdf_text, section
 from .rank import drafted_fit_key
-from .research import RESEARCHER, employer_hosts
+from .research import employer_hosts
 from .term import BOLD, GREEN, OFF, RED, YELLOW, say
 from .text import claimed, flat, slug, visible
 from .turns import Api, Turns
@@ -635,27 +635,6 @@ def render_mock(ctx: Context, stage: str, mock: Mock) -> str:
 
 
 # ── the command ─────────────────────────────────────────────────────────────────────────────────
-def add_arguments(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--me", default="me", help="the personal-data folder (profile.md, tracker.csv, applications/, fit/)")
-    p.add_argument("--company", default="", help="the tracked application's company (default: the live applications)")
-    p.add_argument("--role", default="")
-    p.add_argument("--posting", help="a posting file, for an application that has no archive")
-    p.add_argument("--stage", required=True, help="the interview stage, e.g. phone-screen, technical, final")
-    p.add_argument("--date", default="")
-    p.add_argument("--format", default="", help="phone, video or onsite")
-    p.add_argument("--people", default="", help="interviewers, comma separated")
-    p.add_argument("--fit", help="the application's fit JSON (default: <me>/fit/<key>.json when present)")
-    p.add_argument("--mock", action="store_true", help="offer a mock interview after the pack")
-    p.add_argument("--questions", type=int, default=6, help="the mock interview's question budget")
-    p.add_argument("--researcher", default=RESEARCHER, help="the web-search harness (it gets a company or interviewer name, never the profile); '' for no web research")
-    p.add_argument("--company-domain", default="", help="the company's own domain, e.g. example.com: company research then runs on its hosts")
-    p.add_argument("--model", default="claude-code")
-    p.add_argument("--server", default="http://127.0.0.1:8000")
-    p.add_argument("--rounds", type=int, default=3)
-    p.add_argument("--minutes", type=float, default=30)
-    p.add_argument("--budget", type=float, default=5.0)
-
-
 def _console_ask(question: str) -> str | None:
     try:
         return input(f"\n{BOLD}{question}{OFF}\n> ")

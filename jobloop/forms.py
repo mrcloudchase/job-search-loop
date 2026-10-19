@@ -10,7 +10,6 @@ counts. Nothing is submitted. The posting is untrusted and travels as a file.
 """
 from __future__ import annotations
 
-import argparse
 import json
 import re
 import unicodedata
@@ -19,9 +18,6 @@ from datetime import date
 from pathlib import Path
 
 from jobloop import grounding, keywords, style
-from jobloop.term import GREEN, OFF, RED, YELLOW, say
-from jobloop.text import slug
-from jobloop.turns import Api, Turns
 
 HARNESS = True
 
@@ -197,51 +193,3 @@ def gap_terms(fit_path: Path | str | None) -> list[str]:
     if not fit_path:
         return []
     return [r["term"] for r in json.loads(Path(fit_path).read_text()).get("requirements", []) if not r.get("backed")]
-
-
-def add_arguments(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--profile", required=True, help="the candidate's profile (markdown)")
-    p.add_argument("--posting", required=True, help="the job posting (text or markdown)")
-    p.add_argument("--questions", required=True, help="JSON file: employer, and questions with id, question, limit, unit")
-    p.add_argument("--fit", help="the saved fit (JSON) whose unbacked requirements must never be claimed")
-    p.add_argument("--key", required=True, help="the application's folder name under <me>/applications/")
-    p.add_argument("--model", default="claude-code", help="a harness name, optionally harness/model")
-    p.add_argument("--me", default="me", help="the personal-data folder")
-    p.add_argument("--server", default="http://127.0.0.1:8000", help="the harness-interface server")
-    p.add_argument("--rounds", type=int, default=3, help="turns the harness gets to fix failed checks")
-    p.add_argument("--minutes", type=float, default=20)
-    p.add_argument("--budget", type=float, default=5.0, help="dollars, as the harnesses report them")
-
-
-def main(args: argparse.Namespace) -> int:
-    profile, posting = Path(args.profile).read_text(), Path(args.posting).read_text()
-    employer, questions = load_questions(args.questions)
-    gaps = gap_terms(args.fit)
-    kept: dict[str, str] = {}
-
-    def validate(record: dict) -> list[str]:
-        raw = turns.files(record, "answers.json")["answers.json"]
-        try:
-            data = json.loads(raw) if raw is not None else None
-        except ValueError:
-            data = None
-        failures = check_answers(questions, data, [profile], gaps, date.today()) if raw is not None else \
-            ["answers.json must exist in the working directory."]
-        if not failures:
-            kept.update(data)
-        return failures
-
-    out = Path(args.me) / "applications" / slug(args.key, 80)
-    with Turns(Api(args.server), Path(args.me) / "state" / "forms-log.jsonl", args.minutes, args.budget) as turns:
-        record = turns.turn("FORMS", args.model, "Draft answers.json for the questions in questions.json.", ROLE,
-                            files={"profile.md": profile, "posting.md": posting,
-                                   "questions.json": json.dumps([q.__dict__ for q in questions], indent=2)})
-        passed = turns.settle(record, validate, args.rounds, ROLE, "FIX") if record else None
-    if not passed:
-        say(f"{RED}no answers passed the checks; nothing was saved{OFF}")
-        return 1
-    out.mkdir(parents=True, exist_ok=True)
-    (out / "form-answers.txt").write_text(render(employer, questions, kept, profile))
-    say(f"{GREEN}saved {(out / 'form-answers.txt').resolve()}{OFF}")
-    say(f"{YELLOW}Read them before you paste anything. Nothing has been submitted.{OFF}")
-    return 0

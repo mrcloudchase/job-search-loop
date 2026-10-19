@@ -194,8 +194,8 @@ def me_with(tmp_path, text: str) -> Path:
 
 def parse(*argv):
     parser = argparse.ArgumentParser()
-    Q.add_arguments(parser)
-    return parser.parse_args(argv)
+    search.add_arguments(parser)                      # the plan is `search --plan`: these are the arguments `queries.main` gets
+    return parser.parse_args([*argv, "--plan"])
 
 
 def test_the_command_prints_the_plan_as_runnable_searches_and_requests_nothing(tmp_path, capsys, monkeypatch):

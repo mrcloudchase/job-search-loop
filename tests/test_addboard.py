@@ -6,6 +6,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -95,18 +96,10 @@ def test_the_test_query_must_be_a_plain_search(query):
         ab.Request("nordlys-jobs", URL, HOSTS, query)
 
 
-def test_a_missing_name_url_host_or_query_is_asked_for_and_nothing_runs(tmp_path, capsys):
-    server = FakeServer([])
-    for given in (dict(name=None), dict(url=None), dict(host=[]), dict(query="")):
-        assert ab.main(args(tmp_path, **given), api=Api("http://x", server.transport())) == 2
-    assert server.requests == [] and "give a name" in capsys.readouterr().out
-    assert not (tmp_path / "boards.json").exists()
-
-
 def test_a_url_argument_is_carried_into_the_task_the_harness_gets(tmp_path):
     server = FakeServer([{"files": {"REFUSED.txt": "no"}}])
     rig = Rig(server)
-    ab.main(args(tmp_path), api=rig.api())
+    add(tmp_path, rig, runner=ab.run_in_container)
     task = json.loads(server.requests[0]["input"][1]["file_data"])
     assert task == {"name": "nordlys-jobs", "url": URL, "hosts": list(HOSTS), "test_query": "engineer"}
     assert server.requests[0]["model"] == "claude-portal" and URL in server.requests[0]["input"][0]["text"]
@@ -410,10 +403,13 @@ class Rig:
         return Turns(self.api(), tmp_path / "log.jsonl", **kw)
 
 
-def args(tmp_path, **over) -> argparse.Namespace:
-    given = dict(me=str(tmp_path), name="nordlys-jobs", url=URL, host=list(HOSTS), query="engineer", list=False, model="claude-portal",
-                 server="http://x", rounds=2, minutes=5, budget=5.0)
-    return argparse.Namespace(**{**given, **over})
+def add(tmp_path, rig, runner=good_runner, rounds=2):
+    """The stage's flow for one board: request, build, and install only what verified. `where` is None when nothing was added."""
+    request = ab.request_for(tmp_path, "nordlys-jobs", URL, list(HOSTS), "engineer")
+    with Turns(rig.api(), tmp_path / "state" / "addboard-log.jsonl", 5, 5.0) as turns:
+        outcome = ab.build(turns, "claude-portal", request, rounds=rounds, runner=runner)
+    where = ab.install(tmp_path, request, outcome.verified) if outcome.verified else None
+    return SimpleNamespace(outcome=outcome, where=where, lines=ab.summary(request, outcome.verified, where) if where else [])
 
 
 GOOD_FILES = {"adapter.py": ADAPTER, "board.json": BOARD, "live_test.json": LIVE, **{f"samples/{n}": t for n, t in SAMPLES.items()}}
@@ -453,7 +449,7 @@ def test_failures_go_back_to_the_harness_verbatim_and_the_fixed_board_is_accepte
 ])
 def test_a_rejected_adapter_is_sent_back_and_when_never_fixed_nothing_is_registered(tmp_path, bad, expect):
     rig = Rig(FakeServer([{"files": {**GOOD_FILES, **bad}}] * 2))
-    assert ab.main(args(tmp_path, rounds=1), api=rig.api(), runner=good_runner) == 1
+    assert add(tmp_path, rig, rounds=1).where is None
     assert expect in rig.server.requests[1]["input"][0]["text"]
     assert not (tmp_path / "boards.json").exists() and not (tmp_path / "boards" / "nordlys-jobs").exists()
     assert rig.history[-1] == []
@@ -466,12 +462,11 @@ def test_a_prompt_injection_cannot_widen_the_sandbox(tmp_path):
     assert rig.history == [list(HOSTS), []]
 
 
-def test_a_refusal_registers_nothing_and_is_shown(tmp_path, capsys):
+def test_a_refusal_registers_nothing_and_is_shown(tmp_path):
     reason = "robots.txt disallows /api/ for every agent."
     rig = Rig(FakeServer([{"files": {"REFUSED.txt": reason, **GOOD_FILES}}]))
-    assert ab.main(args(tmp_path), api=rig.api(), runner=good_runner) == 1
-    shown = capsys.readouterr().out
-    assert reason in shown and "Nothing was added" in shown
+    done = add(tmp_path, rig)
+    assert done.outcome.refused == reason and done.where is None
     assert not (tmp_path / "boards.json").exists() and not (tmp_path / "boards").exists()
     assert len(rig.server.requests) == 1                     # a refusal is not argued with
 
@@ -486,21 +481,22 @@ def test_registration_requires_green_tests(tmp_path):
     def failing(d, q):
         return {**parsed(d.samples), **errors(**{"bad flag": "network"})}
     rig = Rig(FakeServer([{"files": GOOD_FILES}] * 2))
-    assert ab.main(args(tmp_path, rounds=1), api=rig.api(), runner=failing) == 1
+    assert add(tmp_path, rig, runner=failing, rounds=1).where is None
     assert not (tmp_path / "boards.json").exists()
 
 
 def test_files_the_harness_adds_beyond_the_expected_ones_are_never_installed(tmp_path):
     rig = Rig(FakeServer([{"files": {**GOOD_FILES, "evil.sh": "rm -rf /", "samples/../x.json": "{}", "samples/a/b.json": "{}", "notes.md": "hi"}}]))
-    assert ab.main(args(tmp_path), api=rig.api(), runner=good_runner) == 0
+    assert add(tmp_path, rig).where
     assert sorted(p.name for p in (tmp_path / "boards" / "nordlys-jobs").iterdir()) == ["adapter.py", "board.json", "live_test.json", "samples"]
 
 
 # ── installing ──
-def installed(tmp_path, terms="", capsys=None):
+def installed(tmp_path, terms=""):
     board = json.dumps({**json.loads(BOARD), "terms": terms})
     rig = Rig(FakeServer([{"files": {**GOOD_FILES, "board.json": board}}]))
-    assert ab.main(args(tmp_path), api=rig.api(), runner=good_runner) == 0
+    rig.done = add(tmp_path, rig)
+    assert rig.done.where
     return rig
 
 
@@ -532,10 +528,9 @@ def test_a_registered_board_is_listed_and_can_be_switched_on_with_the_search_com
     assert search.is_enabled(tmp_path, "nordlys-jobs") and "nordlys-jobs" in search.enabled_boards(tmp_path)
 
 
-def test_restricted_board_carries_personal_use_notice(tmp_path, capsys):
+def test_restricted_board_carries_personal_use_notice(tmp_path):
     warning = "Personal use only: keep volume low, no commercial or bulk use."
-    installed(tmp_path, terms=warning)
-    out = capsys.readouterr().out
+    out = "\n".join(installed(tmp_path, terms=warning).done.lines)
     assert warning in out and "--acknowledge-terms" in out and "Read" in out and "adapter.py" in out
     board = search.module_of("nordlys-jobs", tmp_path)
     assert board.TERMS == warning
@@ -547,9 +542,8 @@ def test_restricted_board_carries_personal_use_notice(tmp_path, capsys):
     assert search.is_enabled(tmp_path, "nordlys-jobs")
 
 
-def test_summary_includes_live_result_count_and_notice(tmp_path, capsys):
-    installed(tmp_path, terms="Personal use only.")
-    out = capsys.readouterr().out
+def test_summary_includes_live_result_count_and_notice(tmp_path):
+    out = "\n".join(installed(tmp_path, terms="Personal use only.").done.lines)
     assert "5 postings parsed from 2 saved sample" in out and "1 result(s) in live_test.json" in out and "PERSONAL-USE WARNING: Personal use only." in out
     assert "switched OFF" in out
 
@@ -563,15 +557,6 @@ def test_the_installed_adapter_is_the_verified_one_and_a_changed_one_is_refused_
         board.search(Query("x"))
 
 
-def test_list_installed_boards(tmp_path, capsys):
-    assert ab.main(args(tmp_path, list=True)) == 0 and capsys.readouterr().out.strip() == ""
-    installed(tmp_path, terms="Personal use only.")
-    capsys.readouterr()
-    assert ab.main(args(tmp_path, list=True)) == 0
-    line = capsys.readouterr().out.strip()
-    assert line.startswith("nordlys-jobs") and "off" in line and "terms" in line
-
-
 def test_generated_board_goes_to_user_config_not_core(tmp_path):
     core = Path(ab.__file__).parent
     before = sorted(str(p.relative_to(core)) for p in core.rglob("*.py"))
@@ -582,15 +567,10 @@ def test_generated_board_goes_to_user_config_not_core(tmp_path):
     assert {"boards", "boards.json"} <= {p.name for p in tmp_path.iterdir()} <= {"boards", "boards.json", "boards.json.lock", "state"}
 
 
-def test_access_rules_are_surfaced_not_bypassed(tmp_path, capsys):
+def test_access_rules_are_surfaced_not_bypassed(tmp_path):
     rig = Rig(FakeServer([{"files": {"REFUSED.txt": "The terms forbid automated access."}}] * 2))
-    assert ab.main(args(tmp_path), api=rig.api(), runner=good_runner) == 1
-    assert "The terms forbid automated access." in capsys.readouterr().out
-    parser = argparse.ArgumentParser()
-    ab.add_arguments(parser)
-    options = {o for a in parser._actions for o in a.option_strings}
-    assert not {"--force", "--override", "--ignore-robots", "--yes", "--enable", "--no-verify", "--skip-checks"} & options
-    assert ab.main(args(tmp_path), api=rig.api(), runner=good_runner) == 1          # asking again changes nothing
+    assert add(tmp_path, rig).outcome.refused == "The terms forbid automated access."
+    assert add(tmp_path, rig).where is None                  # asking again changes nothing
     assert not (tmp_path / "boards.json").exists()
 
 

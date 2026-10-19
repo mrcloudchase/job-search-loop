@@ -309,3 +309,11 @@ def test_the_stage_never_calls_a_tracker_writer(tmp_path, monkeypatch):
     for name in ("set_status", "record_drafted", "add_external"):
         monkeypatch.setattr(tracker, name, lambda *a, **k: pytest.fail("package must not write the tracker"))
     assert stage.STAGE.run(act(ctx), ctx).terminal == "success"
+
+
+def test_stretch_bullets_from_the_draft_are_shown_to_the_person_to_keep_soften_or_drop(tmp_path):
+    ctx, server, me = setup(tmp_path, draft={**draft_json(), "stretch": ["- Built dbt models and migrated cron jobs for analysts"]})
+    stage.STAGE.run(act(ctx), ctx)
+    readme = (me / "queue" / KEY / "README.md").read_text()
+    assert "stretch your experience" in readme and "migrated cron jobs" in readme
+    assert queue_json(me)["stretch"] == ["- Built dbt models and migrated cron jobs for analysts"]

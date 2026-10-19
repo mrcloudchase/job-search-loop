@@ -1,7 +1,6 @@
 """calibrate.py: final outcomes compared with the saved fit scores; proposals only, applied one by one on the person's yes."""
 from __future__ import annotations
 
-import argparse
 import csv
 import hashlib
 import json
@@ -261,32 +260,3 @@ def test_accepted_weights_always_sum_to_one_hundred_within_bounds():
     assert calibrate.MIN_WEIGHT <= min(fit.WEIGHTS.values()) and max(fit.WEIGHTS.values()) <= calibrate.MAX_WEIGHT
 
 
-# ── the command ──
-def args(me, *extra):
-    p = argparse.ArgumentParser()
-    calibrate.add_arguments(p)
-    return p.parse_args(["--me", str(me), *extra])
-
-
-def test_the_command_lists_proposals_with_evidence_and_asks_nothing_with_list(me, capsys):
-    world(me)
-
-    def never(p):
-        raise AssertionError("asked")
-
-    assert calibrate.main(args(me, "--list"), TODAY, never) == 0
-    out = capsys.readouterr().out
-    assert "weights: raise technical to 35" in out and "5 progressed, 5 did not" in out
-    assert not (me / "state" / "calibration.json").exists()
-
-
-def test_the_command_applies_what_is_confirmed_and_says_so(me, capsys):
-    world(me)
-    assert calibrate.main(args(me), TODAY, lambda p: p.kind == "weights") == 0
-    assert "applied 1 of 2" in capsys.readouterr().out and calibrate.load_weights(me)["technical"] == 35
-
-
-def test_the_command_with_too_little_data_says_why_and_writes_nothing(me, capsys):
-    world(me, went=1, not_went=1)
-    assert calibrate.main(args(me), TODAY, lambda p: True) == 0
-    assert "Too little to learn from" in capsys.readouterr().out and not (me / "state").exists()

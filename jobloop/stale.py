@@ -12,14 +12,12 @@ Nothing is sent to anyone.
 """
 from __future__ import annotations
 
-import argparse
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
 from jobloop import archive, tracker
-from jobloop.term import say
 
 STATUSES = ("applied", "interview")
 THRESHOLD_DAYS = tracker.STALE_AFTER_DAYS
@@ -108,35 +106,3 @@ def resolve(me: Path, selection: Selection, today: date, confirm: Callable[[str]
         else:
             resolved.append(candidate.row.key)
     return Result(tuple(resolved), tuple(kept), tuple(refused))
-
-
-# ── the command ──
-def add_arguments(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--me", default="me", help="your personal folder (default: me)")
-    p.add_argument("--days", type=int, default=THRESHOLD_DAYS, help=f"quiet days that make an application stale (default {THRESHOLD_DAYS})")
-
-
-def _ask(question: str) -> bool:
-    return input(f"{question}\n  close as no_response? [y/N] ").strip().lower() in ("y", "yes")
-
-
-def main(args: argparse.Namespace, today: date | None = None, confirm: Callable[[str], bool] = _ask) -> int:
-    """List the stale applications and ask about each one. Nothing is closed without a yes for that row."""
-    me, today = Path(args.me), today or date.today()
-    try:
-        selection = select(me, tracker.read_rows(me / "tracker.csv"), today, args.days)
-    except ValueError as error:
-        say(str(error))
-        return 2
-    for line in selection.skipped:
-        say(line)
-    if not selection.candidates:
-        say(f"No applied or interview application has been quiet {args.days} days or more.")
-        return 0
-    result = resolve(me, selection, today, confirm)
-    for line in result.refused:
-        say(f"refused: {line}")
-    say(f"closed as no_response: {len(result.resolved)}; left as they were: {len(result.kept) + len(result.refused)}")
-    if result.calibration_due:
-        say("Several applications are settled: `calibrate` can compare the outcomes with your fit scores.")
-    return 2 if result.refused else 0

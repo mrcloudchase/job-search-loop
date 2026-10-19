@@ -38,7 +38,7 @@ def test_utf8_io_replaces_what_it_cannot_write_and_leaves_ordinary_streams_alone
     assert capsys.readouterr().out == "plain\n"
 
 
-def test_cyrillic_cjk_polish_in_each_cli_output(tmp_path):
+def test_cyrillic_cjk_polish_in_each_output(tmp_path):
     from jobloop import tracker
     me = tmp_path / "me"
     me.mkdir()
@@ -48,14 +48,8 @@ def test_cyrillic_cjk_polish_in_each_cli_output(tmp_path):
     assert listed.returncode == 0 and "Яндекс" in listed.stdout.decode("utf-8") and "エンジニア" in listed.stdout.decode("utf-8")
     data = ROOT / "tests" / "fixtures" / "salary" / "benchmark.json"
 
-    def salary_cli(*argv):
-        return legacy(code="import argparse, sys\nfrom jobloop import salary, text\ntext.utf8_io()\np = argparse.ArgumentParser()\n"
-                           f"salary.add_arguments(p)\nsys.exit(salary.main(p.parse_args({list(argv)!r})))")
-
-    looked_up = salary_cli("--data", str(data), "--company", "Nestl")                           # Nestlé: a Latin-1 name
+    looked_up = legacy(code=f"from jobloop import salary, text\ntext.utf8_io()\nprint(salary.benchmark('.', 'Nestl', path={str(data)!r}).text)")   # Nestlé: a Latin-1 name
     assert looked_up.returncode == 0 and "Nestlé Suisse SA" in looked_up.stdout.decode("utf-8")
-    cjk = salary_cli("--data", str(data), "--company", "Nestl", "--json")
-    assert cjk.returncode == 0 and b"Nestl" in cjk.stdout
     verdict = legacy(code="from jobloop import pdfcheck, text, layout; text.utf8_io()\n"
                           "print('履歴書.pdf: ' + pdfcheck.unverified('pdftotext', 'missing for 履歴書.pdf').feedback())\n"
                           "print('Zażółć gęślą jaźń')")
@@ -155,25 +149,6 @@ def test_addboard_never_fetches_third_party_code():
 
 
 # ── flagged bullets are shown after drafting; a poor experience match warns before ────────────────────
-def test_stretch_bullets_surface_and_low_match_warns(tmp_path, capsys):
-    from dataclasses import replace
-    from test_apply import DRAFT, REVIEW, Env, make_fit
-    env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}])
-    inner = env.app.deps.verify
-    env.app.deps.verify = lambda *a, **k: replace(inner(*a, **k), stretch=('flag: "Built dbt models": "dbt" comes from a different role',))
-    env.app.deps.evaluate = lambda *a, **k: replace(make_fit(), experience=40)
-    assert env.app.execute() == 0
-    out = capsys.readouterr().out
-    assert "Experience match is 40" in out and out.index("Experience match is 40") < out.index("RESULT")
-    assert "keep it" in out and "soften" in out and "drop it" in out and "Built dbt models" in out
-
-
-def test_a_good_match_and_clean_bullets_show_neither_warning(tmp_path, capsys):
-    from test_apply import DRAFT, REVIEW, Env
-    env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}])
-    assert env.app.execute() == 0
-    out = capsys.readouterr().out
-    assert "Experience match is" not in out and "stretch the profile" not in out
 
 
 def test_the_gate_fails_a_never_bullet_and_a_contradicting_letter_and_passes_a_stretch_with_a_note():

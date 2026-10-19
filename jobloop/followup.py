@@ -20,7 +20,6 @@ and (for a follow-up) a question and no filler. Failures go back to the harness 
 """
 from __future__ import annotations
 
-import argparse
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -28,9 +27,9 @@ from datetime import date
 from pathlib import Path
 
 from jobloop import archive, grounding, letter, stale, style, tracker
-from jobloop.term import RED, say
+from jobloop.term import say
 from jobloop.text import flat, slug
-from jobloop.turns import Api, Turns
+from jobloop.turns import Turns
 
 HARNESS = True
 
@@ -316,41 +315,3 @@ def write(me: Path, c: Candidate, text: str, today: date) -> Path | None:
     name = _thankyou_name(c.stage) if c.stage else f"followup_{today.isoformat()}.md"
     path = archive.folder_for(Path(me), c.row.key, create=True) / name
     return path if archive.create_new(path, (text.strip() + "\n").encode()) else None
-
-
-# ── the command ──
-def add_arguments(p: argparse.ArgumentParser) -> None:
-    p.add_argument("keys", nargs="*", help="application keys to draft for now, whatever their quiet time (`list` shows them)")
-    p.add_argument("--all", action="store_true", help="draft for every application that is due")
-    p.add_argument("--days", type=int, default=DEFAULT_THRESHOLD_DAYS, help=f"quiet days before a follow-up is due (default {DEFAULT_THRESHOLD_DAYS})")
-    p.add_argument("--model", default="claude-code", help="a harness name, optionally harness/model")
-    p.add_argument("--me", default="me", help="your personal folder (default: me)")
-    p.add_argument("--server", default="http://127.0.0.1:8000", help="the harness-interface server")
-    p.add_argument("--rounds", type=int, default=3, help="turns the harness gets to fix failed checks")
-    p.add_argument("--minutes", type=float, default=20)
-    p.add_argument("--budget", type=float, default=5.0, help="dollars, as the harnesses report them")
-
-
-def main(args: argparse.Namespace, today: date | None = None, api: Api | None = None) -> int:
-    """Show what is due; draft for the keys named (or all with --all). The drafts are files for you to send yourself."""
-    me, today = Path(args.me), today or date.today()
-    try:
-        selection = select(me, tracker.read_rows(me / "tracker.csv"), today, args.days, args.keys or None)
-    except ValueError as error:
-        say(str(error))
-        return 2
-    say(render(selection))
-    if not (args.keys or args.all) or not selection.candidates:
-        return 0
-    failed = 0
-    with Turns(api or Api(args.server), me / "state" / "followup-log.jsonl", args.minutes, args.budget) as turns:
-        for c in selection.candidates:
-            text = draft(turns, args.model, me, c, today, args.rounds)
-            path = write(me, c, text, today) if text else None
-            if path:
-                say(f"drafted {path}  (a draft only: you send it)")
-            else:
-                failed += 1
-                say(f"{c.row.key}: no draft was kept", RED)
-        say(turns.summary())
-    return 1 if failed else 0

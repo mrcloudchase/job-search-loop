@@ -25,10 +25,8 @@ the posting with fit and it is included).
 """
 from __future__ import annotations
 
-import argparse
 import json
 import re
-from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -37,10 +35,9 @@ from typing import Protocol, Sequence
 from . import archive, fit, tracker
 from .profile import parse_skills
 from .rank import drafted_fit_key as rank_drafted_fit_key
-from .research import RESEARCHER
-from .term import GREEN, OFF, RED, say
+from .term import say
 from .text import claimed, flat, slug, visible
-from .turns import Api, Turns
+from .turns import Turns
 
 HARNESS = True
 
@@ -509,16 +506,6 @@ def save(me: Path, today: date, text: str) -> Path:
 
 
 # ── the command ─────────────────────────────────────────────────────────────────────────────────
-def add_arguments(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--me", default="me", help="the personal-data folder (profile.md, tracker.csv, fit/, upskill/)")
-    p.add_argument("--model", default="claude-code")
-    p.add_argument("--server", default="http://127.0.0.1:8000")
-    p.add_argument("--researcher", default=RESEARCHER, help="the web-search harness (it gets a gap's name only, never the profile); '' for no web research")
-    p.add_argument("--rounds", type=int, default=3)
-    p.add_argument("--minutes", type=float, default=20)
-    p.add_argument("--budget", type=float, default=3.0)
-
-
 def run(me: Path, model: str, turns: Turns, today: date, research: Researcher | None = None, fetch: Fetcher | None = None,
         rounds: int = 3) -> tuple[str, list[Gap]]:
     """Build the report text. The heatmap is shown before any resource is searched for."""
@@ -536,19 +523,3 @@ def run(me: Path, model: str, turns: Turns, today: date, research: Researcher | 
     fetched = {g.skill: {c.url: c for c in find_resources(g, research, fetch, today.year)} if research and fetch else {} for g in targets}
     plan = propose_plan(turns, model, profile, targets, fetched, rounds) if targets else None
     return render_report(today, jobs, gaps, diff, plan, fetched, targets), gaps
-
-
-def main(args: argparse.Namespace, *, today: date | None = None, research: Researcher | None = None,
-         fetch: Fetcher | None = None, api: Api | None = None) -> int:
-    me, today = Path(args.me), today or date.today()
-    if not (me / "profile.md").is_file():
-        say(f"{RED}no profile at {me / 'profile.md'}: build it first{OFF}")
-        return 2
-    with Turns(api or Api(args.server), me / "state" / "upskill-log.jsonl", args.minutes, args.budget) as turns, ExitStack() as stack:
-        if research is None and fetch is None and getattr(args, "researcher", ""):
-            from . import webresearch                    # here, not at the top: webresearch builds on this module's Candidate
-            web = stack.enter_context(webresearch.WebResearch(turns, args.researcher, today=today))
-            research, fetch = web.resources, web.page
-        report, gaps = run(me, args.model, turns, today, research, fetch, args.rounds)
-    say(f"saved {save(me, today, report)} ({len(gaps)} gaps)", GREEN)
-    return 0

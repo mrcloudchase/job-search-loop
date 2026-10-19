@@ -26,7 +26,6 @@ a guess below it. Not ported: the original's Excel reader and column guessing; t
 """
 from __future__ import annotations
 
-import argparse
 import csv
 import io
 import json
@@ -36,7 +35,6 @@ import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 
-from .term import GREEN, OFF, RED, say
 
 DEFAULT_BASELINE, DEFAULT_LABEL = 100, "Index"
 MIN_SCORE = 30
@@ -299,15 +297,6 @@ def render(data: dict, matches: list[Match]) -> str:
     return "\n".join(out).rstrip() + "\n"
 
 
-def as_json(data: dict, matches: list[Match]) -> str:
-    """The matches as JSON, non-ASCII names kept as they are; a non-finite number can never be emitted."""
-    baseline, label = settings(data)
-    return json.dumps({"index_baseline": baseline, "index_label": label,
-                       "matches": [{"score": m.score, "company": m.entry["name"], "city": m.entry.get("city"),
-                                    "categories": _categories_of(m.entry)} for m in matches]},
-                      ensure_ascii=False, allow_nan=False, indent=2)
-
-
 # ── loading and converting ──────────────────────────────────────────────────────────────────────
 def ingest_csv(text: str, *, source: str = "", baseline: float = DEFAULT_BASELINE, label: str = DEFAULT_LABEL,
                description: str = "") -> dict:
@@ -363,16 +352,6 @@ def load(path: Path) -> dict | None:
                               "The format is described at the top of jobloop/salary.py.") from None
 
 
-def convert(source: Path, out: Path) -> dict:
-    """Ingest a CSV and write the JSON dataset, only if it parsed and validates; otherwise nothing is written."""
-    data = ingest_csv(Path(source).read_bytes().decode("utf-8-sig"), source=Path(source).stem)
-    result = validate(data)
-    if result.errors:
-        raise SalaryDataError("; ".join(result.errors))
-    Path(out).write_text(json.dumps(data, ensure_ascii=False, allow_nan=False, indent=2) + "\n")
-    return data
-
-
 def find_data(me: Path) -> Path | None:
     return next((p for p in (Path(me) / "salary" / "benchmark.json", Path(me) / "salary" / "benchmark.csv") if p.is_file()), None)
 
@@ -399,49 +378,3 @@ def benchmark(me: Path, company: str, city: str = "", path: Path | None = None) 
     if not matches:
         return Benchmark(None, f"no benchmark found for {company!r}" + (f" in {city!r}" if city else "") + "; try a shorter name")
     return Benchmark(render(data, matches), "")
-
-
-# ── the command ─────────────────────────────────────────────────────────────────────────────────
-def add_arguments(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--me", default="me", help="the personal-data folder; the data is <me>/salary/benchmark.json or .csv")
-    p.add_argument("--data", help="the data file, instead of the default")
-    p.add_argument("--company", help="the company to benchmark")
-    p.add_argument("--city", default="", help="narrow to a city")
-    p.add_argument("--validate", action="store_true", help="check the data; exit 1 only on errors")
-    p.add_argument("--json", action="store_true", help="print the matches as JSON")
-    p.add_argument("--convert-to", help="write a CSV given by --data as the JSON dataset at this path")
-
-
-def main(args: argparse.Namespace) -> int:
-    path = Path(args.data) if args.data else find_data(Path(args.me))
-    if path is None or not path.is_file():
-        say("No salary data supplied: the benchmark is optional and skipped. See the top of jobloop/salary.py for the format.")
-        return 0
-    try:
-        if args.convert_to:
-            convert(path, Path(args.convert_to))
-            say(f"wrote {args.convert_to}", GREEN)
-            return 0
-        data = load(path)
-        result = validate(data)
-    except SalaryDataError as error:
-        say(f"{RED}{error}{OFF}")
-        return 1
-    for n, message in enumerate(result.errors, 1):
-        say(f"{RED}error {n}: {message}{OFF}")
-    for n, message in enumerate(result.warnings, 1):
-        say(f"warning {n}: {message}")
-    if result.errors:
-        return 1
-    if args.validate:
-        say("OK" if not result.warnings else f"OK with {len(result.warnings)} warning(s)")
-        return 0
-    if not args.company:
-        say("Give --company to look a company up, or --validate to check the data.")
-        return 2
-    matches = search(data, args.company, args.city)
-    if not matches:
-        say(f"No benchmark found for {args.company!r}" + (f" in {args.city!r}" if args.city else "") + ". Try a shorter name.")
-        return 1
-    say(as_json(data, matches) if args.json else render(data, matches).rstrip())
-    return 0

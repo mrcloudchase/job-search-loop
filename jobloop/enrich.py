@@ -13,7 +13,6 @@ What it promises:
   not proposed, so a second run proposes nothing new."""
 from __future__ import annotations
 
-import argparse
 import re
 from contextlib import ExitStack
 from dataclasses import dataclass
@@ -24,9 +23,9 @@ from urllib.parse import urlsplit
 
 from . import profile
 from .guards.hosts import split_url
-from .research import RESEARCHER, Claim, Dropped, Fetcher, gather, verify_claims
+from .research import Claim, Dropped, Fetcher, gather, verify_claims
 from .text import flat
-from .turns import Api, Turns
+from .turns import Turns
 
 HARNESS = True
 GITHUB_HOSTS = ("github.com", "raw.githubusercontent.com")
@@ -135,34 +134,3 @@ def enrich(turns: Turns, model: str, profile_path: Path | str, named: Sources, c
         else:
             declined.append(claim.claim)
     return Report(tuple(added), tuple(declined), tuple(known), dropped)
-
-
-def add_arguments(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--github", help="your GitHub profile address, https://github.com/<you>")
-    p.add_argument("--site", help="your own site or portfolio, an https address")
-    p.add_argument("--me", default="me", help="your personal folder (default: me); the profile is <me>/profile.md")
-    p.add_argument("--researcher", default=RESEARCHER, help="the web-enabled research harness registered by tools/register_harnesses.py")
-    p.add_argument("--server", default="http://127.0.0.1:8000", help="the harness-interface server")
-    p.add_argument("--rounds", type=int, default=2, help="turns the harness gets to fix a malformed answer")
-    p.add_argument("--minutes", type=float, default=20)
-    p.add_argument("--budget", type=float, default=5.0, help="dollars, as the harnesses report them")
-
-
-def _ask(question: str) -> bool:
-    return input(f"\n{question}\nAdd it? [y/N] ").strip().lower() in ("y", "yes")
-
-
-def main(args: argparse.Namespace, confirm: Callable[[str], bool] = _ask) -> int:
-    me = Path(args.me)
-    try:
-        named = sources(args.github, args.site)
-        profile.preflight(me)
-        if not (me / "profile.md").is_file():
-            raise ValueError(f"{me / 'profile.md'} does not exist; build your profile first")
-        with Turns(Api(args.server), me / "state" / "enrich-log.jsonl", args.minutes, args.budget) as turns:
-            report = enrich(turns, args.researcher, me / "profile.md", named, confirm, rounds=args.rounds)
-    except (ValueError, profile.ProfileError) as e:
-        print(f"enrich: {e}")
-        return 1
-    print("\n".join(report.lines()))
-    return 0

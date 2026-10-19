@@ -1,7 +1,6 @@
 """stale.py: which silent applications are offered for closing, and that nothing closes without a yes for that row."""
 from __future__ import annotations
 
-import argparse
 import csv
 from datetime import date, timedelta
 from pathlib import Path
@@ -190,40 +189,28 @@ def test_calibration_is_offered_at_three_resolutions_and_not_at_two(me):
     assert not stale.resolve(me, select(me), TODAY, lambda q: True).calibration_due
 
 
-# ── the command ──
-def args(me, days=60):
-    p = argparse.ArgumentParser()
-    stale.add_arguments(p)
-    return p.parse_args(["--me", str(me), "--days", str(days)])
 
 
-def test_an_empty_sweep_says_so_asks_nothing_and_writes_nothing(me, capsys):
+def test_an_empty_sweep_asks_nothing_and_writes_nothing(me):
     path = put_rows(me, app("Fresh", days=3))
     before = path.read_bytes()
+    selection = select(me)
 
     def never(question):
         raise AssertionError("asked about nothing")
 
-    assert stale.main(args(me), TODAY, never) == 0
-    assert "quiet 60 days or more" in capsys.readouterr().out and path.read_bytes() == before
+    assert selection.candidates == () and stale.resolve(me, selection, TODAY, never).resolved == () and path.read_bytes() == before
 
 
-def test_the_sweep_asks_with_days_quiet_and_skipping_every_row_changes_nothing(me, capsys):
+def test_the_sweep_asks_with_days_quiet_and_skipping_every_row_changes_nothing(me):
     path = put_rows(me, app("A", days=75))
     before, asked = path.read_bytes(), []
-    assert stale.main(args(me), TODAY, lambda q: asked.append(q) and False) == 0
+    result = stale.resolve(me, select(me), TODAY, lambda q: asked.append(q) and False)
     assert "75 days quiet" in asked[0] and "applied" in asked[0]
-    assert "left as they were: 1" in capsys.readouterr().out and path.read_bytes() == before
+    assert len(result.kept) == 1 and result.resolved == () and path.read_bytes() == before
 
 
-def test_the_command_refuses_a_bad_threshold_before_anything_is_asked(me, capsys):
+def test_a_bad_threshold_is_refused_before_anything_is_asked(me):
     put_rows(me, app("A"))
-    assert stale.main(args(me, days=0), TODAY, lambda q: True) == 2
-    assert "whole number of days" in capsys.readouterr().out
-
-
-def test_the_command_has_no_yes_to_all_option():
-    p = argparse.ArgumentParser()
-    stale.add_arguments(p)
-    options = {o for a in p._actions for o in a.option_strings}
-    assert options == {"-h", "--help", "--me", "--days"}
+    with pytest.raises(ValueError, match="whole number of days"):
+        select(me, threshold=0)

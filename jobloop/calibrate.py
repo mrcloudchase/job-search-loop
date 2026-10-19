@@ -20,7 +20,6 @@ more. fit.py reads the file through `load_weights`.
 """
 from __future__ import annotations
 
-import argparse
 import json
 import re
 from collections.abc import Callable
@@ -31,7 +30,6 @@ from pathlib import Path
 from jobloop import archive, stale, tracker
 from jobloop.fit import GATES, WEIGHTS
 from jobloop.rank import drafted_fit_key
-from jobloop.term import say
 
 MIN_OUTCOMES = 8
 MIN_EACH_SIDE = 3
@@ -236,42 +234,3 @@ def apply(me: Path, proposals: Proposals, confirm: Callable[[Proposal], bool], t
             data = _merge(data, proposal, today)
         archive.write_atomically(path, (json.dumps(data, indent=2, ensure_ascii=False) + "\n").encode())
     return chosen
-
-
-# ── the command ──
-def add_arguments(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--me", default="me", help="your personal folder (default: me)")
-    p.add_argument("--list", action="store_true", help="show the proposals and the evidence; ask nothing, change nothing")
-
-
-def _ask(proposal: Proposal) -> bool:
-    say(f"\n{proposal.kind}: {proposal.summary}")
-    for line in proposal.evidence:
-        say(f"  {line}")
-    return input("  apply this? [y/N] ").strip().lower() in ("y", "yes")
-
-
-def main(args: argparse.Namespace, today: date | None = None, confirm: Callable[[Proposal], bool] = _ask) -> int:
-    me, today = Path(args.me), today or date.today()
-    try:
-        proposals = propose(me)
-    except ValueError as error:
-        say(str(error))
-        return 2
-    for note in proposals.notes:
-        say(note)
-    if not proposals.items:
-        return 0
-    if args.list:
-        for p in proposals.items:
-            say(f"{p.kind}: {p.summary}")
-            for line in p.evidence:
-                say(f"  {line}")
-        return 0
-    try:
-        applied = apply(me, proposals, confirm, today)
-    except ValueError as error:
-        say(str(error))
-        return 2
-    say(f"applied {len(applied)} of {len(proposals.items)}; {_path(me)} " + ("updated" if applied else "unchanged"))
-    return 0

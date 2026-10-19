@@ -148,15 +148,6 @@ def plan_queries(profile: str, boards: list[str] | tuple[str, ...], languages: t
 
 
 # ── the command: print the plan, make no request ──
-def add_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--me", default="me", help="the folder holding your profile")
-    parser.add_argument("--board", action="append", default=[], help="a board to plan for; default: the boards that are on")
-    parser.add_argument("--language", action="append", default=[], help="plan only this declared language; repeat for several")
-    parser.add_argument("--focus", help="a function or skill to put first, or `broad` for every function")
-    parser.add_argument("--recency-days", type=int, default=14)
-    parser.add_argument("--per-board", type=int, default=PER_BOARD, help="the most searches planned for one board")
-
-
 def _skipped(boards: list[str], wanted: tuple[str, ...]) -> list[str]:
     return [f"{b}: not planned, it works in {', '.join(BOARD_LANGUAGES[b])} and your profile does not declare it"
             for b in boards if not board_languages(b, wanted)]

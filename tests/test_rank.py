@@ -2,7 +2,6 @@
 network and the harness, except where a test uses the real fit.evaluate against the fake harness-interface server."""
 from __future__ import annotations
 
-import argparse
 import copy
 import json
 import re
@@ -14,7 +13,6 @@ from jobloop import fetch as FT
 from jobloop import fit as F
 from jobloop import rank as K
 from jobloop import rankstate as R
-from jobloop import state as store
 from jobloop.turns import Api, Turns
 
 FIX = Path(__file__).parent / "fixtures" / "fit"
@@ -402,80 +400,16 @@ def test_rendering_uses_only_stored_fields(tmp_path):
     assert text.count("+ SENTINEL") >= 1 and "Python and SQL pipelines" not in text
 
 
-# ── the command ──
-def args(tmp_path, **kw):
-    p = argparse.ArgumentParser()
-    K.add_arguments(p)
-    return p.parse_args(["--me", str(tmp_path), *[x for k, v in kw.items() for x in ([f"--{k}"] if v is True else [f"--{k}", str(v)])]])
-
-
-def test_the_command_is_a_harness_command_with_the_documented_flags(tmp_path):
-    a = args(tmp_path, limit=3, top=2, focus="data", all=True, model="codex")
-    assert K.HARNESS is True and (a.limit, a.top, a.focus, a.all, a.model) == (3, 2, "data", True, "codex")
-    d = args(tmp_path)
-    assert (d.limit, d.top, d.all, d.focus) == (10, 5, False, "")
-
-
-def test_missing_state_stops_with_scrape_hint(tmp_path, capsys):
-    assert K.main(args(tmp_path)) == 1
-    assert "run the search first" in capsys.readouterr().out
-
-
-def test_a_bad_limit_or_top_is_refused_before_anything_runs(tmp_path, capsys):
-    assert K.main(args(tmp_path, limit=-1)) == 2 and K.main(args(tmp_path, top=0)) == 2
-
-
-def test_with_no_candidates_the_command_sweeps_saves_and_never_touches_the_tracker_or_profile(tmp_path, capsys):
-    store.save(tmp_path, state_of(entry("r", status="ranked", deadline="2026-10-01", rank_score=70), entry("k", status="ranked", deadline="2026-12-01")))
-    tracker = tmp_path / "tracker.csv"
-    from jobloop import tracker as T
-    tracker.write_text(",".join(T.HEADER) + "\n2026-10-01,Acme,,,,,applied,,,,,,,\n")
-    before = tracker.read_bytes()
-    assert K.main(args(tmp_path), today=TODAY, now=NOW) == 0
-    assert tracker.read_bytes() == before and not (tmp_path / "profile.md").exists()          # no profile needed to sweep
-    saved = store.load(tmp_path)
-    assert saved["r"]["status"] == "expired" and saved["k"]["status"] == "ranked"
-    assert "Nothing to rank" in capsys.readouterr().out
 
 
 def test_rank_never_writes_tracker(tmp_path):
     import inspect
-    from jobloop import tracker
     source = inspect.getsource(K)
     for writer in ("record_drafted", "set_status", "add_external", "append_note"):
         assert writer not in source and not hasattr(K, writer)
-    assert "tracker.read_rows" in source and tracker.read_rows
-
-
-def test_the_command_keeps_a_search_that_ran_meanwhile(tmp_path, monkeypatch):
-    store.save(tmp_path, state_of(entry("r", status="ranked", deadline="2026-10-01")))
-    original = K.run
-
-    def run_then_search(*a, **kw):
-        out = original(*a, **kw)
-        with store.transaction(tmp_path) as live:
-            live["r"]["tags"] = ["added-by-search"]
-            live["new"] = entry("new")
-        return out
-    monkeypatch.setattr(K, "run", run_then_search)
-    K.main(args(tmp_path), today=TODAY, now=NOW)
-    saved = store.load(tmp_path)
-    assert saved["r"]["status"] == "expired" and saved["r"]["tags"] == ["added-by-search"] and "new" in saved
 
 
 def test_rows_carry_url_not_key(tmp_path):
     s = state_of(entry("jobindex|9f3a-composite", title="Composite", company="Acme", url="https://jobs.example/p/1"))
     text = K.render(go(s, tmp_path), s, TODAY)
     assert "https://jobs.example/p/1" in text and "9f3a-composite" not in text
-
-
-def test_the_command_exits_nonzero_when_a_result_could_not_be_written(tmp_path, monkeypatch):
-    store.save(tmp_path, state_of(entry("r", status="ranked", deadline="2026-12-01")))
-    original = K.run
-
-    def failing(*a, **kw):
-        out = original(*a, **kw)
-        out.errors.append("r: status 'applied' is never changed by rank")
-        return out
-    monkeypatch.setattr(K, "run", failing)
-    assert K.main(args(tmp_path), today=TODAY, now=NOW) == 1

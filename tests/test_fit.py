@@ -480,18 +480,6 @@ def test_evaluate_gives_none_when_the_file_never_passes(tmp_path):
     assert "not valid JSON" in server.requests[2]["input"][0]["text"]
 
 
-def test_main_saves_the_fit(tmp_path, monkeypatch):
-    import argparse
-    server = FakeServer([{"files": {"fit.json": json.dumps(GOOD)}}])
-    monkeypatch.setattr(F, "Api", lambda url: Api(url, server.transport()))
-    parser = argparse.ArgumentParser()
-    F.add_arguments(parser)
-    args = parser.parse_args(["--profile", str(FIX / "profile.md"), "--posting", str(FIX / "posting.md"),
-                              "--model", "h", "--me", str(tmp_path), "--key", "demo"])
-    assert F.HARNESS is True and F.main(args) == 0
-    assert (tmp_path / "fit" / "demo.json").exists() and (tmp_path / "fit" / "demo.keywords").exists()
-
-
 def test_language_fail_vetoes():
     d = data(scores=scores(90, 90, 90, 90))
     d["languages"] = [{"language": "Russian", "level": "", "required": True, "text": "Fluent English with our international team"}]

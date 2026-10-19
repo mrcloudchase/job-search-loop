@@ -1,7 +1,6 @@
 """enrich.py: public pages the person names, claims verified by code, additive proposals the person confirms."""
 from __future__ import annotations
 
-import argparse
 import json
 import shutil
 from datetime import date
@@ -164,23 +163,3 @@ def test_the_report_lists_added_declined_known_and_dropped(tmp_path):
     assert "added 1" in text and "dropped as unverified 1" in text and TOOL["claim"] in text and "Invented" in text
 
 
-# ── the command ──
-def parse(*argv):
-    p = argparse.ArgumentParser()
-    enrich.add_arguments(p)
-    return p.parse_args(argv)
-
-
-def test_the_command_declares_it_drives_harnesses_and_defaults_to_the_research_harness():
-    assert enrich.HARNESS is True
-    args = parse("--github", "https://github.com/alice", "--site", "https://alice.example", "--me", "somewhere")
-    assert args.researcher == "claude-research" and args.me == "somewhere"
-
-
-def test_the_command_refuses_with_a_message_and_exit_1_without_a_source_or_a_profile(tmp_path, capsys):
-    assert enrich.main(parse("--me", str(tmp_path))) == 1
-    assert "Name at least one public page" in capsys.readouterr().out
-    assert enrich.main(parse("--site", "https://alice.example", "--me", str(tmp_path))) == 1
-    assert "profile.md" in capsys.readouterr().out
-    assert enrich.main(parse("--github", "https://github.com/a/b", "--me", str(tmp_path))) == 1
-    assert "--github" in capsys.readouterr().out

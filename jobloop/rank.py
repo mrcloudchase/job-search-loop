@@ -8,11 +8,10 @@ past --limit is deferred, not dropped; a vetoed job is never in the shortlist an
 marked applied and the tracker is never written. The scores are triage from posting text, nothing more."""
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from pathlib import Path
 from typing import Callable
 
@@ -205,65 +204,3 @@ def render(out: Run, state: dict[str, dict], today: date, top: int = 5, notes: d
         lines += ["", f"{DIM}Dates that could not be read (treated as absent): "
                   + ", ".join(f"{what} from {board}" for board, what in sorted(unread)) + OFF]
     return "\n".join([*lines, "", TRIAGE])
-
-
-# ── the command ─────────────────────────────────────────────────────────────────────────────────
-def add_arguments(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--limit", type=int, default=10, help="postings scored this run; 0 means no cap; the rest wait")
-    p.add_argument("--top", type=int, default=5, help="how many go on the shortlist (does not change how many are scored)")
-    p.add_argument("--all", action="store_true", help="re-rank everything except skipped and applied postings")
-    p.add_argument("--focus", default="", help="only postings whose title, company, strengths or gaps contain this text")
-    p.add_argument("--me", default="me", help="the personal-data folder")
-    p.add_argument("--model", default="claude-code", help="a harness name, optionally harness/model")
-    p.add_argument("--server", default="http://127.0.0.1:8000", help="the harness-interface server")
-    p.add_argument("--rounds", type=int, default=3, help="turns the harness gets to fix failed checks")
-    p.add_argument("--minutes", type=float, default=30)
-    p.add_argument("--budget", type=float, default=5.0, help="dollars, as the harnesses report them")
-    p.add_argument("--acknowledge-terms", action="store_true", help="a board with terms: confirm personal, low-volume use")
-
-
-def main(args: argparse.Namespace, today: date | None = None, now: datetime | None = None) -> int:
-    from contextlib import ExitStack
-
-    from . import state as store
-    from . import tracker
-    from .turns import Api, Turns
-
-    me = Path(args.me)
-    if args.limit < 0 or args.top < 1:
-        say(f"{RED}--limit must be 0 or more and --top 1 or more{OFF}")
-        return 2
-    if not store.path(me).exists():
-        say(f"{RED}no postings yet ({store.path(me)}): run the search first{OFF}")
-        return 1
-    now = now or datetime.now(timezone.utc)
-    today = today or now.date()
-    state = store.load(me)
-    tracker_file = me / "tracker.csv"
-    taken = [(r.company, r.role) for r in tracker.read_rows(tracker_file)] if tracker_file.exists() else []
-    with ExitStack() as stack:
-        cache: dict = {}
-
-        def score(posting: str, name: str):
-            if "turns" not in cache:
-                profile_file = me / "profile.md"
-                if not profile_file.exists():
-                    raise SystemExit(f"{profile_file} is missing: write your profile first")
-                cache["profile"] = profile_file.read_text()
-                cache["turns"] = stack.enter_context(Turns(Api(args.server), me / "state" / "rank-log.jsonl", args.minutes, args.budget))
-            return fitting.evaluate(cache["turns"], args.model, cache["profile"], posting, name, args.rounds)
-
-        out = run(state, today=today, now=now, score=score, stopped=lambda: cache["turns"].stopped() if "turns" in cache else "",
-                  fit_dir=me / "fit", postings_dir=me / "postings", limit=args.limit, focus=args.focus, include_all=args.all,
-                  tracker_keys=taken, acknowledged=args.acknowledge_terms)
-    with store.transaction(me) as fresh:
-        rs.merge(fresh, state, out.touched)
-    notes: dict[str, list[str]] = {}
-    if (me / "profile.md").exists():
-        try:
-            from .profile import parse_signals
-            notes = signal_notes(out.ranked, state, parse_signals((me / "profile.md").read_text()), me / "postings")
-        except ValueError:
-            pass                                    # a profile the checks reject is reported by its own command
-    say(render(out, state, today, args.top, notes))
-    return 1 if out.errors else 0

@@ -283,6 +283,11 @@ def readme_text(key: str, data: dict, status: str, reasons: list[str], form_file
               "disability, veteran status, age, religion, marital status, citizenship) is left for you. The loop never answers them.",
               "- If you want to change a document, edit `edit-here/cv.tex` or `edit-here/cover.tex`; the loop learns from the difference. "
               "Your edits are never overwritten."]
+    if data.get("stretch"):
+        lines += ["", "## Bullets that stretch your experience (keep, soften or drop?)", "",
+                  "These CV bullets reframe what the profile says more than a plain restatement does. Read each; you decide.", ""]
+        lines += [f"- {b}" for b in data["stretch"]]
+        lines.append("")
     if form_file:
         lines.append("- `form-answers.txt` holds drafted answers to the form's questions, each with its counts. Check every date and number before you paste." +
                      (f" {len(left)} question(s) in it are marked FOR YOU." if left else ""))
@@ -360,7 +365,7 @@ class Package:
         notes: list[str] = []
         info = {"key": key, "url": url, "title": f"{company} — {role}".strip(" —"), "company": company, "role": role,
                 "fit": draft.get("fit", fit_data.get("total", entry.get("rank_score"))), "deadline": deadline, "host_kind": kind,
-                "why": _why(strengths), "gaps": _lines(draft.get("gaps")), "claims": _claims(me, key, draft),
+                "why": _why(strengths), "gaps": _lines(draft.get("gaps")), "stretch": _lines(draft.get("stretch")), "claims": _claims(me, key, draft),
                 "judge_mean": judge.get("mean")}
         for name, alternatives in PDFS.items():
             if (src := _first(folder, alternatives)) is not None:
