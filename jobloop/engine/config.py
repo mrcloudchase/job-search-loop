@@ -52,6 +52,11 @@ class Config:
     rollback_margin: float = 0.15           # a playbook version worse than its parent by this fraction is rolled back
     rollback_after: int = 5                 # applications before a version is judged
     disabled_stages: list = field(default_factory=list)      # stage names the loop must not run
+    enrich_github: str = ""                 # your GitHub profile address (https://github.com/you): `onboard` proposes profile additions from it
+    enrich_site: str = ""                   # your own site (https), read the same way; with neither set, the profile's Contact "Links" are used
+    enrich_every_hours: float = 168.0       # how often `onboard` re-reads those pages (proposals only: the profile is never written by a pass)
+    new_boards: list = field(default_factory=list)          # boards to build and register switched off: [{name, url, hosts: [..], query}]
+    min_boards: int = 2                     # fewer enabled, healthy boards than this for the candidate's market -> a suggestion to the person
     notify_file: str = ""                   # if set, the digest is also copied here
 
     def validate(self) -> "Config":
@@ -64,6 +69,11 @@ class Config:
             raise ConfigError("best_of is 1 to 4")
         if self.max_new_drafts < 0:
             raise ConfigError("max_new_drafts cannot be negative")
+        if self.min_boards < 0:
+            raise ConfigError("min_boards cannot be negative")
+        if not isinstance(self.new_boards, list) or not all(
+                isinstance(b, dict) and {"name", "url", "hosts", "query"} <= set(b) and isinstance(b["hosts"], list) for b in self.new_boards):
+            raise ConfigError("new_boards is a list of {name, url, hosts: [..], query}")
         for role, ladder in self.ladders.items():
             if not isinstance(ladder, list) or not ladder or not all(isinstance(h, str) and h for h in ladder):
                 raise ConfigError(f"ladders.{role} must be a non-empty list of harness names")

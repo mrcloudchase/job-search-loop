@@ -20,7 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
@@ -70,12 +70,13 @@ def score_errors(scores: object) -> list[str]:
     return errors
 
 
-def score(scores: dict) -> int:
-    """The weighted total, rounded half up. Raises ValueError naming every bad dimension."""
+def score(scores: dict, weights: dict | None = None) -> int:
+    """The weighted total (`weights` default WEIGHTS), rounded half up. Raises ValueError naming every bad dimension."""
     errors = score_errors(scores)
     if errors:
         raise ValueError(" ".join(errors))
-    return (sum(WEIGHTS[d] * scores[d] for d in WEIGHTS) + 50) // 100
+    weights = weights or WEIGHTS
+    return (sum(weights[d] * scores[d] for d in WEIGHTS) + 50) // 100
 
 
 def band(total: int) -> str:
@@ -114,8 +115,13 @@ class Fit:
     requirements: tuple[Requirement, ...]
     strengths: tuple[str, ...]      # verbatim, as the harness wrote them
     gaps: tuple[str, ...]
+    weights: dict = field(default_factory=lambda: dict(WEIGHTS))   # what the total is computed with (the playbook's, in the loop)
+    panel: tuple[dict, ...] = ()    # per-evaluation {harness, total, scores, vetoes} when a panel of harnesses scored it
+    panel_note: str = ""            # why a panel is not whole (one evaluation failed its checks)
 
     def __post_init__(self):
+        if set(self.weights) != set(WEIGHTS) or sum(self.weights.values()) != 100:
+            raise ValueError(f"weights must name exactly {', '.join(WEIGHTS)} and sum to 100")
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,79}", self.key):
             raise ValueError(f"fit key {self.key!r} must be lowercase letters, digits and hyphens")
         if tuple(g.name for g in self.gates) != GATES:
@@ -130,7 +136,7 @@ class Fit:
 
     @property
     def total(self) -> int:
-        return score(self.scores)
+        return score(self.scores, self.weights)
 
     @property
     def band(self) -> str:
@@ -155,8 +161,10 @@ class Fit:
         return not self.vetoes
 
     def as_dict(self) -> dict:
-        return {"rubric_version": RUBRIC_VERSION, "key": self.key, "scores": self.scores, "total": self.total,
-                "band": self.band, "recommendation": self.recommendation, "shortlisted": self.shortlisted,
+        extra = {**({"panel": [dict(p) for p in self.panel]} if self.panel else {}),
+                 **({"panel_note": self.panel_note} if self.panel_note else {})}
+        return {**extra, "rubric_version": RUBRIC_VERSION, "key": self.key, "scores": self.scores, "weights": dict(self.weights),
+                "total": self.total, "band": self.band, "recommendation": self.recommendation, "shortlisted": self.shortlisted,
                 "vetoes": list(self.vetoes), "flags": list(self.flags),
                 "gates": [{"name": g.name, "verdict": g.verdict, "notes": list(g.notes)} for g in self.gates],
                 "requirements": [{"term": r.term, "kind": r.kind, "backed": r.backed, "quote": r.quote,
@@ -183,7 +191,7 @@ def save(fit: Fit, folder: Path | str) -> Path:
 def render(fit: Fit) -> str:
     """The evaluation as a person reads it: scores, total, band, vetoes and flags, strengths, gaps, recommendation."""
     lines = [f"Fit {fit.key}: {fit.total}/100, {fit.band}" + ("" if fit.shortlisted else " (VETOED)")]
-    lines += [f"  {d:<12}{fit.scores[d]:>4}  (weight {WEIGHTS[d]})" for d in WEIGHTS]
+    lines += [f"  {d:<12}{fit.scores[d]:>4}  (weight {fit.weights[d]})" for d in WEIGHTS]
     lines += [f"  VETO {v}" for v in fit.vetoes] + [f"  FLAG {f}" for f in fit.flags]
     lines += ["Strengths:", *[f"  - {s}" for s in fit.strengths], "Gaps:", *[f"  - {g}" for g in fit.gaps]]
     return "\n".join([*lines, f"Recommendation: {fit.recommendation}"])
@@ -495,9 +503,10 @@ def _posting_fields(rows: list, label: str, fields: dict[str, type], posting: st
     return kept
 
 
-def build(data: object, profile: str, posting: str, key: str) -> tuple[Fit | None, list[str]]:
+def build(data: object, profile: str, posting: str, key: str, weights: dict | None = None) -> tuple[Fit | None, list[str]]:
     """The harness's fit.json checked against the profile and the posting: (the Fit, no failures) or
-    (None, every failure). Anything the harness reported that code computes itself is ignored."""
+    (None, every failure). Anything the harness reported that code computes itself is ignored. `weights` (default
+    WEIGHTS) are what the total is computed with."""
     if not isinstance(data, dict):
         return None, ["fit.json must be a JSON object."]
     posting = visible(posting)
@@ -558,7 +567,8 @@ def build(data: object, profile: str, posting: str, key: str) -> tuple[Fit | Non
     gates = (eligibility_gate(eligibility, held), permit_gate(eligibility, held),
              location_gate(location, read_deal_breakers(profile), opening),
              language_gate(languages, read_languages(profile)))
-    return Fit(key, *(data["scores"][d] for d in WEIGHTS), gates, tuple(requirements), strengths, gaps), []
+    return Fit(key, *(data["scores"][d] for d in WEIGHTS), gates, tuple(requirements), strengths, gaps,
+               dict(weights or WEIGHTS)), []
 
 
 # ── the harness turn ────────────────────────────────────────────────────────────────────────────
@@ -595,13 +605,15 @@ gate verdict itself from your facts; do not report them.
 - The loop checks the file after every turn and sends back whatever fails. Write fit.json and nothing else."""
 
 
-def evaluate(turns: Turns, model: str, profile: str, posting: str, key: str = "", rounds: int = 3) -> Fit | None:
+def evaluate(turns: Turns, model: str, profile: str, posting: str, key: str = "", rounds: int = 3,
+             weights: dict | None = None, failed: list[str] | None = None) -> Fit | None:
     """Run the harness turn and check its facts; failures go back word for word until they pass or `rounds` run out.
-    Returns the Fit (gates, score, band and vetoes all computed here), or None if the run stopped or never passed."""
+    Returns the Fit (gates, score, band and vetoes all computed here), or None if the run stopped or never passed.
+    `weights` are the total's weights; `failed`, if given, is filled with the last round's failures, verbatim."""
     key = key or slug(next((l.lstrip("# ") for l in visible(posting).splitlines() if l.strip()), ""), 60) or "posting"
     best: list[Fit] = []
 
-    def validate(record: dict) -> list[str]:
+    def check(record: dict) -> list[str]:
         text = turns.files(record, "fit.json")["fit.json"]
         if text is None:
             return ["fit.json must exist in the working directory."]
@@ -609,9 +621,15 @@ def evaluate(turns: Turns, model: str, profile: str, posting: str, key: str = ""
             data = json.loads(text)
         except ValueError as error:
             return [f"fit.json is not valid JSON: {error}"]
-        fit, failures = build(data, profile, posting, key)
+        fit, failures = build(data, profile, posting, key, weights)
         if fit:
             best[:] = [fit]
+        return failures
+
+    def validate(record: dict) -> list[str]:
+        failures = check(record)
+        if failed is not None:
+            failed[:] = failures
         return failures
 
     record = turns.turn("FIT", model, "Evaluate how well the candidate in profile.md fits the job in posting.md.", ROLE,

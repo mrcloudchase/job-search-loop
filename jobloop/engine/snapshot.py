@@ -86,7 +86,7 @@ def fingerprint(me: Path) -> dict:
     profile = me / "profile.md"
     try:
         rows = tracker.read_rows(me / "tracker.csv")
-    except OSError:
+    except (OSError, ValueError):           # an unreadable tracker is reported by the snapshot; it is not a pass-ending surprise
         rows = ()
     return {"profile": hashlib.sha256(profile.read_bytes()).hexdigest() if profile.exists() else "",
             "rows": {r.key or f"row{i}": (r.status, r.company, r.role) for i, r in enumerate(rows)}}

@@ -14,6 +14,7 @@ from .stage import Stage
 from .store import Store
 
 URGENT_DAYS = 3
+ONBOARD = "onboard"
 
 
 def _when(stamp: str) -> datetime:
@@ -56,6 +57,8 @@ def candidates(snap: Snapshot, stages: list[Stage], skip: set[tuple[str, str]] =
     found = []
     for stage in stages:
         if stage.spec.name in snap.config_disabled():
+            continue
+        if not snap.profile_ready and stage.spec.name != ONBOARD:      # nothing runs on a missing profile except asking for one
             continue
         try:
             proposed = stage.propose(snap)

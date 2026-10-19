@@ -86,18 +86,19 @@ def acknowledged(me: Path | str, name: str) -> bool:
     return bool(_read_config(me).get(name, {}).get("terms_acknowledged"))
 
 
-def is_enabled(me: Path | str, name: str, config: dict | None = None) -> bool:
-    """On if recorded on (or, with nothing recorded, the adapter's default), and, for a board with TERMS, acknowledged."""
+def is_enabled(me: Path | str, name: str, config: dict | None = None, person_acked: bool = False) -> bool:
+    """On if recorded on (or, with nothing recorded, the adapter's default), and, for a board with TERMS, acknowledged.
+    `person_acked` is the person's own standing acknowledgement given by the caller (the loop's `acknowledge_terms`)."""
     module = module_of(name, me)
     config = _read_config(me) if config is None else config
     on = config.get(name, {}).get("enabled")
     on = module.DEFAULT_ENABLED if on is None else bool(on)
-    return on and (not module.TERMS or bool(config.get(name, {}).get("terms_acknowledged")))
+    return on and (not module.TERMS or person_acked or bool(config.get(name, {}).get("terms_acknowledged")))
 
 
-def enabled_boards(me: Path | str) -> list[str]:
+def enabled_boards(me: Path | str, person_acked: bool = False) -> list[str]:
     config = _read_config(me)
-    return [name for name in registry.names(me) if is_enabled(me, name, config)]
+    return [name for name in registry.names(me) if is_enabled(me, name, config, person_acked)]
 
 
 def set_enabled(me: Path | str, name: str, on: bool, acknowledged_terms: bool = False, today: date | None = None) -> None:
@@ -116,10 +117,10 @@ def set_enabled(me: Path | str, name: str, on: bool, acknowledged_terms: bool = 
         archive.write_atomically(file, (json.dumps({"boards": boards}, indent=1, sort_keys=True) + "\n").encode())
 
 
-def require_runnable(me: Path | str, module) -> None:
+def require_runnable(me: Path | str, module, person_acked: bool = False) -> None:
     """A board with TERMS is never run, even when asked for by name, until its terms are acknowledged."""
     name = module.NAME
-    if module.TERMS and not acknowledged(me, name):
+    if module.TERMS and not (person_acked or acknowledged(me, name)):
         raise PermissionError(f"{name} has terms: {module.TERMS} Run `boards enable {name} --acknowledge-terms` first.")
 
 
@@ -231,7 +232,7 @@ def _day(text: str | None) -> str | None:
 def search(boards: list[str], queries, me: Path | str, *, location: str = "", recency_days: int | None = DEFAULT_RECENCY_DAYS,
            limit: int = 20, verify_open: bool = False, today: date | None = None, modules: dict | None = None,
            client_factory: Callable[..., Client] = make_client, sleep: Callable[[float], None] = time.sleep,
-           clock: Callable[[], float] = time.monotonic) -> Report:
+           clock: Callable[[], float] = time.monotonic, person_acked: bool = False) -> Report:
     """Search the named boards for each query and store what is found. Refuses before any request if a board's terms are
     not acknowledged or a query is invalid. Each board gets at most MAX_REQUESTS requests, MIN_GAP seconds apart. `modules` replaces the registry (tests); `client_factory(module)` builds each client."""
     today = today or date.today()
@@ -240,7 +241,7 @@ def search(boards: list[str], queries, me: Path | str, *, location: str = "", re
         raise ValueError("no query given")
     loaded = {name: (modules or {}).get(name) or module_of(name, me) for name in boards}
     for module in loaded.values():
-        require_runnable(me, module)
+        require_runnable(me, module, person_acked)
     stored = state.load(me)
     seen_urls = state.url_index(stored)
 

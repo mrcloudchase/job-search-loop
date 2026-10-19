@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import unicodedata
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -84,6 +85,61 @@ def load_questions(path: Path | str) -> tuple[str, tuple[Question, ...]]:
     if not employer or not questions or len(set(ids)) != len(ids):
         raise SystemExit(f"{path}: needs an employer and at least one question, each with its own id")
     return employer, questions
+
+
+# Questions about who the candidate IS are never sent to a model and never answered by the loop: the person answers them
+# (or declines) on the form. The list is conservative on purpose: when a question might be one of these, it is left for the person.
+_PERSONAL = (
+    # English
+    r"race", r"racial", r"ethnic\w*", r"gender\w*", r"sex", r"sexual\W+orientation", r"sexuality", r"lgbt\w*", r"transgender",
+    r"pronouns?", r"disabilit\w+", r"disabled", r"handicap\w*", r"veterans?", r"military\W+(?:status|service)", r"age", r"how\W+old",
+    r"date\W+of\W+birth", r"birth\W?date", r"birthday", r"religio\w*", r"faith", r"marital", r"married", r"citizen\w*", r"nationality",
+    r"national\W+origin", r"place\W+of\W+birth", r"country\W+of\W+birth", r"self\W?identif\w*", r"voluntary\W+(?:self|disclosure|survey|information)",
+    r"equal\W+(?:employment\W+)?opportunity", r"eeo\w*", r"diversity\W+(?:survey|question|data|monitoring)", r"pregnan\w*",
+    r"criminal\W+(?:record|history|convictions?)", r"work\W+(?:permit|authori[sz]ation)", r"right\W+to\W+work",
+    r"(?:authori[sz]ed|eligible|legally\W+entitled)\W+to\W+work", r"visa", r"sponsorship",
+    # Danish
+    r"koen", r"etnicitet\w*", r"etnisk\w*", r"seksuel\w*", r"handicap\w*", r"funktionsnedsaettelse\w*", r"veteran\w*", r"alder",
+    r"foedselsdato", r"foedselsaar", r"religion\w*", r"tros\w+", r"civilstand", r"gift", r"statsborger\w*", r"nationalitet\w*",
+    r"herkomst", r"selvidentifikation", r"frivillig\w*\W+(?:oplysning|besvarelse|undersoegelse)\w*", r"arbejdstilladelse", r"opholdstilladelse",
+    # German
+    r"geschlecht\w*", r"ethnisch\w*", r"ethnie", r"herkunft", r"rasse\w*", r"sexuell\w*", r"behinderung\w*", r"schwerbehinder\w*",
+    r"alter", r"geburtsdatum", r"geburtsjahr", r"geburtsort", r"religion\w*", r"konfession\w*", r"weltanschauung", r"familienstand",
+    r"verheiratet", r"staatsangehoerigkeit\w*", r"staatsbuergerschaft\w*", r"nationalitaet\w*", r"freiwillige\W+angaben",
+    r"arbeitserlaubnis", r"aufenthaltstitel", r"arbeitsgenehmigung",
+    # Dutch
+    r"geslacht\w*", r"etnisch\w*", r"etniciteit", r"ras", r"seksuele\w*", r"geaardheid", r"beperking\w*", r"arbeidsbeperking", r"handicap\w*",
+    r"veteraan\w*", r"leeftijd", r"geboortedatum", r"geboorteplaats", r"geloof", r"godsdienst\w*", r"religie\w*", r"burgerlijke\W+staat",
+    r"gehuwd", r"nationaliteit\w*", r"staatsburgerschap", r"vrijwillig\w*\W+(?:gegevens|vragenlijst|invullen)", r"werkvergunning", r"verblijfsvergunning",
+)
+
+
+def _fold(text: str) -> str:
+    """Lower-case, accents and the letters ae oe aa ss written out, so 'Køn', 'Geschlecht' and 'Staatsangehörigkeit' meet one spelling."""
+    text = text.casefold().replace("\u00e6", "ae").replace("\u00f8", "oe").replace("\u00e5", "aa").replace("\u00df", "ss")
+    text = text.replace("\u00e4", "ae").replace("\u00f6", "oe").replace("\u00fc", "ue")
+    return "".join(c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c))
+
+
+_PERSONAL_RE = re.compile(r"(?<![a-z0-9])(?:" + "|".join(_PERSONAL) + r")(?![a-z0-9])")
+
+
+def personal_question(text: str) -> str:
+    """The word or phrase that makes this question one only the person answers (race, ethnicity, gender, sexual orientation,
+    disability, veteran status, age, religion, marital status, citizenship, voluntary self-identification, in English, Danish,
+    German and Dutch), or "" when it is not one. Keyword matching, deliberately over-inclusive: a false match only means the
+    person writes that answer themselves."""
+    found = _PERSONAL_RE.search(_fold(text))
+    return found.group(0) if found else ""
+
+
+def is_personal(text: str) -> bool:
+    return bool(personal_question(text))
+
+
+def for_you(question: "Question", why: str = "") -> str:
+    """How a question the loop does not answer is shown to the person: its original text, untouched."""
+    return f"FOR YOU: {question.text}" + (f" ({why})" if why else "")
 
 
 def check_answer(question: Question, answer: str, sources: list[str], gaps: list[str], today: date | None = None,

@@ -24,7 +24,7 @@ from urllib.parse import urlsplit
 
 from . import profile
 from .guards.hosts import split_url
-from .research import RESEARCHER, Dropped, Fetcher, gather, verify_claims
+from .research import RESEARCHER, Claim, Dropped, Fetcher, gather, verify_claims
 from .text import flat
 from .turns import Api, Turns
 
@@ -101,20 +101,30 @@ class Report:
         return out
 
 
+def collect(turns: Turns, model: str, named: Sources, *, fetch: Callable[[str], str] | None = None,
+            rounds: int = 2) -> tuple[tuple[Claim, ...], tuple[Dropped, ...]] | None:
+    """One research turn on the named pages, every claim verified by code: (kept, dropped), or None if no turn completed.
+    Writes nothing and asks nobody; `enrich` and the loop's `onboard` stage both build on it."""
+    text = ("The person's public pages (read these, nothing else):\n" + "\n".join(f"- {u}" for u in named.urls)
+            + f"\nAllowed hosts (the only ones you can fetch): {', '.join(named.hosts)}")
+    claims = gather(turns, model, named.hosts, ROLE, text, {}, "ENRICH", rounds)
+    if claims is None:
+        return None
+    with ExitStack() as stack:
+        fetch = fetch or stack.enter_context(Fetcher(named.hosts))
+        return verify_claims(claims, fetch, named.hosts, url_ok=named.owns)
+
+
 def enrich(turns: Turns, model: str, profile_path: Path | str, named: Sources, confirm: Callable[[str], bool], *,
            fetch: Callable[[str], str] | None = None, ignored: Callable[[Path], bool | None] = profile.git_ignored,
            today: date | None = None, rounds: int = 2) -> Report:
     """Read the named pages in one research turn, verify every claim, and offer each new fact to the person."""
     path, today = Path(profile_path), today or date.today()
     existing = path.read_text()
-    text = ("The person's public pages (read these, nothing else):\n" + "\n".join(f"- {u}" for u in named.urls)
-            + f"\nAllowed hosts (the only ones you can fetch): {', '.join(named.hosts)}")
-    claims = gather(turns, model, named.hosts, ROLE, text, {}, "ENRICH", rounds)
-    if claims is None:
+    found = collect(turns, model, named, fetch=fetch, rounds=rounds)
+    if found is None:
         return Report(notes=("no research turn completed (time, budget or format); the profile was not touched",))
-    with ExitStack() as stack:
-        fetch = fetch or stack.enter_context(Fetcher(named.hosts))
-        kept, dropped = verify_claims(claims, fetch, named.hosts, url_ok=named.owns)
+    kept, dropped = found
     added, declined, known = [], [], []
     for claim in kept:
         if flat(claim.claim) in flat(existing):

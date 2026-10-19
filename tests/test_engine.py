@@ -38,6 +38,8 @@ class Stub:
 
 
 def run(tmp_path, stages, at=NOW, **kw):
+    if not (tmp_path / "profile.md").exists() and not kw.pop("no_profile", False):      # stages other than onboard need a profile to run
+        (tmp_path / "profile.md").write_text("# A\n")
     return runner.run_pass(tmp_path, stages, config=kw.pop("config", cfg()), now=lambda: at, out=lambda s: None, **kw)
 
 
@@ -295,3 +297,16 @@ def test_a_better_playbook_version_stays(tmp_path):
             store.queue_put(f"b{i}", "ready", "p", {}, later)
         assert playbook.review(tmp_path, store, (), 0.15, 5, later) == ""
         assert playbook.load(tmp_path, store).version == 2
+
+
+# ── no profile: only onboard is considered ──
+def test_without_a_profile_only_the_onboard_stage_is_considered(tmp_path):
+    from jobloop.engine import snapshot
+    other, onboard = Stub("draft"), Stub("onboard")
+    with Store(tmp_path) as store:
+        snap = snapshot.take(tmp_path, store, cfg(), NOW)
+        assert not snap.profile_ready
+        assert [s.name for _, s in policy.candidates(snap, [other, onboard])] == ["onboard"]
+        (tmp_path / "profile.md").write_text("# A\n")
+        snap = snapshot.take(tmp_path, store, cfg(), NOW)
+        assert sorted(s.name for _, s in policy.candidates(snap, [other, onboard])) == ["draft", "onboard"]
