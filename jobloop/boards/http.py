@@ -25,6 +25,7 @@ class Reply:
     status: int
     body: bytes
     headers: httpx.Headers
+    url: str = ""
 
 
 class Client:
@@ -49,17 +50,17 @@ class Client:
         if parts.scheme != "https" or (parts.hostname or "").lower() not in self.hosts or parts.username or parts.password:
             raise BoardError("invalid", f"{self.board} may only use https on {', '.join(self.hosts)}, not {url[:80]}")
 
-    def _once(self, url: str, params: dict | None, headers: dict | None) -> Reply:
-        """One request, redirects not followed, the body size-limited."""
+    def _once(self, url: str, params: dict | None, headers: dict | None, body: dict | None = None) -> Reply:
+        """One request, redirects not followed, the body size-limited. A `body` makes it a JSON POST."""
         self._check(url)
         try:
-            with self.http.stream("GET", url, params=params, headers=headers) as r:
-                body = bytearray()
+            with self.http.stream("POST" if body is not None else "GET", url, params=params, headers=headers, json=body) as r:
+                body_bytes = bytearray()
                 for chunk in r.iter_bytes():
-                    body += chunk
-                    if len(body) > self.max_bytes:
+                    body_bytes += chunk
+                    if len(body_bytes) > self.max_bytes:
                         raise BoardError("parse", f"{self.board} sent more than {self.max_bytes} bytes")
-                return Reply(r.status_code, bytes(body), r.headers)
+                return Reply(r.status_code, bytes(body_bytes), r.headers, str(r.url))
         except httpx.TimeoutException:
             raise BoardError("network", f"{self.board} did not answer in time") from None
         except httpx.HTTPError as e:
@@ -80,11 +81,22 @@ class Client:
         return self._gate.allowed(url)
 
     def get(self, url: str, *, params: dict | None = None, headers: dict | None = None, html: bool = False) -> httpx.Response:
-        """A GET with backoff. `html=True` marks a page that is scraped rather than an API, so robots.txt is checked first."""
+        """A GET with backoff. `html=True` marks a page that is scraped rather than an API, so robots.txt is checked first.
+        The response's `request.url` is where the redirects ended."""
         if html and not self.allowed(str(httpx.URL(url, params=params)) if params else url):
             raise BoardError("robots", f"robots.txt does not allow {self.board} to fetch {url[:100]}")
+        return self._send(url, params, headers, None)
+
+    def post_json(self, url: str, body: dict, *, headers: dict | None = None) -> httpx.Response:
+        """A JSON POST under the same rules as `get`. A POST is an API call, so robots.txt is checked as for a page; a
+        redirect is never followed, since it would have to repeat the body."""
+        if not self.allowed(url):
+            raise BoardError("robots", f"robots.txt does not allow {self.board} to fetch {url[:100]}")
+        return self._send(url, None, headers, body)
+
+    def _send(self, url: str, params: dict | None, headers: dict | None, body: dict | None) -> httpx.Response:
         for attempt in range(self.retries + 1):
-            reply = self._follow(url, params, headers)
+            reply = self._follow(url, params, headers, body)
             if reply.status != 429 and reply.status < 500:
                 break
             if attempt == self.retries:
@@ -96,16 +108,16 @@ class Client:
             raise BoardError("blocked", f"{self.board} refused the request ({reply.status}); it is not retried or worked around")
         if reply.status in (404, 410):
             raise BoardError("not_found", f"{self.board} has no such page ({reply.status})")
-        if reply.status >= 400:
-            raise BoardError("invalid", f"{self.board} answered {reply.status}")
-        return httpx.Response(reply.status, content=reply.body, headers={"content-type": ctype}, request=httpx.Request("GET", url))
+        if reply.status >= 400 or 300 <= reply.status < 400:
+            raise BoardError("invalid", f"{self.board} answered {reply.status}" + (" (a redirect that is not followed)" if reply.status < 400 else ""))
+        return httpx.Response(reply.status, content=reply.body, headers={"content-type": ctype}, request=httpx.Request("GET", reply.url or url))
 
-    def _follow(self, url: str, params: dict | None, headers: dict | None) -> Reply:
-        """One attempt, following up to 5 redirects, each of which must stay on the declared hosts."""
+    def _follow(self, url: str, params: dict | None, headers: dict | None, body: dict | None) -> Reply:
+        """One attempt, following up to 5 redirects of a GET, each of which must stay on the declared hosts."""
         for _ in range(6):
-            reply = self._once(url, params, headers)
+            reply = self._once(url, params, headers, body)
             location = reply.headers.get("location")
-            if reply.status in (301, 302, 303, 307, 308) and location:
+            if reply.status in (301, 302, 303, 307, 308) and location and body is None:
                 url, params = urljoin(url, location), None
                 continue
             return reply
@@ -119,7 +131,10 @@ class Client:
             return 2.0 ** attempt
 
     def json(self, url: str, **kw) -> object:
+        return self.parse_json(self.get(url, **kw))
+
+    def parse_json(self, response: httpx.Response) -> object:
         try:
-            return json.loads(self.get(url, **kw).content)
+            return json.loads(response.content)
         except ValueError:
             raise BoardError("parse", f"{self.board} did not send JSON") from None

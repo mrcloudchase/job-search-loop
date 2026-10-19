@@ -17,11 +17,10 @@ import sys
 from html.parser import HTMLParser
 from urllib.parse import urlparse
 
-import httpx
 
 from . import contract
 from .contract import BoardError, Query
-from .http import CHALLENGE, Client
+from .http import Client
 
 NAME = "jobdanmark"
 HOSTS = ("jobdanmark.dk",)
@@ -77,35 +76,7 @@ def normalize_slug(ref: str) -> str:
 # --- requests ---------------------------------------------------------------------------------------------------------
 
 def _post_json(http: Client, url: str, body: dict) -> object:
-    """A JSON POST under the Client's rules (hosts, robots, backoff, blocked/not-found mapping). The shared Client only
-    has GET, so this repeats its policy for POST; it goes when the Client grows a POST."""
-    http._check(url)
-    if not http.allowed(url):
-        raise BoardError("robots", f"robots.txt does not allow {NAME} to fetch {url[:100]}")
-    for attempt in range(http.retries + 1):
-        try:
-            reply = http.http.post(url, json=body)
-        except httpx.TimeoutException:
-            raise BoardError("network", f"{NAME} did not answer in time") from None
-        except httpx.HTTPError as e:
-            raise BoardError("network", f"{NAME}: {type(e).__name__}: {e}") from None
-        if reply.status_code != 429 and reply.status_code < 500:
-            break
-        if attempt == http.retries:
-            raise BoardError("rate_limited" if reply.status_code == 429 else "network",
-                             f"{NAME} answered {reply.status_code} after {attempt + 1} tries")
-        http.sleep(http._delay(attempt, reply.headers.get("retry-after")))
-    status, ctype = reply.status_code, reply.headers.get("content-type", "")
-    if status in (401, 403) or (status == 200 and "html" in ctype and CHALLENGE.search(reply.text[:3000])):
-        raise BoardError("blocked", f"{NAME} refused the request ({status}); it is not retried or worked around")
-    if status in (404, 410):
-        raise BoardError("not_found", f"{NAME} has no such page ({status})")
-    if status >= 300 or len(reply.content) > http.max_bytes:
-        raise BoardError("invalid", f"{NAME} answered {status}")
-    try:
-        return reply.json()
-    except ValueError:
-        raise BoardError("parse", f"{NAME} did not send JSON") from None
+    return http.parse_json(http.post_json(url, body))
 
 
 def _lookup(http: Client, path: str, **params: str) -> list:

@@ -1,0 +1,10 @@
+{
+  "metadata": {"source": "fictional survey", "index_baseline": 100, "index_label": "Pay index"},
+  "companies": [
+    {"name": "Novo Nordisk A/S", "city": "Bagsværd", "categories": {"engineers": {"count": 120, "index": 118.5}, "managers": {"count": 4, "index": null}}},
+    {"name": "A.P. Møller - Mærsk A/S", "city": "København", "categories": {"all": {"count": 0, "index": 101}}},
+    {"name": "Nestlé Suisse SA", "city": "Vevey", "categories": {"staff": {"count": 30, "index": "private"}}},
+    {"name": "腾讯", "city": "深圳", "categories": {"staff": {"count": 5, "index": 140}}},
+    {"name": "Café Étoile", "city": null, "categories": {"staff": {"count": 7}}}
+  ]
+}

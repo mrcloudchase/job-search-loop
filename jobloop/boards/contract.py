@@ -2,7 +2,7 @@
 
 An adapter module defines `NAME`, `HOSTS` (every host it may contact), `DEFAULT_ENABLED`, `TERMS` (a personal-use or
 terms note, or ""), `ACK_WAIVES_ROBOTS` (True only for a board whose robots.txt disallows pages that its terms permit for
-personal use), and two functions: `search(query, http) -> list[dict]` and `detail(ref, http) -> dict`, where
+personal use), optionally `TIMEOUT` (seconds, default 20) and `RETRIES` (default 3; 0 means a 429 stops at once), and two functions: `search(query, http) -> list[dict]` and `detail(ref, http) -> dict`, where
 `http` is a `boards.http.Client`. Both return results in the shape below. Run as a program (`python -m
 jobloop.boards.NAME search --query ...`) it prints `{"meta": {...}, "results": [...]}` as JSON; any failure goes to
 stderr as one line and the exit code is 1. Adapters run as plain code in the loop, never inside a harness.
@@ -114,7 +114,8 @@ def run_cli(module, argv: list[str] | None = None) -> int:
         if module.TERMS:
             print(f"{module.NAME}: {module.TERMS}", file=sys.stderr)
         waive = module.TERMS and getattr(module, "ACK_WAIVES_ROBOTS", False)
-        with Client(module.NAME, module.HOSTS, robots=(lambda url: True) if waive else None) as http:
+        with Client(module.NAME, module.HOSTS, robots=(lambda url: True) if waive else None, timeout=getattr(module, "TIMEOUT", 20.0),
+                    retries=getattr(module, "RETRIES", 3)) as http:
             if args.command == "search":
                 query = Query(args.query, args.location, args.recency_days, args.limit)
                 found = [r for r in (result(x) for x in module.search(query, http)) if r]

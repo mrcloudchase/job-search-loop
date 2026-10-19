@@ -1,0 +1,102 @@
+[
+ {
+  "id": "500001",
+  "title": "Customer Support Agent",
+  "company": "Nordlys Staffing ApS",
+  "location": "Copenhagen",
+  "date": "2026-10-12",
+  "deadline": null,
+  "url": "https://jobs.example.com/nordlys/500001?utm_source=feed&utm_medium=cpc",
+  "description": "Join our growing support team."
+ },
+ {
+  "id": "500101",
+  "title": "Customer Support Agent",
+  "company": "Nordlys Staffing ApS",
+  "location": "Aarhus",
+  "date": "2026-10-12",
+  "deadline": null,
+  "url": "https://jobs.example.com/nordlys/501001?utm_source=feed&utm_medium=cpc",
+  "description": "Join our growing support team."
+ },
+ {
+  "id": "500201",
+  "title": "Customer Support Agent",
+  "company": "Nordlys Staffing ApS",
+  "location": "Odense",
+  "date": "2026-10-12",
+  "deadline": null,
+  "url": "https://jobs.example.com/nordlys/502001?utm_source=feed&utm_medium=cpc",
+  "description": "Join our growing support team."
+ },
+ {
+  "id": "500301",
+  "title": "Customer Support Agent",
+  "company": "Nordlys Staffing ApS",
+  "location": "Aalborg",
+  "date": "2026-10-12",
+  "deadline": null,
+  "url": "https://jobs.example.com/nordlys/503001?utm_source=feed&utm_medium=cpc",
+  "description": "Join our growing support team."
+ },
+ {
+  "id": "500401",
+  "title": "Customer Support Agent",
+  "company": "Nordlys Staffing ApS",
+  "location": "Esbjerg",
+  "date": "2026-10-12",
+  "deadline": null,
+  "url": "https://jobs.example.com/nordlys/504001?utm_source=feed&utm_medium=cpc",
+  "description": "Join our growing support team."
+ },
+ {
+  "id": "500501",
+  "title": "Customer Support Agent",
+  "company": "Nordlys Staffing ApS",
+  "location": "Randers",
+  "date": "2026-10-12",
+  "deadline": null,
+  "url": "https://jobs.example.com/nordlys/505001?utm_source=feed&utm_medium=cpc",
+  "description": "Join our growing support team."
+ },
+ {
+  "id": "600001",
+  "title": "Platform Engineer",
+  "company": "Fjord Systems",
+  "location": "Copenhagen",
+  "date": "2026-10-15",
+  "deadline": "2026-11-30",
+  "url": "https://jobs.example.com/fjord/600001",
+  "description": "Build platforms."
+ },
+ {
+  "id": "600002",
+  "title": "Old Role",
+  "company": "Fjord Systems",
+  "location": "Copenhagen",
+  "date": "2026-08-01",
+  "deadline": null,
+  "url": "https://jobs.example.com/fjord/600002",
+  "description": null
+ },
+ {
+  "id": "600003",
+  "title": "数据工程师",
+  "company": "Fjord Systems",
+  "location": "Copenhagen",
+  "date": "2026-10-16",
+  "deadline": null,
+  "url": "https://jobs.example.com/fjord/600003",
+  "description": null
+ },
+ {
+  "id": "600004",
+  "title": "数据分析师",
+  "company": "Fjord Systems",
+  "location": "Copenhagen",
+  "date": "2026-10-16",
+  "deadline": null,
+  "url": "https://jobs.example.com/fjord/600004",
+  "description": null
+ }
+]

@@ -38,11 +38,13 @@
   \begin{center}
     {\jlnamefont\fontsize{40}{44}\selectfont\jl@name\par}
     \vspace{6pt}
-    {\color{jlmuted}\fontsize{11}{14}\selectfont\jl@contact\par}
+    {\jlbodyfont\color{jlmuted}\fontsize{11}{14}\selectfont\jl@contact\par}
   \end{center}\vspace{14pt}}
 
+% Date and contact lines use the body font: Lato's hyphen is stored as U+2010 and would corrupt emails, phone
+% numbers and reference ids in the text layer.
 % Date, optionally followed by the posting's reference id (label chosen by the drafter, so any language works).
-\newcommand*{\letterdate}[1]{\begin{flushright}\color{jlmuted}#1%
+\newcommand*{\letterdate}[1]{\begin{flushright}\jlbodyfont\color{jlmuted}#1%
   \ifx\jl@reference\@empty\else\\\jl@reference\fi\end{flushright}\vspace{10pt}}
 
 \newcommand*{\salutation}[1]{{\jlbodyfont\fontsize{11}{13}\selectfont #1\par}\vspace{9pt}}

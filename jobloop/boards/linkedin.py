@@ -25,6 +25,7 @@ from urllib.parse import urlparse
 from . import contract
 from .contract import BoardError, Query
 
+RETRIES = 0                                    # a 429 or a challenge stops the run: no retrying around a refusal
 NAME = "linkedin"
 HOSTS = ("www.linkedin.com",)
 DEFAULT_ENABLED = False

@@ -1,0 +1,15 @@
+I read both drafts. Part A is below, Part B after it.
+
+```json
+[
+  {"file": "cv.tex", "old_string": "migrated 45 cron jobs onto it", "new_string": "migrated 45 cron jobs onto it and ran dbt", "reason": "keyword match"},
+  {"file": "cover.tex", "old_string": "I would bring that experience", "new_string": "I would gladly bring that experience", "reason": "reframing"}
+]
+```
+
+## Part B
+
+1. Missed keywords and requirements: dbt is backed by the profile and was missing.
+2. Company and department angles: the platform team is named in the opening.
+3. Action-oriented reframing: no issues.
+4. Tone and style: no issues.

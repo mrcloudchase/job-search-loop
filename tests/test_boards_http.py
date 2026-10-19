@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import sys
 import types
 from datetime import date
 
@@ -208,3 +207,54 @@ def test_a_board_with_terms_refuses_to_run_until_the_person_acknowledges_them(ca
     assert contract.run_cli(board, ["search", "--query", "data", "--acknowledge-terms"]) == 0
     captured = capsys.readouterr()
     assert "Personal use only." in captured.err and json.loads(captured.out)["meta"]["count"] == 1
+
+
+def test_a_json_post_follows_the_same_rules_and_never_follows_a_redirect():
+    sent = []
+
+    def handler(request):
+        sent.append(request)
+        return httpx.Response(302, headers={"location": f"https://{HOST}/elsewhere"})
+
+    c = client(handler)
+    with pytest.raises(contract.BoardError) as e:
+        c.post_json(f"https://{HOST}/search", {"q": "a"})
+    assert e.value.kind == "invalid" and len(sent) == 1 and sent[0].method == "POST" and json.loads(sent[0].content) == {"q": "a"}
+    with pytest.raises(contract.BoardError) as e:
+        c.post_json("https://evil.example.org/search", {})
+    assert e.value.kind == "invalid" and len(sent) == 1
+
+
+def test_a_post_is_gated_by_robots_and_backs_off_like_a_get():
+    c = client(ok, robots=lambda url: False)
+    with pytest.raises(contract.BoardError) as e:
+        c.post_json(f"https://{HOST}/search", {})
+    assert e.value.kind == "robots" and c.seen == []
+    limited = client(lambda r: httpx.Response(429, headers={"retry-after": "3"}))
+    with pytest.raises(contract.BoardError) as e:
+        limited.post_json(f"https://{HOST}/search", {})
+    assert e.value.kind == "rate_limited" and limited.sleeps == [3.0, 3.0, 3.0]
+
+
+def test_the_response_remembers_where_the_redirects_ended():
+    answers = iter([httpx.Response(301, headers={"location": "/final"}), httpx.Response(200, text="x")])
+    assert str(client(lambda r: next(answers)).get(f"https://{HOST}/start").request.url) == f"https://{HOST}/final"
+
+
+def test_an_adapter_can_ask_for_a_longer_timeout_and_no_retries(capsys):
+    seen = {}
+
+    class Spy(http.Client):
+        def __init__(self, *a, **kw):
+            seen.update(kw)
+            super().__init__(*a, **kw)
+
+    board = fake_board()
+    board.TIMEOUT, board.RETRIES = 60.0, 0
+    real = http.Client
+    http.Client = Spy
+    try:
+        contract.run_cli(board, ["search", "--query", "data"])
+    finally:
+        http.Client = real
+    assert seen["timeout"] == 60.0 and seen["retries"] == 0

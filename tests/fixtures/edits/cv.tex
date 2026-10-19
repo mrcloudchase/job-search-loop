@@ -1,0 +1,19 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=2cm]{geometry}
+\newcommand{\entry}[3]{\textbf{#1} \hfill #3\\ \emph{#2}\vspace{-2pt}}
+\begin{document}
+{\LARGE\textbf{Alex Fernsby}}\\
+alex.fernsby@example.com \quad +1 555 0100 \quad Rotterdam \quad \href{https://github.com/afernsby-example}{github.com/afernsby-example}
+
+\section*{Experience}
+\entry{Senior Data Engineer}{Tidewater Logistics, Rotterdam}{March 2022 - present}
+\begin{itemize}\setlength\itemsep{0pt}
+  \item Cut the nightly rebuild of the delivery-performance mart from 6 hours to 55 minutes with incremental dbt models.
+  \item Mentors two junior engineers and leads the weekly data-modelling review.
+\end{itemize}
+% a deliberate comment line with 100% of nothing
+\entry{Data Engineer}{Marlow Retail Group, Utrecht}{June 2018 - February 2022}
+\begin{itemize}
+  \item Built the first Airflow deployment and migrated 45 cron jobs onto it.
+\end{itemize}
+\end{document}

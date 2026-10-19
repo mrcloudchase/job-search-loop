@@ -66,6 +66,14 @@ class Api:
         r = self.http.get(f"/responses/{rid}/diff")
         return r.text if r.status_code == 200 else ""
 
+    def set_sandbox_egress(self, name: str, hosts: list[str] | tuple[str, ...]) -> None:
+        """Replace a sandbox's `egress` list with exactly `hosts`, keeping its Dockerfile. Raises if the server refuses."""
+        r = self.http.get(f"/sandboxes/{name}")
+        r.raise_for_status()
+        sandbox = r.json()
+        put = self.http.put(f"/sandboxes/{name}", json={"name": name, "dockerfile": sandbox["dockerfile"], "egress": list(hosts)})
+        put.raise_for_status()
+
     def cancel(self) -> None:
         if self.current:
             self.http.post(f"/responses/{self.current}/cancel")

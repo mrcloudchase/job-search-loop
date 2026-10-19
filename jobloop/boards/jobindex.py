@@ -23,6 +23,7 @@ from zoneinfo import ZoneInfo
 from .contract import BoardError, Query, parse_date, recent, run_cli
 from .http import Client
 
+TIMEOUT = 60.0                                  # Jobindex is slow: about 20 s a request was seen
 NAME = "jobindex"
 HOSTS = ("www.jobindex.dk",)
 DEFAULT_ENABLED = False

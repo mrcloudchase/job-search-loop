@@ -10,6 +10,8 @@
 \documentclass[11pt,a4paper,sans]{moderncv}
 \moderncvstyle{banking}
 \moderncvcolor{blue}
+% Plain-text contact labels, so the text layer reads "Mobile" and not an icon name.
+\moderncvicons{letters}
 
 \usepackage[scale=0.80]{geometry}
 \usepackage{needspace}
@@ -24,6 +26,9 @@
 
 \AtEndPreamble{%
   \hypersetup{pdfpagemode=UseNone,pdfauthor={[[FULL NAME]]},pdftitle={[[FULL NAME]], CV},colorlinks=false,pdfborder={0 0 0}}}
+
+% A plain bullet, so the text layer holds a bullet and not a symbol-font character.
+\AtBeginDocument{\renewcommand*{\labelitemi}{\textbullet}}
 
 \firstname{[[FIRST NAME]]}
 \familyname{[[FAMILY NAME]]}

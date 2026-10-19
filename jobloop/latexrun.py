@@ -3,7 +3,7 @@
 Promises: documents are compiled with no network, a read-only root, size-limited tmpfs, uid 1000, no capabilities, a
 time limit and shell escape off. The engine and source extension come only from a fixed allowlist, never from a free-form
 command. A failed compile returns LaTeX's own error lines word for word. Every PDF comes back with the text of
-pdfinfo, pdftotext (default layout and raw) and pdftotext -bbox-layout, so later checks never run a tool themselves.
+pdfinfo, pdffonts, pdftotext (default layout and raw) and pdftotext -bbox-layout, so later checks never run a tool themselves.
 """
 from __future__ import annotations
 
@@ -145,6 +145,7 @@ class Rendered:
     text: str
     text_raw: str
     bbox: str
+    fonts: str
     tool_errors: tuple[str, ...]
 
     @property
@@ -195,7 +196,8 @@ if spec["mode"] == "compile":
 if os.path.exists(pdf):
     out["pdf"] = base64.b64encode(open(pdf, "rb").read()).decode()
     for key, argv in (("pdfinfo", ["pdfinfo", pdf]), ("text", ["pdftotext", pdf, "-"]),
-                      ("text_raw", ["pdftotext", "-raw", pdf, "-"]), ("bbox", ["pdftotext", "-bbox-layout", pdf, "-"])):
+                      ("text_raw", ["pdftotext", "-raw", pdf, "-"]), ("bbox", ["pdftotext", "-bbox-layout", pdf, "-"]),
+                      ("fonts", ["pdffonts", pdf])):
         done = subprocess.run(argv, stdin=subprocess.DEVNULL, capture_output=True, timeout=60)
         out["tools"][key] = done.stdout.decode("utf-8", "replace")
         if done.returncode != 0:
@@ -237,7 +239,7 @@ def _run(image: str, files: dict[str, bytes], spec: dict, label: str, timeout: i
             done = subprocess.run(argv, capture_output=True, timeout=2 * timeout + 120)
         except subprocess.TimeoutExpired:
             subprocess.run(["docker", "rm", "-f", name], capture_output=True)
-            return Rendered(label, False, None, "the container did not finish in time", (), True, "", "", "", "", ())
+            return Rendered(label, False, None, "the container did not finish in time", (), True, "", "", "", "", "", ())
     if done.returncode != 0:
         raise RuntimeError(f"the check container failed to run ({done.returncode}): {done.stderr.decode(errors='replace')}")
     out = json.loads(done.stdout)
@@ -246,7 +248,7 @@ def _run(image: str, files: dict[str, bytes], spec: dict, label: str, timeout: i
         name=label, ok=out["ok"], pdf=base64.b64decode(out["pdf"]) if out["pdf"] else None,
         log_tail=log_tail(out["log"]), errors=extract_errors(out["log"]), timed_out=out["timed_out"],
         pdfinfo=tools.get("pdfinfo", ""), text=tools.get("text", ""), text_raw=tools.get("text_raw", ""),
-        bbox=tools.get("bbox", ""), tool_errors=tuple(out["tool_errors"]))
+        bbox=tools.get("bbox", ""), fonts=tools.get("fonts", ""), tool_errors=tuple(out["tool_errors"]))
 
 
 def compile_one(source_text: str, template: Template, stem: str, image: str, timeout: int) -> Rendered:
@@ -269,6 +271,18 @@ def compile_documents(cv_tex: str, cover_tex: str, image: str = DEFAULT_IMAGE, *
         raise TemplateError("cv_template must be a cv template and cover_template a letter template")
     return Documents(cv=compile_one(cv_tex, cv_template, "cv", image, timeout),
                      cover=compile_one(cover_tex, cover_template, "cover", image, timeout))
+
+
+def verify_template(template: Template, image: str = DEFAULT_IMAGE, *, timeout: int = 180) -> Rendered:
+    """The registration check: the template's filled sample must compile cleanly to exactly its declared page limit."""
+    sample = (template.folder / template.sample).read_text(encoding="utf-8")
+    rendered = compile_one(sample, template, "sample", image, timeout)
+    if not rendered.ok:
+        raise TemplateError(f"template {template.name} does not compile.\n{rendered.failure_report()}")
+    if rendered.pages != template.page_limit:
+        raise TemplateError(
+            f"template {template.name} sample has {rendered.pages} pages; its page_limit is {template.page_limit}")
+    return rendered
 
 
 def inspect_pdf(pdf: bytes, image: str = DEFAULT_IMAGE, *, timeout: int = 60) -> Rendered:
