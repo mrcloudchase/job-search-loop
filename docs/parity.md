@@ -10,7 +10,7 @@ or `not ported, because ...`. `planned (stricter: ...)` is planned and will be s
 
 | Area | Rows | done | stricter here | not ported | planned |
 |---|---|---|---|---|---|
-| [A-profile-security](parity/A-profile-security.md) | 238 | 87 | 60 | 62 | 29 |
+| [A-profile-security](parity/A-profile-security.md) | 238 | 106 | 69 | 63 | 0 |
 | [B-search-rank](parity/B-search-rank.md) | 295 | 169 | 70 | 56 | 0 |
 | [C1-apply](parity/C1-apply.md) | 291 | 183 | 72 | 36 | 0 |
 | [C2-pdf-salary](parity/C2-pdf-salary.md) | 163 | 136 | 15 | 12 | 0 |

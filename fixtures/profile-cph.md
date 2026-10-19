@@ -50,7 +50,7 @@ companies. Strongest in Python, SQL and Apache Airflow.
 
 ## Preferences
 - Wants: a senior individual-contributor or tech-lead role on a data platform team
-- Deal-breakers: more than 3 days a week on site; on-call without compensation
+- Deal-breakers: more than 4 days a week on site; on-call without compensation
 - Career goals: tech lead within 3 years
 
 ## Behavioural profile

@@ -1,0 +1,159 @@
+
+━━ FACTS · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 00:00 · $0.00
+  resp_d723c75f20124705 · claude-deepseek/deepseek-chat · streaming
+  ⚙ Read /srv/hi-data/workspaces/resp_d723c75f20124705/posting.md
+  ⚙ Write /srv/hi-data/workspaces/resp_d723c75f20124705/facts.json
+  Wrote `facts.json`: - **company**: "Too Good To Go" - **role**: "Senior Data Engineer" - **department**: "Par…
+  completed · 8.917s · $0.071 · changed facts.json
+  diff --git a/facts.json b/facts.json
+  new file mode 100644
+  index 0000000..f380341
+  --- /dev/null
+  +++ b/facts.json
+  @@ -0,0 +1,8 @@
+  +{
+  +  "company": "Too Good To Go",
+  +  "role": "Senior Data Engineer",
+  +  "department": "Parcels",
+  +  "location": "Copenhagen, Capital Region of Denmark, Denmark",
+  +  "deadline": null,
+  +  "reference": null
+  +}
+  verify: all checks pass
+
+Senior Data Engineer at Too Good To Go  → me/applications/too_good_to_go__senior_data_engineer
+  source host: portal (linkedin.com) www.linkedin.com is under linkedin.com
+
+━━ FIT · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 00:09 · $0.07
+  resp_3e09ccf6ae7b4f3e · claude-deepseek/deepseek-chat · streaming
+  ⚙ Read /srv/hi-data/workspaces/resp_3e09ccf6ae7b4f3e/profile.md
+  ⚙ Read /srv/hi-data/workspaces/resp_3e09ccf6ae7b4f3e/posting.md
+  ⚙ Write /srv/hi-data/workspaces/resp_3e09ccf6ae7b4f3e/fit.json
+  I wrote fit.json. Key facts: - **Strong technical match:** Airflow, Python, SQL, dbt, Kafka, Terraform, GitHu…
+  completed · 12.239s · $0.095 · changed fit.json
+  diff --git a/fit.json b/fit.json
+  new file mode 100644
+  index 0000000..e4c9c7d
+  --- /dev/null
+  +++ b/fit.json
+  @@ -0,0 +1,51 @@
+  +{
+  +  "scores": {
+  +    "technical": 82,
+  +    "experience": 86,
+  +    "behavioural": 72,
+  +    "career": 55
+  +  },
+  +  "requirements": [
+  +    {"term": "Logistics", "kind": "required", "verdict": "backed", "quote": "Owns the shipment-events pipeline: 40 million events per day
+  +    {"term": "inventory", "kind": "required", "verdict": "gap", "quote": ""},
+  +    {"term": "supply-chain", "kind": "required", "verdict": "gap", "quote": ""},
+  +    {"term": "Python", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, Bi
+  +    {"term": "SQL", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, BigQu
+  +    {"term": "Redshift", "kind": "preferred", "verdict": "gap", "quote": ""},
+  +    {"term": "Airflow", "kind": "required", "verdict": "backed", "quote": "Built the first Airflow deployment at the company and migrated
+  +    {"term": "dbt", "kind": "required", "verdict": "backed", "quote": "Cut the nightly rebuild of the delivery-performance mart from 6 ho
+  +    {"term": "Terraform", "kind": "required", "verdict": "backed", "quote": "Working: Terraform, GitHub Actions, Looker"},
+  +    {"term": "GitHub Actions", "kind": "required", "verdict": "backed", "quote": "Working: Terraform, GitHub Actions, Looker"},
+  +    {"term": "Docker", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, Bi
+  +    {"term": "DataOps", "kind": "required", "verdict": "gap", "quote": ""},
+  +    {"term": "Kafka", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, Big
+  +    {"term": "stakeholder", "kind": "required", "verdict": "gap", "quote": ""}
+  +  ],
+  +  "strengths": [
+  +    "Airflow is a primary skill: built the first Airflow deployment at Marlow Retail Group and runs Tidewater's Kafka-to-warehouse shipme
+  +    "Python and SQL are named strong skills, matching the core technical requirements",
+  +    "dbt experience evidenced by the incremental-models rebuild cut from 6 hours to 55 minutes",
+  +    "Terraform, GitHub Actions and Docker cover the Infrastructure-as-Code and CI/CD requirements",
+  +    "Seven years of logistics pipeline work at Tidewater Logistics matches the operational logistics domain"
+  +  ],
+  +  "gaps": [
+  +    "No evidence of inventory or supply-chain systems beyond shipment events",
+  +    "Redshift (preferred) is not mentioned; the profile lists BigQuery and PostgreSQL",
+  +    "No stated DataOps or stakeholder-management experience, though mentoring and cross-review work exist"
+  +  ],
+  +  "eligibility": [
+  +    {"kind": "work_authorisation", "stance": "welcomes", "scope": "role", "value": "applications welcomed from any candidate", "text": "P
+  +  ],
+  +  "languages": [
+  +    {"language": "English", "level": "", "required": true, "text": "Please submit your CV and Cover letter in English."}
+  +  ],
+  +  "location": {
+  +    "onsite_days": 4,
+  +    "relocation_required": false,
+  +    "travel": "none",
+  +    "text": "Hybrid work setup in our Copenhagen HQ (4 days in office).",
+  +    "deal_breaker_hits": [
+  +      {"deal_breaker": "more than 3 days a week on site", "text": "Hybrid work setup in our Copenhagen HQ (4 days in office)."}
+  +    ]
+  +  }
+  +}
+  verify: 3 failing
+    ✗ requirements[0] ('Logistics'): quote must be profile.md's own words, containing 'Logistics', from a line that…
+    ✗ requirements[12] ('Kafka'): 'Kafka' does not appear in the posting's visible text (HTML comments are not the …
+    ✗ strengths entry 'Seven years of logistics pipeline work at Tidewater Logistics matches the operational logist…
+
+━━ FIX FIT 1/3 · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 00:21 · $0.17
+  resp_c3805342e3b34911 · claude-deepseek/deepseek-chat · streaming
+  ⚙ Read /srv/hi-data/workspaces/resp_3e09ccf6ae7b4f3e/profile.md
+  ⚙ Write /srv/hi-data/workspaces/resp_3e09ccf6ae7b4f3e/fit.json
+  I fixed all three problems. - **Logistics quote:** it now uses the profile's own words, "Data engineer with 7…
+  completed · 11.185s · $0.098 · changed fit.json
+  diff --git a/fit.json b/fit.json
+  index e4c9c7d..98b1e17 100644
+  --- a/fit.json
+  +++ b/fit.json
+  @@ -6,7 +6,7 @@
+       "career": 55
+     },
+     "requirements": [
+  -    {"term": "Logistics", "kind": "required", "verdict": "backed", "quote": "Owns the shipment-events pipeline: 40 million events per day
+  +    {"term": "Logistics", "kind": "required", "verdict": "backed", "quote": "Data engineer with 7 years of experience building batch and 
+       {"term": "inventory", "kind": "required", "verdict": "gap", "quote": ""},
+       {"term": "supply-chain", "kind": "required", "verdict": "gap", "quote": ""},
+       {"term": "Python", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, Bi
+  @@ -18,20 +18,18 @@
+       {"term": "GitHub Actions", "kind": "required", "verdict": "backed", "quote": "Working: Terraform, GitHub Actions, Looker"},
+       {"term": "Docker", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, Bi
+       {"term": "DataOps", "kind": "required", "verdict": "gap", "quote": ""},
+  -    {"term": "Kafka", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, Big
+       {"term": "stakeholder", "kind": "required", "verdict": "gap", "quote": ""}
+     ],
+     "strengths": [
+  -    "Airflow is a primary skill: built the first Airflow deployment at Marlow Retail Group and runs Tidewater's Kafka-to-warehouse shipme
+  +    "Airflow is a primary skill: built the first Airflow deployment at Marlow Retail Group and mentioned with Python and SQL as strongest
+       "Python and SQL are named strong skills, matching the core technical requirements",
+       "dbt experience evidenced by the incremental-models rebuild cut from 6 hours to 55 minutes",
+  -    "Terraform, GitHub Actions and Docker cover the Infrastructure-as-Code and CI/CD requirements",
+  -    "Seven years of logistics pipeline work at Tidewater Logistics matches the operational logistics domain"
+  +    "Terraform, GitHub Actions and Docker cover the Infrastructure-as-Code and CI/CD requirements"
+     ],
+     "gaps": [
+  -    "No evidence of inventory or supply-chain systems beyond shipment events",
+  +    "No evidence of inventory or supply-chain systems beyond logistics shipment events",
+       "Redshift (preferred) is not mentioned; the profile lists BigQuery and PostgreSQL",
+  -    "No stated DataOps or stakeholder-management experience, though mentoring and cross-review work exist"
+  +    "No stated DataOps or stakeholder-management experience, though mentoring and a weekly data-modelling review exist"
+     ],
+     "eligibility": [
+       {"kind": "work_authorisation", "stance": "welcomes", "scope": "role", "value": "applications welcomed from any candidate", "text": "P
+  verify: all checks pass
+
+Fit senior-data-engineer: 73/100, good (VETOED)
+  technical     82  (weight 30)
+  experience    86  (weight 25)
+  behavioural   72  (weight 15)
+  career        55  (weight 30)
+  VETO location: 4 on-site days a week against a deal-breaker of more than 3: "Hybrid work setup in our Copenhagen HQ (4 days in office)."
+  VETO location: deal-breaker "more than 3 days a week on site": "Hybrid work setup in our Copenhagen HQ (4 days in office)."
+Strengths:
+  - Airflow is a primary skill: built the first Airflow deployment at Marlow Retail Group and mentioned with Python and SQL as strongest skills
+  - Python and SQL are named strong skills, matching the core technical requirements
+  - dbt experience evidenced by the incremental-models rebuild cut from 6 hours to 55 minutes
+  - Terraform, GitHub Actions and Docker cover the Infrastructure-as-Code and CI/CD requirements
+Gaps:
+  - No evidence of inventory or supply-chain systems beyond logistics shipment events
+  - Redshift (preferred) is not mentioned; the profile lists BigQuery and PostgreSQL
+  - No stated DataOps or stakeholder-management experience, though mentoring and a weekly data-modelling review exist
+Recommendation: Apply, and address the gaps in the cover letter.
+  A gate failed; nothing is drafted for a vetoed job.

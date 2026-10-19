@@ -172,7 +172,7 @@ def test_a_good_match_and_clean_bullets_show_neither_warning(tmp_path, capsys):
 
 
 def test_the_gate_fails_a_never_bullet_and_a_contradicting_letter_and_passes_a_stretch_with_a_note():
-    from test_verify import CV, CV_TEX, LETTER, docs, judge
+    from test_verify import CV_TEX, LETTER, docs, judge
     bullet = lambda text: CV_TEX.replace("\\section{Education}", "\\begin{itemize}\n\\item " + text + "\n\\end{itemize}\n\\section{Education}")
     ok = judge(cv_tex=bullet("Owns the shipment-events pipeline on Apache Airflow"))
     assert ok.passed and ok.stretch == ()
@@ -197,3 +197,12 @@ def test_list_wrapper_pattern():
     assert "bare list" in latex.letter_rules(bare)[0] and "letterbullets" in latex.letter_rules(bare)[0]
     assert latex.letter_rules("%\\lettercontent{\\begin{itemize}}") == []                      # a comment is not the letter
     assert any("lettercontent" in f for f in verify.source_findings("\\section{Profile}", wrapped))
+
+
+# ── the command table lists the modules that exist, each with a purpose ──────────────────────────────
+def test_reference_table_lists_existing_files():
+    from jobloop.__main__ import COMMANDS
+    modules = {p.stem for p in (ROOT / "jobloop").glob("*.py") if "def add_arguments" in p.read_text()}
+    assert modules == set(COMMANDS)                                      # none missing from the table, none listed that is not there
+    assert all(purpose.strip() and len(purpose.split()) >= 2 for purpose in COMMANDS.values())
+    assert all((ROOT / "jobloop" / f"{name}.py").is_file() for name in COMMANDS)
