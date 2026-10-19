@@ -102,7 +102,7 @@ loop that takes a candidate through the whole search and stops short of one thin
   never edits the profile, never drafts a vetoed posting. A stage that lies about it trips the wire and the pass stops.
 
 ## How it was built
-Specification and engine first (me), then 11 builder agents in parallel, one stage each, against a written contract; then a
+Specification and engine first (me), then nine builder agents in parallel, one or two stages each, against a written contract; then a
 whole-loop **simulation** with a role-aware fake harness-interface (offline, ~20 s, 42 scenarios incl. failure injection and a
 SIGKILL mid-pass). **The simulation found 19 real contract mismatches between stages that each passed its own tests**: a
 proposal kind whose accept path could never succeed, a tracker row lost if the process died mid-commit, Ctrl-C swallowed by a
