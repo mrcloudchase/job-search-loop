@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 
 from .. import archive, research as lib
+from ..engine import policy
 from ..engine.spec import Action, Brakes, Outcome, Spec, Trigger
 from ..engine.stage import Context
 from ..fetch import installed_hosts
@@ -97,10 +98,10 @@ class Research:
             score = fit.get("total", snap.postings[key].get("rank_score", 0))
             score = score if isinstance(score, (int, float)) else 0
             found.append((score, app, key))
-        found.sort(key=lambda t: (-t[0], t[1]))
-        limit = 2 * snap.config.max_new_drafts
-        return [Action("research", app, f"shortlisted, fit {score}, not yet researched", priority=float(score), payload={"posting_key": key})
-                for score, app, key in found[:limit]]
+        actions = [Action("research", app, f"shortlisted, fit {score}, not yet researched", priority=float(score), payload={"posting_key": key},
+                          deadline=str(snap.postings[key].get("deadline") or "") or None) for score, app, key in found]
+        actions.sort(key=lambda a: (policy.urgency(a, snap.today), -a.priority, a.key))        # the postings the draft stage will take first (urgent, then best)
+        return actions[:2 * snap.config.max_new_drafts]
 
     def _entry(self, action: Action, ctx: Context) -> dict | None:
         snap = ctx.snapshot

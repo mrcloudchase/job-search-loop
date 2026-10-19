@@ -271,7 +271,7 @@ def analyse(turns: Turns, model: str, inputs: Inputs, rounds: int = 3) -> Result
 
     files = {"offer.md": inputs.terms, "targets.md": inputs.targets, "posting.md": inputs.posting or "No posting is archived.",
              "benchmark.md": inputs.benchmark or "none"}
-    record = turns.turn("OFFER", model, f"Analyse the offer for {inputs.company}, {inputs.role}.", ROLE, files=files)
+    record = turns.turn("OFFER", model, "Analyse the offer in offer.md for the job in posting.md.", ROLE, files=files)
     return kept[0] if record and turns.settle(record, validate, rounds, ROLE, "FIX OFFER") and kept else None
 
 

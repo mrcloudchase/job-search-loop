@@ -44,6 +44,22 @@ def _parked(store: Store) -> list[str]:
     return out
 
 
+def _playbook_lines(store: Store, run_id: int) -> list[str]:
+    """What the loop changed about itself in this pass: playbook versions applied or proposed, and a rollback."""
+    row = store.db.execute("SELECT started FROM runs WHERE id=?", (run_id,)).fetchone()
+    since = row["started"] if row else ""
+    found = []
+    for e in sorted(store.events("playbook_rollback", limit=20) + store.events("learn", limit=20), key=lambda e: e["id"]):
+        if e["at"] < since:
+            continue
+        data = json.loads(e["data"] or "{}")
+        if e["kind"] == "playbook_rollback":
+            found.append(data.get("line", "a playbook version was rolled back"))
+        else:
+            found += [n for n in data.get("notes", []) if n.startswith(("playbook v", "self-improvement is off"))]
+    return found
+
+
 def render(store: Store, snap: Snapshot, result, problems: list[str], config: Config) -> str:
     lines = [f"# Loop digest {snap.now.strftime('%Y-%m-%d %H:%M')} UTC", "",
              f"**Pass {result.run_id}: {STATUS_WORDS.get(result.terminal, result.terminal)}** — {result.reason or 'done'}. "
@@ -70,6 +86,9 @@ def render(store: Store, snap: Snapshot, result, problems: list[str], config: Co
         lines.append(f"- `{a['stage']}` `{a['item']}` → **{a['terminal']}** ${a['cost_usd']:.2f}{extra}")
     if not store.attempts_in_run(result.run_id):
         lines.append("Nothing ran.")
+    changed = _playbook_lines(store, result.run_id)
+    if changed:
+        lines += ["", "## What the loop changed about itself", *[f"- {c}" for c in changed]]
     parked = _parked(store)
     if parked:
         lines += ["", "## Parked (will retry on the next harness, or rest)", *parked]

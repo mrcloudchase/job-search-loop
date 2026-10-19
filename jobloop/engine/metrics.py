@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 
-from .. import tracker
+from .. import archive, tracker
 from .store import Store
 
 DRAFTING_STAGES = ("research", "draft", "package")
@@ -27,7 +27,7 @@ def _since(since: str | None) -> str:
 
 def window(store: Store, rows=(), since: str | None = None, version: int | None = None) -> Window:
     """Metrics over everything after `since` (an ISO stamp), or for the judgments made under one playbook version."""
-    ready = [r for r in store.queue() if r["status"] in ("ready", "done") and r["created"] >= _since(since)]
+    ready = [r for r in store.queue() if r["status"] in ("ready", "done") and archive.is_key(r["item"]) and r["created"] >= _since(since)]   # applications, not follow-up drafts or reports
     spent = store.db.execute(
         "SELECT COALESCE(SUM(cost_usd),0) FROM attempts WHERE stage IN (%s) AND finished >= ?" % ",".join("?" * len(DRAFTING_STAGES)),
         (*DRAFTING_STAGES, _since(since))).fetchone()[0]

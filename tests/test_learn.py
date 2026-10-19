@@ -197,7 +197,7 @@ def test_a_fact_the_person_added_is_found_with_its_section_and_a_rewording_is_no
     me, store = populate(tmp_path)
     facts = learn.fact_candidates(learn.evidence(me, store, rows_of(me)), PROFILE)
     assert len(facts) == 1
-    assert "Zephyr Corp" in facts[0]["text"] and facts[0]["section"] == "Experience" and facts[0]["source"] == "your edit of acme__data_engineer/cv.tex"
+    assert "Zephyr Corp" in facts[0]["text"] and facts[0]["section"] == "Confirmed additions" and facts[0]["evidence"] == facts[0]["text"] and facts[0]["source"] == "your edit of acme__data_engineer/cv.tex"
     assert learn.fact_candidates(learn.evidence(me, store, rows_of(me)), "") == []
 
 

@@ -5,7 +5,7 @@ Two kinds of action, weekly (168 hours):
   the gateway (the `builder` ladder; addboard widens the research sandbox to the board's hosts for the build turn itself),
   verified OFFLINE by code in the no-network container, then `addboard.install` registers it SWITCHED OFF. The person is asked
   to read it: a `needs_decision` queue entry `board:<name>` (data {title, why, terms}) and a proposal `add_board`
-  (payload {summary, name, path}). A refused or failed build is `blocked` with the verbatim problems; a refused one is queued
+  (payload {summary, board, name, path}: `proposals.accept` reads `board`; `enable` is left out, so accepting only records that the person read it). A refused or failed build is `blocked` with the verbatim problems; a refused one is queued
   `blocked` and not asked again.
 - `*`: when fewer than `min_boards` boards are enabled and healthy for the candidate's market, a `needs_decision` queue entry
   `boards:suggest` lists the state of every board (what `search boards list` shows) and what could be enabled.
@@ -111,7 +111,8 @@ class Boards:
         ctx.store.queue_put(f"board:{request.name}", "needs_decision", str(where), {
             "title": f"Read the new board {request.name}, then switch it on",
             "why": f"read me/boards/{request.name}/adapter.py then enable it", "terms": terms}, ctx.now)
-        ctx.store.add_proposal("add_board", {"summary": lines[0] + (f" Terms: {terms}" if terms else ""), "name": request.name, "path": str(where)},
+        ctx.store.add_proposal("add_board", {"summary": lines[0] + (f" Terms: {terms}" if terms else ""), "board": request.name, "name": request.name,
+                                "path": str(where)},
                                "boards", ctx.now)
         return Outcome("success", lines, produced=produced)
 

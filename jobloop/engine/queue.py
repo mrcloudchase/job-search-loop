@@ -14,6 +14,7 @@ from .store import Store
 
 ORDER = {"ready": 0, "needs_decision": 1, "blocked": 2}
 LEFT_OVER = "9999-12-31"
+MAX_SHOWN = 8000
 
 
 class QueueError(ValueError):
@@ -69,8 +70,10 @@ def show_text(me: Path | str, store: Store, key: str) -> str:
     if row is None:
         known = ", ".join(r["item"] for r in store.queue()) or "nothing is queued yet"
         raise QueueError(f"no queue entry {key!r} ({known})")
-    folder = entry_dir(me, key)
     data = _data(row)
+    if not archive.is_key(key):             # a follow-up draft, interview pack, offer analysis, report or question: one file, not an application folder
+        return _show_entry(row, data)
+    folder = entry_dir(me, key)
     out = [f"{data.get('title') or key}  [{row['status']}]", f"folder: {folder}"]
     if data.get("url"):
         out.append(f"apply:  {data['url']}")
@@ -86,11 +89,26 @@ def show_text(me: Path | str, store: Store, key: str) -> str:
     return "\n".join(out)
 
 
+def _show_entry(row, data: dict) -> str:
+    """An entry that is not an application: what it is, why, and the file it points at (the draft, pack or report itself)."""
+    out = [f"{data.get('title') or row['item']}  [{row['status']}]"]
+    if data.get("why"):
+        out.append(str(data["why"]))
+    path = Path(row["path"]) if row["path"] else None
+    if path is not None and path.is_file():
+        out += [f"file: {path}", "", path.read_text(encoding="utf-8", errors="replace")[:MAX_SHOWN].rstrip()]
+    elif path is not None and str(path):
+        out.append(f"where: {path}")
+    return "\n".join(out)
+
+
 def done(store: Store, key: str) -> str:
     """Mark the queue row `done` and say what to do next. The tracker is not touched: submitting is the person's act."""
     row = store.queue_item(key)
     if row is None:
         raise QueueError(f"no queue entry {key!r}; `jobloop queue list` shows them")
     store.queue_put(key, "done", row["path"], _data(row))
+    if not archive.is_key(key):
+        return f"{key} is marked done in the queue."
     return (f"{key} is marked done in the queue. It is not marked applied: "
             f"now run: jobloop tracker set {key} applied after you have submitted")

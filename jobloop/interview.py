@@ -143,7 +143,7 @@ def load_context(me: Path, key: str, posting_file: Path | None = None,
     docs, missing = {}, []
     folder = archive.folder_for(Path(me), key)
     for kind in archive.DOCUMENT_KINDS:
-        name = next((n for n in held.documents if n.startswith(kind + ".")), None)
+        name = next((n for n in sorted(held.documents, key=lambda n: n.endswith(".pdf")) if n.startswith(kind + ".")), None)   # the source text beats a PDF (a loop-drafted application archives both)
         text = _document(folder / name, extract_pdf) if name else None
         if text:
             docs[kind] = text

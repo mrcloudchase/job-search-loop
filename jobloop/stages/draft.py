@@ -54,6 +54,7 @@ from ..research import Claim
 from ..text import flat, visible
 
 ROUNDS = 3                          # turns a drafter gets to fix failed checks, per verification (the apply loop's default)
+COMMITTING = "draft.committing"     # engine kv: application key -> when its archive commit began; cleared once the tracker row is written
 DEPS: applying.Deps | None = None   # tests supply stand-ins for the container verifier
 FETCH = None                        # tests supply a stand-in for fetch.fetch_posting
 
@@ -71,6 +72,17 @@ def active_playbook(snap):
             except (OSError, ValueError, KeyError):
                 return None
     return None
+
+
+def committing(store) -> dict:
+    found = store.get(COMMITTING, {})
+    return dict(found) if isinstance(found, dict) else {}
+
+
+def end_commit(store, app: str) -> None:
+    found = committing(store)
+    if found.pop(app, None) is not None:
+        store.put(COMMITTING, found)
 
 
 def current_run(store) -> int | None:
@@ -145,12 +157,13 @@ class Draft:
         if room <= 0:
             return []
         research_off = "research" in snap.config_disabled()
+        unfinished = committing(snap.store)
         found = []
         for pkey in snap.keys_in("shortlisted"):
             entry = snap.postings[pkey]
             app = snap.application_key(entry)
-            if not app or app in snap.row_by_key or (snap.me / "applications" / app).exists():
-                continue
+            if not app or app in snap.row_by_key or ((snap.me / "applications" / app).exists() and app not in unfinished):
+                continue                                    # (a commit cut short by a kill is picked up again: `_recover`)
             if rankstate.vetoes(entry) or not (research_off or research_record(snap.me, app) is not None):
                 continue
             stored = snap.fit(pkey)
@@ -165,7 +178,7 @@ class Draft:
                             payload={"posting_key": pkey, "fit": total}, deadline=deadline if deadline[:1].isdigit() else None)
             if policy.allowed(action, self.spec, snap.store, snap.now)[0]:
                 found.append((total, app, action))
-        found.sort(key=lambda t: (-t[0], t[1]))
+        found.sort(key=lambda t: (policy.urgency(t[2], snap.today), -t[0], t[1]))      # a deadline within days outranks a better fit for the few slots
         return [a for _, _, a in found[:room]]
 
     # ── one action ─────────────────────────────────────────────────────────────────────────────
@@ -237,6 +250,9 @@ class Draft:
             return Outcome("blocked", failures=["vetoed by the fit's gates: " + "; ".join(fit.vetoes or stored["vetoes"])])
         if total < floor:
             return Outcome("blocked", failures=[f"fit {total} is below the floor {floor}"])
+        recovered = self._recover(ctx, app)
+        if recovered is not None:
+            return recovered
         url = str(entry.get("url") or "")
         verdict = host_check.classify(url, fetch.installed_hosts())
         if verdict.kind == "unverified":
@@ -255,6 +271,15 @@ class Draft:
             return self._draft(ctx, action, pkey, entry, fit, stored, total, text, text_url, claims, record or {})
         except applying.NeedsDecision as question:
             return self._needs_decision(ctx, action, entry, "needs_decision", f"needs a person: {question}", str(question), total)
+
+    def _recover(self, ctx: Context, app: str) -> Outcome | None:
+        """A commit that was cut short (the process was killed between the archive writes and the tracker row): finish it from the
+        archive when it is whole (`apply.recover_commit`), else it is cleared away and the draft is made again."""
+        if app not in committing(ctx.store):
+            return None
+        whole = applying.recover_commit(ctx.me, app, ctx.now.date())
+        end_commit(ctx.store, app)
+        return Outcome("success", notes=[f"{app}: an interrupted commit was finished from its archive; nothing was drafted again"]) if whole else None
 
     def _unverified(self, ctx, action, entry, verdict, total) -> Outcome:
         why = f"unverified source host: {verdict.host or entry.get('url')}: {verdict.reason}"
@@ -330,7 +355,11 @@ class Draft:
         info = {"posting_key": pkey, "judge": {"mean": judge.mean(panel), "judges": [
                     {"judge": j.judge, "overall": j.overall, "failed": [[n, why] for n, why in j.failed]} for j in panel]},
                 "first_pass": first_pass, "harnesses": {"drafter": chosen.harness, "reviewer": reviewer}, "best_of": best_of, "notes": notes}
+        found = committing(ctx.store)
+        found[app] = ctx.now.isoformat()
+        ctx.store.put(COMMITTING, found)
         application.finish(info)
+        end_commit(ctx.store, app)
         produced = {"harness": chosen.harness, "reviewer": reviewer, "judge_mean": info["judge"]["mean"], "first_pass": first_pass}
         if stopped and not reviewer:
             return Outcome("exhausted", notes=[*notes, f"stopped ({stopped}): the draft was finished without a review"], produced=produced)

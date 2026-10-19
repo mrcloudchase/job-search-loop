@@ -30,6 +30,7 @@ from .. import archive, calibrate, grounding, rankstate, state as postings_store
 from ..latex import to_text
 from ..rank import fit_key
 from . import metrics
+from .proposals import ADDITIONS, SECTIONS as ALLOWED_SECTIONS
 from .store import Store
 
 DEAD_AFTER = 3
@@ -269,7 +270,7 @@ def evidence(me: Path | str, store: Store, rows, min_fit: float = 60) -> Evidenc
     found = Evidence(outcomes=outcomes(me, rows), edits=edits(me))
     found.yields, found.per_query = yields(me, store, rows, min_fit)
     found.rubric, found.judged = rubric(store)
-    found.ready = sum(1 for r in store.queue() if r["status"] in ("ready", "done"))
+    found.ready = sum(1 for r in store.queue() if r["status"] in ("ready", "done") and archive.is_key(r["item"]))   # applications only
     found.cost_per_accepted = metrics.window(store, rows).cost_per_accepted
     if not found.edited:
         found.missing.append("none of the delivered drafts has been edited")
@@ -336,8 +337,10 @@ def fact_candidates(ev: Evidence, profile: str) -> list[dict]:
             problems = grounding.check(text, [profile])
             if problems:
                 seen.add(text)
+                section = _section_of(e.text, line)
                 found.append({"summary": f"your edit of {e.key}/{e.file} adds something the profile does not say: {text[:100]}",
-                              "section": _section_of(e.text, line), "text": text, "source": f"your edit of {e.key}/{e.file}",
+                              "section": section if section in ALLOWED_SECTIONS else ADDITIONS,        # `proposals.accept` writes only under these
+                              "text": text, "evidence": text, "source": f"your edit of {e.key}/{e.file}",      # evidence: their own words
                               "problems": problems[:3]})
     return found
 

@@ -198,7 +198,7 @@ class Learn:
         for fact in analysis.fact_candidates(ev, profile):
             if fact["text"] in known:
                 continue
-            ctx.store.add_proposal("profile_fact", {k: fact[k] for k in ("summary", "section", "text", "source")}, fact["source"], ctx.now)
+            ctx.store.add_proposal("profile_fact", {k: fact[k] for k in ("summary", "section", "text", "evidence", "source")}, fact["source"], ctx.now)
             known.add(fact["text"])
             count += 1
         return count

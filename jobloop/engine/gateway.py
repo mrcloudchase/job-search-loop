@@ -62,6 +62,14 @@ class LedgerTurns(Turns):
     def stopped(self) -> str:
         return super().stopped() or self.ledger.exhausted()
 
+    def __exit__(self, kind, error, trace) -> bool:
+        """A Ctrl-C ends the PASS, not just this run: `Turns` would swallow it and the stage would carry on with half its state, and
+        the pass with the next action. Cancel the turn in flight, then let it propagate to the runner, which records it and stops."""
+        super().__exit__(kind, error, trace)
+        if kind is KeyboardInterrupt:
+            self.ledger.stop = "interrupted"
+        return False
+
     def turn(self, *args, **kwargs):
         before = (self.spent, self.unpriced_tokens)
         record = super().turn(*args, **kwargs)

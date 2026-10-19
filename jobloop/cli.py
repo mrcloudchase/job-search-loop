@@ -19,6 +19,8 @@ from .term import BOLD, DIM, GREEN, OFF, RED, say
 from .text import utf8_io
 
 ROOT = Path(__file__).resolve().parent.parent
+TRANSPORT = None            # tests (tests/sim_loop.py) supply an httpx transport for the harness-interface server and a clock
+CLOCK = None
 
 
 def _me(args) -> Path:
@@ -55,7 +57,8 @@ def cmd_run(args) -> int:
         return _dry_run(me, stages, config)
     code = 0
     while True:
-        result = runner.run_pass(me, stages, config=config, mode="watch" if args.watch else "once", playbook_loader=playbook.load)
+        result = runner.run_pass(me, stages, config=config, mode="watch" if args.watch else "once", playbook_loader=lambda me_, store: playbook.load(me_, store, defaults=_strategy(config), now=CLOCK() if CLOCK else None),
+                                 transport=TRANSPORT, now=CLOCK)
         code = 2 if result.terminal == "blocked" else 0
         if not args.watch:
             return code
@@ -66,10 +69,15 @@ def cmd_run(args) -> int:
             return code
 
 
+def _strategy(config) -> dict:
+    """The first playbook version starts from what the person set in loop.json, not from built-in constants."""
+    return {"best_of": config.best_of, "min_fit": config.min_fit}
+
+
 def _dry_run(me: Path, stages, config) -> int:
     """What the next pass would consider, in the order the policy would take it. No model call, no network request."""
     with Store(me) as store:
-        snap = snapshot.take(me, store, config)
+        snap = snapshot.take(me, store, config, CLOCK() if CLOCK else None)
         found = policy.candidates(snap, stages)
         found.sort(key=lambda p: (policy.urgency(p[0], snap.today), -p[1].rank, -p[0].priority, p[0].key))
         say(f"{BOLD}A pass would consider {len(found)} actions{OFF} (the first goes first):")
@@ -85,7 +93,7 @@ def cmd_status(args) -> int:
     me = _me(args)
     config = configuration.load(me)
     with Store(me) as store:
-        say(digest.status(me, store, snapshot.take(me, store, config)))
+        say(digest.status(me, store, snapshot.take(me, store, config, CLOCK() if CLOCK else None)))
     return 0
 
 
@@ -114,7 +122,7 @@ def _describe(p: dict, full: bool = False) -> str:
 
 def cmd_proposals(args) -> int:
     me = _me(args)
-    now = datetime.now(timezone.utc)
+    now = CLOCK() if CLOCK else datetime.now(timezone.utc)
     with Store(me) as store:
         pending = proposals.list_pending(store)
         if args.action == "list":
@@ -276,7 +284,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         return args.fn(args) or 0
-    except configuration.ConfigError as error:
+    except (configuration.ConfigError, queue.QueueError) as error:
         say(f"{RED}{error}{OFF}")
         return 2
 

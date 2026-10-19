@@ -136,8 +136,8 @@ def test_a_fact_in_an_edit_is_a_profile_proposal_and_nothing_in_the_playbook(tmp
     outcome, ctx, server = run(tmp_path, [reply(GOOD)])
     (fact,) = [p for p in ctx.store.proposals() if p["kind"] == "profile_fact"]
     payload = json.loads(fact["payload"])
-    assert fact["status"] == "pending" and set(payload) == {"summary", "section", "text", "source"}
-    assert "Zephyr Corp" in payload["text"] and payload["section"] == "Experience" and payload["source"] == "your edit of acme__data_engineer/cv.tex"
+    assert fact["status"] == "pending" and set(payload) == {"summary", "section", "text", "evidence", "source"}
+    assert "Zephyr Corp" in payload["text"] and payload["section"] == "Confirmed additions" and payload["evidence"] == payload["text"] and payload["source"] == "your edit of acme__data_engineer/cv.tex"
     for path in (ctx.me / "playbook").rglob("*"):
         if path.is_file():
             assert "Zephyr" not in path.read_text() and "90" not in path.read_text().replace("20", "")

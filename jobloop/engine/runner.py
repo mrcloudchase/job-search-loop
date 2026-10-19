@@ -14,7 +14,7 @@ from typing import Callable
 
 import httpx
 
-from .. import archive
+from .. import archive, tracker
 from ..term import DIM, OFF, RED, YELLOW, say
 from . import config as configuration, digest, invariants, policy, snapshot
 from .gateway import Gateway, Ledger
@@ -45,6 +45,9 @@ def observe(snap: snapshot.Snapshot) -> None:
     for key, status in current.items():
         if seen.get(key) != status:
             snap.store.add_event("human:status" if seen.get(key) else "tracker:new", key, {"from": seen.get(key), "to": status}, snap.now)
+        entry = snap.store.queue_item(key) if tracker.normalize_status(status) not in (None, "drafted") else None
+        if entry is not None and entry["status"] != "done":         # the person moved the application on: its queue entry is handled
+            snap.store.queue_put(key, "done", entry["path"], json.loads(entry["data"] or "{}"), snap.now)
     snap.store.put("tracker_seen", current)
 
 
@@ -83,7 +86,6 @@ def _pass(me, stages, config, mode, transport, clock, playbook_loader, out, stor
     ledger = Ledger(config)
     gateway = Gateway(config, store, ledger, me, transport)
     result.run_id = store.start_run(mode, json.dumps(asdict(config)), clock())
-    playbook = playbook_loader(me, store) if playbook_loader else None
     skip: set[tuple[str, str]] = set()
     tries: dict[tuple[str, str], int] = {}
     problems: list[str] = []
@@ -92,6 +94,7 @@ def _pass(me, stages, config, mode, transport, clock, playbook_loader, out, stor
         while result.actions < MAX_ACTIONS:
             snap = snapshot.take(me, store, config, clock())
             observe(snap)
+            playbook = playbook_loader(me, store) if playbook_loader else None       # a stage may have changed it (or rolled it back) a moment ago
             if ledger.exhausted():
                 result.terminal, result.reason = "exhausted", f"pass {ledger.exhausted()} limit reached"
                 break

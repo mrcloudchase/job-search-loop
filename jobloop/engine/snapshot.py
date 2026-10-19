@@ -55,11 +55,12 @@ class Snapshot:
             return ""
 
     def state_of(self, key: str) -> str:
-        """new, unreachable, expired, gave_up, vetoed, below_floor, shortlisted, drafted, applied (the person's), or skipped."""
+        """new, unreachable, expired, gave_up, vetoed, below_floor, shortlisted, skipped, drafted, or (once the person moved the
+        application on) the tracker's own word for where it is: applied, interview, offer, hired, rejected, no_response, ..."""
         entry = self.postings[key]
         app = self.application_key(entry)
         if app and app in self.row_by_key:
-            return "drafted" if self.row_by_key[app].status == "drafted" else "applied"
+            return tracker.normalize_status(self.row_by_key[app].status) or "applied"
         status = entry.get("status", "new")
         if status == "ranked":
             if rankstate.vetoes(entry):

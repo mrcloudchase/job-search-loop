@@ -40,6 +40,7 @@ from ..engine.stage import Context
 from ..fetch import installed_hosts
 from ..guards import hosts as host_check
 from ..rank import fit_key
+from ..text import visible
 
 PDFS = {"cv.pdf": ("cv.pdf",), "cover.pdf": ("cover.pdf", "cover_letter.pdf")}
 TEX = {"cv.tex": ("cv.tex",), "cover.tex": ("cover.tex", "cover_letter.tex")}
@@ -214,7 +215,7 @@ def _deliver_tex(folder: Path, edit: Path, name: str, previous: dict, notes: lis
 # ── form answers ──
 def _posting_text(me: Path, key: str, draft: dict, entry: dict) -> str:
     try:
-        return (archive.folder_for(me, key) / archive.POSTING).read_bytes().decode("utf-8", "replace")
+        return visible((archive.folder_for(me, key) / archive.POSTING).read_bytes().decode("utf-8", "replace"))      # the archive keeps comments; no prompt gets them
     except OSError:
         return "\n".join([f"Title: {draft.get('role') or entry.get('title') or ''}", f"Company: {draft.get('company') or entry.get('company') or ''}"])
 
