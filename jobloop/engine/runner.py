@@ -120,6 +120,15 @@ def _pass(me, stages, config, mode, transport, clock, playbook_loader, out, stor
                 gateway.api.cancel()
                 outcome = Outcome("exhausted", notes=["interrupted"])
             except Exception as error:
+                if _server_down(error, config):
+                    outcome = Outcome("exhausted", failures=[f"the harness-interface server is not reachable at {config.server}"],
+                                      notes=["start it with `hi server start`; nothing was lost and no attempt counts against this item"])
+                    result.terminal, result.reason = "blocked", f"the harness-interface server is not reachable at {config.server} (`hi server start`)"
+                    store.record_attempt(result.run_id, action.stage, action.key, action.reason, "", started, now_stamp(clock()),
+                                         outcome.terminal, 0.0, 0, outcome.failures, outcome.notes)
+                    result.actions += 1
+                    out(f"{RED}{result.reason}{OFF}")
+                    break
                 outcome = Outcome("blocked", failures=[f"{type(error).__name__}: {error}"], notes=[traceback.format_exc().splitlines()[-3:][0][:200]])
             after = snapshot.fingerprint(me)
             tripped = invariants.violations(before, after, snapshot.take(me, store, config, clock()))
@@ -151,6 +160,16 @@ def _pass(me, stages, config, mode, transport, clock, playbook_loader, out, stor
             "actions": result.actions, "reason": result.reason, "violations": result.violations}, clock())
         out(f"\n{result.terminal}: {result.reason}; {result.actions} actions, ${result.spent_usd:.2f}; digest {result.digest_path}")
     return result
+
+
+def _server_down(error: Exception, config) -> bool:
+    """A refused or timed-out connection to the harness-interface server itself (not to a board or an employer's site)."""
+    if not isinstance(error, httpx.TransportError):
+        return False
+    try:
+        return error.request.url.host in config.server and (not error.request.url.port or f":{error.request.url.port}" in config.server)
+    except RuntimeError:                                     # an httpx error raised without a request
+        return False
 
 
 def _brake(outcome: Outcome, spec, store: Store, action) -> Outcome:

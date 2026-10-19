@@ -94,11 +94,29 @@ def questions_source(me: Path, key: str, config) -> tuple[str, Path | None]:
     return "", None
 
 
+STANDARD_QUESTIONS = (
+    ("Why do you want to work at {company}?", 800),
+    ("Why are you a good fit for this role?", 800),
+    ("What are your salary expectations? Answer only with a figure your profile states; if it states none, say you would like to "
+     "discuss it once the scope is clear.", 300),
+    ("When can you start and what is your notice period? Answer only from your profile; if it says nothing, say you can discuss it.", 300),
+    ("Are you authorised to work in the country this role is in? Answer only from what your profile states about permits and where "
+     "you live.", 300),
+    ("Describe a relevant project you are proud of.", 1000),
+)
+
+
+def standard_questions(company: str) -> tuple[forms.Question, ...]:
+    """What nearly every application form asks, so each queued application comes with answers even when the loop cannot read the
+    form (most employer forms are scripts). The person's own questions file, when there is one, replaces these."""
+    return tuple(forms.Question(f"s{i}", text.format(company=company or "this company"), limit) for i, (text, limit) in enumerate(STANDARD_QUESTIONS, 1))
+
+
 def load_questions(me: Path, key: str, config, company: str) -> tuple[str, tuple[forms.Question, ...], str]:
     """(employer, questions, problem). A file that cannot be read is a problem for the person, never a prompt or a crash."""
     kind, path = questions_source(me, key, config)
     if not path:
-        return company, (), ""
+        return company, (standard_questions(company) if config.standard_questions else ()), ""
     try:
         if kind == "markdown":
             questions = parse_markdown_questions(path.read_text(encoding="utf-8"))

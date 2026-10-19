@@ -93,6 +93,29 @@ def test_a_stage_that_raises_is_blocked_and_the_pass_goes_on(tmp_path):
         assert first["terminal"] == "blocked" and "disk on fire" in first["failures"]
 
 
+def test_a_dead_harness_server_ends_the_pass_at_once_and_counts_against_nothing(tmp_path):
+    import httpx
+
+    def down(action, ctx):
+        raise httpx.ConnectError("refused", request=httpx.Request("POST", "http://127.0.0.1:8000/responses"))
+
+    stub = Stub(behaviour=down, items=("a", "b", "c"))
+    result = run(tmp_path, [stub])
+    assert stub.calls == ["a"] and result.terminal == "blocked" and "hi server start" in result.reason
+    with Store(tmp_path) as store:
+        assert store.attempts("work", "a")[0]["terminal"] == "exhausted"
+
+
+def test_a_refused_connection_to_some_other_host_is_an_ordinary_failure(tmp_path):
+    import httpx
+
+    def board(action, ctx):
+        raise httpx.ConnectError("refused", request=httpx.Request("GET", "https://board.example/jobs"))
+
+    stub = Stub(behaviour=board, items=("a", "b"))
+    assert run(tmp_path, [stub]).terminal == "success" and stub.calls == ["a", "b"]
+
+
 def test_the_same_failure_twice_is_stalled_not_another_retry(tmp_path):
     def fail(action, ctx):
         return Outcome("blocked", failures=["cv.pdf layout: the last page is 49% empty"])

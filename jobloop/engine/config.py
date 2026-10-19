@@ -42,6 +42,7 @@ class Config:
     followups: bool = True
     ladders: dict = field(default_factory=lambda: {k: list(v) for k, v in DEFAULT_LADDERS.items()})
     company_domains: dict = field(default_factory=dict)      # company name -> its own domain, for company research
+    standard_questions: bool = True         # answer the questions nearly every form asks (why us, fit, salary, start date, permit, a project)
     form_questions: str = ""                # a file of application-form questions to answer for each queued application
     discover_every_hours: float = 12.0
     maintain_every_hours: float = 24.0

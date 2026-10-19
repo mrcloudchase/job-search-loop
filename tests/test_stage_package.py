@@ -23,6 +23,7 @@ BODY = ("Tell us about yourself [limit 600 characters]\nWhy you, in one sentence
 
 
 def cfg(**kw):
+    kw.setdefault("standard_questions", False)                      # the standard set has its own tests below
     return cfgmod.Config(**kw).validate()
 
 
@@ -180,7 +181,7 @@ def test_the_persons_edits_survive_a_rerun_and_unedited_copies_are_refreshed(tmp
     (folder / "cv.tex").write_text("\\documentclass{article} CV v2")
     (folder / "cover.tex").write_text("\\documentclass{article} COVER v2")
     (folder / "cv.pdf").write_bytes(b"new pdf")
-    ctx2, _ = sim.context(tmp_path, me=me)
+    ctx2, _ = sim.context(tmp_path, me=me, config=cfg())
     assert stage.STAGE.run(act(ctx2), ctx2).terminal == "success"
     assert (edit / "cv.tex").read_text() == "MY OWN EDIT"                                # the edit is kept
     assert (edit / "cover.tex").read_text() == "\\documentclass{article} COVER v2"       # an untouched copy is refreshed
@@ -342,3 +343,18 @@ def test_a_waived_check_still_needs_a_decision_even_when_the_host_was_accepted(t
     ctx, _, me = setup(tmp_path, draft=draft_json(host_kind="unverified", host_trust="trusted", notes=["source host accepted: x", "layout check waived"]))
     stage.STAGE.run(act(ctx), ctx)
     assert ctx.store.queue_item(KEY)["status"] == "needs_decision" and "waived" in queue_json(me)["reasons"][0]
+
+
+# ── the standard questions ──
+def test_every_application_gets_answers_to_the_standard_questions_when_the_form_is_unknown(tmp_path):
+    ctx, server, me = setup(tmp_path, [{"files": {"answers.json": json.dumps({f"s{i}": GOOD["q1"] for i in (1, 2, 3, 4, 6)})}, "cost": 0.1}])
+    ctx.config.standard_questions = True
+    assert stage.STAGE.run(act(ctx), ctx).terminal == "success"
+    text = (me / "queue" / KEY / "form-answers.txt").read_text()
+    assert "Why do you want to work at Northwind Analytics?" in text and "salary expectations" in text and "authorised to work" in text
+    assert "FOR YOU: Are you authorised to work" in text                      # a work-permit answer is the person's, not the model's
+
+
+def test_the_standard_questions_can_be_switched_off(tmp_path):
+    ctx, server, me = setup(tmp_path, [])
+    assert stage.STAGE.run(act(ctx), ctx).terminal == "success" and server.requests == []
