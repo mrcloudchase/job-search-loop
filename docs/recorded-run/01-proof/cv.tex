@@ -1,0 +1,73 @@
+% CV: Alex Fernsby, tailored to Senior Data Engineer, Brightwell Analytics (BW-DE-0417)
+\documentclass[10pt,a4paper]{article}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\newcommand{\sectionrule}{\par\vspace{2pt}\hrule\vspace{6pt}}
+\newcommand{\entry}[3]{\textbf{#1} \hfill #3\\ \emph{#2}\vspace{-2pt}}
+
+\begin{document}
+
+{\LARGE\textbf{Alex Fernsby}}\\[4pt]
+\href{mailto:alex.fernsby@example.com}{alex.fernsby@example.com} \quad +1 555 0100 \quad Rotterdam, Netherlands \quad
+\href{https://github.com/afernsby-example}{github.com/afernsby-example}
+\sectionrule
+
+\section*{Profile}
+Data engineer with 7 years of experience building batch and streaming pipelines for retail and logistics
+companies. Strongest in Python, SQL and Apache Airflow, with hands-on dbt modelling and Great Expectations
+testing in production. Comfortable owning a pipeline from ingestion through to the warehouse, and
+mentoring the engineers who build the next ones. Looking for a senior individual-contributor or tech-lead
+role on a data platform team, working on data quality, modelling and orchestration. Based in Rotterdam,
+open to hybrid roles in the Netherlands and remote across the EU.
+\sectionrule
+
+\section*{Experience}
+
+\entry{Senior Data Engineer}{Tidewater Logistics, Rotterdam}{March 2022 -- present}
+\begin{itemize}\setlength\itemsep{4pt}
+  \item Own the shipment-events pipeline: 40 million events per day from Kafka into a PostgreSQL and
+    BigQuery warehouse, orchestrated with Apache Airflow.
+  \item Cut the nightly rebuild of the delivery-performance mart from 6 hours to 55 minutes by moving it
+    to incremental dbt models.
+  \item Introduced data-quality tests (Great Expectations) on 30 core tables; failed loads dropped 70
+    percent over two quarters.
+  \item Mentor two junior engineers and lead the weekly data-modelling review.
+\end{itemize}
+\vspace{8pt}
+
+\entry{Data Engineer}{Marlow Retail Group, Utrecht}{June 2018 -- February 2022}
+\begin{itemize}\setlength\itemsep{4pt}
+  \item Built the first Airflow deployment at the company and migrated 45 cron jobs onto it.
+  \item Designed a customer-orders star schema in PostgreSQL used by 12 analysts.
+  \item Wrote Python ingestion services for partner price feeds (REST and SFTP), handling about 2 million
+    rows per day.
+  \item Supported the move of the warehouse from on-premise PostgreSQL to BigQuery.
+\end{itemize}
+\vspace{8pt}
+
+\entry{Junior Analyst}{Delft Energy Cooperative, Delft}{September 2016 -- May 2018}
+\begin{itemize}\setlength\itemsep{4pt}
+  \item Automated monthly consumption reports with Python and SQL, saving the team about 3 days each month.
+\end{itemize}
+\sectionrule
+
+\section*{Education}
+\entry{MSc Computer Science (data systems)}{Delft University of Technology}{2016}\\[6pt]
+\entry{BSc Computer Science}{Delft University of Technology}{2014}
+\sectionrule
+
+\section*{Skills}
+\begin{itemize}\setlength\itemsep{4pt}
+  \item \textbf{Strong:} Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, BigQuery, Great
+    Expectations, Docker
+  \item \textbf{Working:} Terraform, GitHub Actions, Looker, Pandas
+  \item \textbf{Languages:} English (fluent), Dutch (native), German (basic)
+\end{itemize}
+
+\end{document}

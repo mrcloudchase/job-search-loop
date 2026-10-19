@@ -1,0 +1,51 @@
+% Cover letter: Alex Fernsby, Senior Data Engineer, Brightwell Analytics (BW-DE-0417)
+\documentclass[11pt,a4paper]{article}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt}
+
+\begin{document}
+
+\textbf{Alex Fernsby}\\
+alex.fernsby@example.com \quad +1 555 0100 \quad Rotterdam, Netherlands\\
+\href{https://github.com/afernsby-example}{github.com/afernsby-example}
+
+19 October 2026
+
+Dear Hiring Manager,
+
+I am applying for the Senior Data Engineer role at Brightwell Analytics (reference BW-DE-0417). I am a
+data engineer of 7 years' experience with a background in retail and logistics data. In my current role I
+moved the nightly rebuild of our delivery-performance mart to incremental dbt models and cut it from 6
+hours to 55 minutes, and I introduced Great Expectations tests on 30 core tables, after which failed
+loads fell by 70 percent over two quarters. Those are the kind of outcomes I would like to help produce
+on the forecast pipelines Brightwell runs every night.
+
+I now own a shipment-events pipeline that carries 40 million events per day, orchestrated with Apache
+Airflow. Earlier, at Marlow
+Retail Group, I built the company's first Airflow deployment and migrated 45 cron jobs onto it, and
+designed a customer-orders star schema in PostgreSQL used by 12 analysts. For your nice-to-haves, I work
+with Kafka in production and mentor two junior engineers while leading the weekly data-modelling review.
+
+I want to be plain about Scala and Spark: I do not have hands-on experience with either. My work has been
+in Python, with Kafka streaming, Python ingestion services (about 2 million rows a day at Marlow) and
+warehouse transformations in SQL and dbt rather than Spark jobs. The incremental dbt work and the Kafka
+pipeline are the closest experience I have to the heavy transformations you describe; I would be willing
+to learn Spark and Scala from there.
+
+I should also say where my experience stops short of your description. I have not worked with
+data scientists to get their features into production, and my data quality work has been Great
+Expectations tests on 30 core tables rather than systematic monitoring and ownership for every table.
+
+I am based in Rotterdam and open to your hybrid setup in Amsterdam. I would welcome the chance to talk
+about the platform team and where these gaps matter most.
+
+Kind regards,\\
+Alex Fernsby
+
+\end{document}

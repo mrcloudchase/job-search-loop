@@ -6,4 +6,4 @@ __pycache__/
 .venv/
 *.pdf
 !fixtures/**/*.pdf
-!docs/recorded-run/*.pdf
+!docs/recorded-run/**/*.pdf
