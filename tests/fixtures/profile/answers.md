@@ -1,5 +1,5 @@
 ## eligibility
-Dutch citizen. I may work anywhere in the EU without sponsorship. No security clearance.
+Dutch citizen. I may work anywhere in the EU without sponsorship. No security clearance. I am currently employed.
 
 ## limits
 Full-time, at most 40 hours per week. Three months notice, so the earliest start is 1 February 2027.

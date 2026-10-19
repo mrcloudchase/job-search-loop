@@ -56,3 +56,14 @@ def test_a_provider_override_applies_to_the_derived_copies_only():
     puts = {}
     rh.register(server(puts), provider="deepseek")
     assert puts["/harnesses/claude-reviewer"]["provider"] == "deepseek" and puts["/harnesses/claude-research"]["provider"] == "deepseek"
+
+
+def test_the_portal_builder_may_write_files_but_not_search_the_web_and_shares_the_research_sandbox():
+    puts = {}
+    rh.register(server(puts))
+    portal = puts["/harnesses/claude-portal"]
+    settings = json.loads(portal["scripts"]["settings.json"])
+    assert portal["sandbox"] == "research" and portal["name"] == "claude-portal"
+    assert not {"Write", "Edit", "MultiEdit", "Bash", "WebFetch"} & set(settings["permissions"]["deny"])
+    assert "WebSearch" in settings["permissions"]["deny"] and settings["skipWebFetchPreflight"] is True
+    assert portal["scripts"]["artifacts"].endswith("settings.json .claude/settings.json\n")

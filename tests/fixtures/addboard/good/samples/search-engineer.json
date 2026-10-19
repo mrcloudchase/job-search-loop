@@ -1,0 +1,6 @@
+{"jobs": [
+ {"id": "nl-101", "title": "Embedded Software Engineer", "company": "Nordlys Robotics", "city": "Aarhus", "posted": "2026-10-12", "closing": "2026-11-15", "path": "/jobs/nl-101", "summary": "<p>Write firmware for inspection robots.</p>"},
+ {"id": "nl-102", "title": "Senior Backend Engineer", "company": "Nordlys Robotics", "city": "Copenhagen", "posted": "2026-10-10", "closing": null, "path": "/jobs/nl-102", "summary": "Build the fleet API."},
+ {"id": "nl-103", "title": "R&amp;D Mechanical Engineer", "company": "Nordlys Marine", "city": "Aalborg", "posted": "2026-10-01", "closing": "2026-12-01", "path": "/jobs/nl-103", "summary": null},
+ {"id": "nl-104", "title": "Test Engineer", "company": "Nordlys Marine", "city": "Odense", "posted": null, "closing": null, "path": "/jobs/nl-104", "summary": "Hardware in the loop testing."}
+]}

@@ -2,7 +2,8 @@
 
 Boards are Python adapters in a fixed registry (`boards.BUILT_IN`). They run IN THIS PROCESS: the adapter module is imported and
 `module.search(Query, Client)` is called with a `boards.http.Client` that is the only thing touching the network. An adapter is
-never run in a harness and never through a shell. What it promises:
+never run in a harness and never through a shell. A person's own board (`jobloop/addboard.py`) is the one exception to "in this process":
+`boards/external.py` runs it as a separate, time-limited program with a scrubbed environment and checks what it prints. What it promises:
 - one board failing never stops the others: each board ends with an `Outcome` (ok, blocked, rate_limited, robots, network,
   parse, not_found, invalid), and a board that refuses us (blocked, rate_limited, robots, network) is not asked again;
 - a board is on or off in `me/boards.json`; with nothing recorded it follows the adapter's DEFAULT_ENABLED (the Danish boards
@@ -57,8 +58,10 @@ class BudgetExceeded(Exception):
 
 
 # ── which boards are on ──
-def module_of(name: str):
-    return registry.load(name)
+def module_of(name: str, me: Path | str | None = None):
+    """The adapter called `name`: a built-in one, or (with `me`) one of this person's registered external boards, which
+    boards/external.py runs as a separate program."""
+    return registry.load(name, me)
 
 
 def _config_file(me: Path | str) -> Path:
@@ -85,7 +88,7 @@ def acknowledged(me: Path | str, name: str) -> bool:
 
 def is_enabled(me: Path | str, name: str, config: dict | None = None) -> bool:
     """On if recorded on (or, with nothing recorded, the adapter's default), and, for a board with TERMS, acknowledged."""
-    module = module_of(name)
+    module = module_of(name, me)
     config = _read_config(me) if config is None else config
     on = config.get(name, {}).get("enabled")
     on = module.DEFAULT_ENABLED if on is None else bool(on)
@@ -94,12 +97,12 @@ def is_enabled(me: Path | str, name: str, config: dict | None = None) -> bool:
 
 def enabled_boards(me: Path | str) -> list[str]:
     config = _read_config(me)
-    return [name for name in registry.BUILT_IN if is_enabled(me, name, config)]
+    return [name for name in registry.names(me) if is_enabled(me, name, config)]
 
 
 def set_enabled(me: Path | str, name: str, on: bool, acknowledged_terms: bool = False, today: date | None = None) -> None:
     """Switch a board on or off (recorded in me/boards.json). Switching a board with TERMS on needs the acknowledgement."""
-    module = module_of(name)
+    module = module_of(name, me)
     file = _config_file(me)
     with archive.locked(file):
         boards = _read_config(me)
@@ -235,7 +238,7 @@ def search(boards: list[str], queries, me: Path | str, *, location: str = "", re
     plan = _queries(queries, location, recency_days, limit)
     if not plan:
         raise ValueError("no query given")
-    loaded = {name: (modules or {}).get(name) or module_of(name) for name in boards}
+    loaded = {name: (modules or {}).get(name) or module_of(name, me) for name in boards}
     for module in loaded.values():
         require_runnable(me, module)
     stored = state.load(me)
@@ -389,26 +392,29 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--recency-days", type=int, default=DEFAULT_RECENCY_DAYS)
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--verify-open", action="store_true", help=f"ask each new posting's board if it is still open (at most {VERIFY_LIMIT})")
+    parser.add_argument("--plan", action="store_true", help="print the searches your profile's queries call for and make no request")
+    parser.add_argument("--focus", help="with --plan: a function or skill to put first, or `broad` for every function")
+    parser.add_argument("--language", action="append", default=[], help="with --plan: only this declared language; repeatable")
     sub = parser.add_subparsers(dest="action")
     boards = sub.add_parser("boards", help="list, enable or disable boards")
     boards.add_argument("what", choices=("list", "enable", "disable"))
-    boards.add_argument("name", nargs="?", choices=registry.BUILT_IN)
+    boards.add_argument("name", nargs="?", help="a built-in board or one of your own")
     boards.add_argument("--acknowledge-terms", action="store_true", help="a board with terms: confirm personal, low-volume use")
     check = sub.add_parser("health", help="is each board answering?")
-    check.add_argument("name", nargs="*", choices=registry.BUILT_IN, help="default: the boards that are on")
+    check.add_argument("name", nargs="*", help="default: the boards that are on")
     sub.add_parser("audit", help="check the posting store's keys and URLs (reports only)")
 
 
 def _boards_command(args) -> int:
     if args.what == "list":
         config = _read_config(args.me)
-        for name in registry.BUILT_IN:
+        for name in registry.names(args.me):
             on = is_enabled(args.me, name, config)
-            terms = " (terms: acknowledge to enable)" if module_of(name).TERMS and not config.get(name, {}).get("terms_acknowledged") else ""
+            terms = " (terms: acknowledge to enable)" if module_of(name, args.me).TERMS and not config.get(name, {}).get("terms_acknowledged") else ""
             say(f"{name:12} {'on ' if on else 'off'}{terms}", GREEN if on else "")
         return 0
     if not args.name:
-        say(f"boards {args.what} needs a board name: {', '.join(registry.BUILT_IN)}", RED)
+        say(f"boards {args.what} needs a board name: {', '.join(registry.names(args.me))}", RED)
         return 1
     try:
         set_enabled(args.me, args.name, args.what == "enable", args.acknowledge_terms)
@@ -422,10 +428,10 @@ def _boards_command(args) -> int:
 def _health_command(args) -> int:
     names = args.name or enabled_boards(args.me)
     for name in names:
-        require_runnable(args.me, module_of(name))
+        require_runnable(args.me, module_of(name, args.me))
     worst = 0
     for name in names:
-        h = health(module_of(name), check_detail=True)
+        h = health(module_of(name, args.me), check_detail=True)
         worst = worst or int(h.status in ("broken", "blocked", "robots"))
         say(f"{name:12} {h.status}  {h.message}", GREEN if h.status == "ok" else YELLOW if h.status == "rate_limited" else RED)
     return worst
@@ -449,6 +455,9 @@ def _dispatch(args) -> int:
         say(f"{report.entries} postings; malformed keys {len(report.malformed)}, legacy keys {len(report.legacy)}, "
             f"duplicate URLs {len(report.duplicate_urls)}, keys that drifted from the current rule {report.drifted}")
         return int(report.failed)
+    if getattr(args, "plan", False):
+        from jobloop import queries                     # queries imports this module, so it is imported here
+        return queries.main(args)
     if not args.query:
         raise ValueError("give at least one --query")
     names = args.board or enabled_boards(args.me)
@@ -459,7 +468,7 @@ def _dispatch(args) -> int:
     for o in report.outcomes:
         say(f"{o.board:12} {o.status}  {o.found} found  {o.message}", GREEN if o.status == "ok" else YELLOW)
         if o.symptoms:
-            h = health(module_of(o.board))
+            h = health(module_of(o.board, args.me))
             say(f"{o.board:12} looks degraded ({'; '.join(o.symptoms)}); probe says {h.status} {h.message}", YELLOW if h.status == "ok" else RED)
     say(f"{len(report.new)} new, {len(report.updated)} updated, {report.closed} closed, {report.duplicates} duplicates, "
         f"{report.tracked} already in the tracker")

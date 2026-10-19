@@ -7,6 +7,8 @@ nothing of harness-interface is copied into this repository:
 - `claude-reviewer`: Claude Code that can't write or edit files and can't use the web. It reads the drafts and answers.
 - `claude-research`: Claude Code that can't write or edit files, on the `research` sandbox, which reaches only its provider
   until the loop widens it to one company's hosts for one research turn (jobloop/research.py does that).
+- `claude-portal`: Claude Code that MAY write files (it writes a job-board adapter and its samples) and can fetch pages, on
+  the same `research` sandbox, which jobloop/addboard.py widens to exactly one board's hosts for the build turn.
 
     python tools/register_harnesses.py [--server URL] [--provider NAME]
 
@@ -26,6 +28,7 @@ ROLES_DIR = Path(__file__).resolve().parent.parent / "roles"
 ROLES = {                                       # name: (shipped harness it derives from, settings file, sandbox)
     "claude-reviewer": ("claude-code", "claude-reviewer.settings.json", "default"),
     "claude-research": ("claude-code", "claude-research.settings.json", "research"),
+    "claude-portal": ("claude-code", "claude-portal.settings.json", "research"),
 }
 SETTINGS_DEST = ".claude/settings.json"         # where Claude Code reads its settings, under the harness's $HOME
 

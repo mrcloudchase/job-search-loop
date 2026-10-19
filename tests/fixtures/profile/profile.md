@@ -44,8 +44,9 @@ companies. Strongest in Python, SQL and Apache Airflow.
 - Citizenship: Dutch
 - Work authorisation: may work anywhere in the EU without sponsorship
 - Security clearance: none
+- Employment status: employed, serving a three months notice period if I leave
 - Hours: full-time, at most 40 hours per week
-- Start date: three months notice, earliest start 1 February 2027
+- Start date: three months notice, earliest start 2027-02-01
 
 ## Preferences
 - Wants: a senior individual-contributor or tech-lead role on a data platform team
@@ -69,13 +70,24 @@ companies. Strongest in Python, SQL and Apache Airflow.
 - Action:
 - Result:
 
+## Settings
+- CV language: English
+- Ideal locations: Rotterdam; Delft
+- Acceptable locations: Utrecht
+- Borderline locations: Amsterdam
+- Too far: Groningen
+- Constraints: at most one hour of commuting each way
+
 ## Search queries
 ### English
 - Data pipeline engineering: data engineer; analytics engineer; data platform engineer
 - Pipeline orchestration and quality: airflow engineer; data reliability engineer
+- Adjacent roles: machine learning platform engineer; data architect
 ### Dutch
 - Data pipeline engineering: data engineer; data platform engineer; dataplatform specialist
 - Pipeline orchestration and quality: airflow engineer; data betrouwbaarheid engineer
+- Adjacent roles: machine learning platform engineer; data architect
 ### German
 - Data pipeline engineering: Dateningenieur; Data Engineer; Datenplattform Entwickler
 - Pipeline orchestration and quality: Airflow Entwickler; Datenqualität Ingenieur
+- Adjacent roles: Datenarchitekt; ML-Plattform Ingenieur

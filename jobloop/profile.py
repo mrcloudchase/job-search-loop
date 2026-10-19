@@ -11,7 +11,9 @@ What it promises:
 - Sources that disagree (a date, a title, a number) are listed for the person to resolve, never silently picked.
 - Nothing is written without the person's confirmation; the same gate (`propose_fact`) serves later steps.
 - Behavioural traits are labelled `(stated)` or `(inferred)`; an inferred one names its basis.
-- Parse helpers (`parse_languages`, `parse_eligibility`, `parse_deal_breakers`, ...) are the contract other modules read.
+- Parse helpers (`parse_languages`, `parse_eligibility`, `parse_deal_breakers`, `parse_settings`, ...) are the contract
+  other modules read. `## Settings` is optional: without it the CV is in English and no location tiers are set.
+- `--section NAME` redrafts only that section; code splices it into the existing profile, so no other section can change.
 """
 from __future__ import annotations
 
@@ -22,6 +24,7 @@ import re
 import shutil
 import subprocess
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Callable
 
@@ -34,6 +37,11 @@ HARNESS = True
 SECTIONS = ("Contact", "Summary", "Experience", "Education", "Skills", "Languages", "Eligibility", "Preferences",
             "Behavioural profile", "Writing style", "STAR stubs", "Search queries")
 CEFR = ("A1", "A2", "B1", "B2", "C1", "C2")
+LANGUAGE_CODES = {"english": "en", "danish": "da", "german": "de", "dutch": "nl"}   # the CV languages letter.detect can verify
+ADJACENT = "Adjacent roles"               # the search-query function that proposes role types the history does not show
+OPTIONAL_SECTIONS = ("Settings", "Projects", "Certifications", "Publications", "Awards", "References",
+                     "Behavioural signals")
+PATTERNS = "Patterns observed"
 MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
           "November", "December")
 NOT_STATED = "not stated"
@@ -127,12 +135,29 @@ class Eligibility:
     security_clearance: str
     hours: str
     start_date: str
+    employment_status: str
+
+
+ISO_DATE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
 
 
 def parse_eligibility(md: str) -> Eligibility:
+    """The eligibility lines. Hours need a number and the start date an ISO date (YYYY-MM-DD), or the word
+    `not stated` / `immediately` for a start date, so the fit's permit gate can compare them with a posting."""
     f = _need(section(md, "Eligibility"), "Citizenship", "Work authorisation", "Security clearance", "Hours",
-              "Start date")
-    return Eligibility(f["citizenship"], f["work authorisation"], f["security clearance"], f["hours"], f["start date"])
+              "Start date", "Employment status")
+    if not re.search(r"\d", f["hours"]) and f["hours"].lower().rstrip(".") != NOT_STATED:
+        raise ValueError("'- Hours:' must give a number of hours per week (or 'not stated') so postings can be compared")
+    for y, m, d in ISO_DATE.findall(f["start date"]):
+        try:
+            date(int(y), int(m), int(d))
+        except ValueError:
+            raise ValueError(f"'- Start date:' holds {y}-{m}-{d}, which is not a calendar date") from None
+    if not ISO_DATE.search(f["start date"]) and not re.search(r"\b(?:immediately|not stated)\b", f["start date"], re.I):
+        raise ValueError("'- Start date:' must hold the earliest start as YYYY-MM-DD (or say 'immediately' or "
+                         "'not stated') so postings can be compared")
+    return Eligibility(f["citizenship"], f["work authorisation"], f["security clearance"], f["hours"], f["start date"],
+                       f["employment status"])
 
 
 def parse_deal_breakers(md: str) -> tuple[str, ...]:
@@ -262,6 +287,193 @@ def parse_search_queries(md: str) -> dict[str, dict[str, tuple[str, ...]]]:
     return out
 
 
+# ── the structured sections beyond the core: education, settings, projects, references, signals ──
+@dataclass(frozen=True)
+class Education:
+    degree: str
+    institution: str
+    period: str
+    topics: str = ""
+    thesis: str = ""
+    grade: str = ""
+
+
+PERIOD = re.compile(r"(?:19|20)\d{2}(?:\s*-\s*(?:(?:19|20)\d{2}|present))?")
+EDUCATION_LABELS = {"key topics": "topics", "thesis": "thesis", "grade": "grade"}
+
+
+def parse_education(md: str) -> tuple[Education, ...]:
+    """`- Degree, Institution, Year` (or `Year - Year`) with optional nested `- Key topics:`, `- Thesis:`, `- Grade:`."""
+    entries: list[dict[str, str]] = []
+    for line in section(md, "Education").splitlines():
+        if not line.strip():
+            continue
+        nested = re.match(r"^\s+- ([^:]+):\s*(.+)$", line)
+        if nested and entries:
+            label = EDUCATION_LABELS.get(nested.group(1).strip().lower())
+            if label is None:
+                raise ValueError(f"education detail '{line.strip()}' must be Key topics, Thesis or Grade")
+            entries[-1][label] = nested.group(2).strip()
+        elif line.startswith("- "):
+            parts = [p.strip() for p in line[2:].rsplit(",", 2)]
+            if len(parts) != 3 or not all(parts) or not PERIOD.fullmatch(parts[2]):
+                raise ValueError(f"education entry '{line.strip()}' must be '- Degree, Institution, Year'")
+            entries.append({"degree": parts[0], "institution": parts[1], "period": parts[2]})
+        else:
+            raise ValueError(f"education line '{line.strip()}' must be a bullet '- Degree, Institution, Year'")
+    return tuple(Education(**e) for e in entries)
+
+
+@dataclass(frozen=True)
+class Settings:
+    """How the person wants the loop to work. Absent from the profile: English CVs and no location tiers."""
+    cv_language: str = "en"                     # a code letter.check_language understands
+    ideal: tuple[str, ...] = ()
+    acceptable: tuple[str, ...] = ()
+    borderline: tuple[str, ...] = ()
+    too_far: tuple[str, ...] = ()
+    constraints: str = ""
+
+
+def _places(value: str) -> tuple[str, ...]:
+    return () if value.lower().rstrip(".") in ("none", NOT_STATED) else tuple(p.strip() for p in value.split(";") if p.strip())
+
+
+def parse_settings(md: str) -> Settings:
+    """The optional `## Settings` section: `- CV language:`, the location tiers (`- Ideal locations:`,
+    `- Acceptable locations:`, `- Borderline locations:`, `- Too far:`, `;` separated) and `- Constraints:`."""
+    body = sections(md).get("Settings")
+    if body is None:
+        return Settings()
+    f = fields(body)
+    code = "en"
+    if f.get("cv language"):
+        wanted = f["cv language"].strip().lower().rstrip(".")
+        code = LANGUAGE_CODES.get(wanted) or (wanted if wanted in LANGUAGE_CODES.values() else "")
+        if not code:
+            raise ValueError(f"CV language '{f['cv language']}' must be one of {', '.join(n.title() for n in LANGUAGE_CODES)}: "
+                             "the loop can only verify a CV written in one of those")
+    tiers = {"ideal": _places(f.get("ideal locations", "")), "acceptable": _places(f.get("acceptable locations", "")),
+             "borderline": _places(f.get("borderline locations", "")), "too_far": _places(f.get("too far", ""))}
+    seen: dict[str, str] = {}
+    for tier, places in tiers.items():
+        for place in places:
+            if flat(place) in seen:
+                raise ValueError(f"location '{place}' is in both the {seen[flat(place)]} and the {tier} tier: pick one")
+            seen[flat(place)] = tier
+    return Settings(code, **tiers, constraints=f.get("constraints", ""))
+
+
+@dataclass(frozen=True)
+class Project:
+    name: str
+    description: str
+    stack: tuple[str, ...]
+    outcome: str
+
+
+def _blocks(md: str, title: str) -> list[tuple[str, dict[str, str]]]:
+    """An optional section's `### name` blocks with their `- Label:` fields; absent or `None yet.` gives none."""
+    body = sections(md).get(title)
+    if body is None or body.lower().rstrip(".") in ("none yet", "none"):
+        return []
+    chunks = re.split(r"(?m)^### ", body)
+    if chunks[0].strip():
+        raise ValueError(f"'## {title}' holds text outside a '### name' entry (or write 'None yet.')")
+    return [(c.partition("\n")[0].strip(), fields(c.partition("\n")[2])) for c in chunks[1:]]
+
+
+def parse_projects(md: str) -> tuple[Project, ...]:
+    """`### Name` with `- Description:`, `- Stack:` (comma separated) and `- Outcome:`, which must hold a number."""
+    projects = []
+    for name, f in _blocks(md, "Projects"):
+        missing = [l for l in ("description", "stack", "outcome") if not f.get(l)]
+        if missing:
+            raise ValueError(f"project '{name}' is missing " + ", ".join(f"'- {l.title()}:'" for l in missing))
+        if not re.search(r"\d", f["outcome"]):
+            raise ValueError(f"project '{name}': the outcome must be measurable (hold a number the sources give)")
+        projects.append(Project(name, f["description"], tuple(s.strip() for s in f["stack"].split(",") if s.strip()),
+                                f["outcome"]))
+    return tuple(projects)
+
+
+@dataclass(frozen=True)
+class Reference:
+    name: str
+    relationship: str
+    email: str
+    phone: str
+    title: str
+    organisation: str
+    quote: str
+
+
+def parse_references(md: str) -> tuple[Reference, ...]:
+    """`### Name` with `- Relationship:` and `- Email:` or `- Phone:`; a `- Quote:` also needs `- Title:` and
+    `- Organisation:`, so a quote always carries who said it."""
+    out = []
+    for name, f in _blocks(md, "References"):
+        if not f.get("relationship") or not (f.get("email") or f.get("phone")):
+            raise ValueError(f"reference '{name}' needs '- Relationship:' and an '- Email:' or '- Phone:'")
+        if f.get("quote") and not (f.get("title") and f.get("organisation")):
+            raise ValueError(f"reference '{name}': a quote needs the referee's '- Title:' and '- Organisation:'")
+        out.append(Reference(name, f["relationship"], f.get("email", ""), f.get("phone", ""), f.get("title", ""),
+                             f.get("organisation", ""), f.get("quote", "").strip('"“” ')))
+    return tuple(out)
+
+
+def parse_list(md: str, title: str) -> tuple[str, ...]:
+    """The bullets of an optional list section (Certifications, Publications, Awards); absent or `None yet.` gives none."""
+    body = sections(md).get(title)
+    if body is None or body.lower().rstrip(".") in ("none yet", "none"):
+        return ()
+    lines = [l for l in body.splitlines() if l.strip()]
+    if not all(l.startswith("- ") for l in lines):
+        raise ValueError(f"'## {title}' must be bullets (or 'None yet.')")
+    return tuple(l[2:].strip() for l in lines)
+
+
+@dataclass(frozen=True)
+class Signals:
+    fit: tuple[str, ...]
+    friction: tuple[str, ...]
+    growth: tuple[tuple[str, str], ...]        # (area, how to frame it positively)
+
+
+def parse_signals(md: str) -> Signals:
+    """The optional `## Behavioural signals`: `- Fit keywords:`, `- Friction keywords:` and `- Growth areas:`
+    (`Area -> how to frame it`, `;` separated). A growth area without its positive framing is an error."""
+    body = sections(md).get("Behavioural signals")
+    if body is None:
+        return Signals((), (), ())
+    f = fields(body)
+    growth = []
+    for part in _places(f.get("growth areas", "")):
+        area, arrow, framing = part.partition("->")
+        if not arrow or not area.strip() or len(framing.split()) < 3:
+            raise ValueError(f"growth area '{part}' must be 'Area -> how to frame it positively' (at least three words)")
+        growth.append((area.strip(), framing.strip()))
+    return Signals(_places(f.get("fit keywords", "")), _places(f.get("friction keywords", "")), tuple(growth))
+
+
+@dataclass(frozen=True)
+class PostingSignals:
+    fit: tuple[str, ...]
+    friction: tuple[str, ...]
+
+    def lines(self) -> list[str]:
+        """What to show: friction is a caution for the person, never a veto and never a reason to drop the posting."""
+        return ([f"strong behavioural fit: the posting says '{k}'" for k in self.fit]
+                + [f"potential friction (not a deal-breaker): the posting says '{k}'" for k in self.friction])
+
+
+def posting_signals(posting: str, signals: Signals) -> PostingSignals:
+    """Which of the person's fit and friction keywords the posting's visible text holds."""
+    text = flat(visible(posting))
+    return PostingSignals(tuple(k for k in signals.fit if flat(k) in text),
+                          tuple(k for k in signals.friction if flat(k) in text))
+
+
 # ── the checks: code decides ──
 def structure_failures(md: str) -> list[str]:
     """Everything about the shape of the profile; each failure says what to fix."""
@@ -277,7 +489,10 @@ def structure_failures(md: str) -> list[str]:
     checks: list[tuple[str | None, Callable]] = [
         (None, parse_name), ("Experience", parse_experience), ("Skills", parse_skills),
         ("Languages", parse_languages), ("Eligibility", parse_eligibility), ("Preferences", parse_preferences),
-        ("Behavioural profile", parse_behavioural), ("STAR stubs", parse_star_stubs)]
+        ("Behavioural profile", parse_behavioural), ("STAR stubs", parse_star_stubs), ("Education", parse_education),
+        ("Settings", parse_settings), ("Projects", parse_projects), ("References", parse_references),
+        ("Behavioural signals", parse_signals),
+        *((t, lambda md, t=t: parse_list(md, t)) for t in ("Certifications", "Publications", "Awards"))]
     for name, parse in checks:
         if name is not None and name not in present:
             continue
@@ -290,7 +505,8 @@ def structure_failures(md: str) -> list[str]:
             out.append(f"STAR stub '{stub.title}': keep '- Source:' and leave Situation, Task, Action and Result "
                        "empty (" + (f"filled: {', '.join(stub.filled)}" if stub.filled else "no source") + "); "
                        "the person fills a stub, you never invent detail.")
-    return out + _query_failures(md, present) + _placeholder_failures(md) + _duplicate_language_failures(md, present)
+    return (out + _query_failures(md, present) + _placeholder_failures(md) + _duplicate_language_failures(md, present)
+            + _cv_language_failures(md, present))
 
 
 PLACEHOLDER = re.compile(r"\[[A-Z][A-Z_ ]{3,}\]|\{\{.*?\}\}|\bYOUR_[A-Z_]+|\bTODO\b|\bTBD\b|<[A-Za-z][A-Za-z ]*>")
@@ -313,6 +529,21 @@ def _duplicate_language_failures(md: str, present: list[str]) -> list[str]:
             for b in breakers if "language" in flat(b) or any(flat(l) in flat(b) for l in languages)]
 
 
+def _cv_language_failures(md: str, present: list[str]) -> list[str]:
+    """A CV is written only in a language the person declares."""
+    if "Settings" not in present or "Languages" not in present:
+        return []
+    try:
+        stated, declared = fields(sections(md)["Settings"]).get("cv language"), parse_languages(md)
+        code = parse_settings(md).cv_language
+    except ValueError:
+        return []
+    if stated and code not in {LANGUAGE_CODES.get(flat(l)) for l in declared}:
+        return [f"Settings: the CV language {stated} is not in the Languages table: declare it there, or choose a "
+                "language you declare."]
+    return []
+
+
 def _query_failures(md: str, present: list[str]) -> list[str]:
     if "Search queries" not in present or "Languages" not in present:
         return []
@@ -327,6 +558,26 @@ def _query_failures(md: str, present: list[str]) -> list[str]:
     if have and any(h != have[0] for h in have):
         out.append("Search queries: every language must cover the same functions (same function labels), "
                    "one '- Function: query; query' line each.")
+    if have and all(ADJACENT not in h for h in have):
+        out.append(f"Search queries: add a '- {ADJACENT}:' line in every language, with role types the person's skills "
+                   "suit but their history does not show, so the search also looks beyond the roles they have held.")
+    out += _adjacent_failures(md, queries)
+    return out
+
+
+def _adjacent_failures(md: str, queries: dict[str, dict[str, tuple[str, ...]]]) -> list[str]:
+    """An adjacent role is new: it is not a title the person held, nor a query of another function."""
+    try:
+        held = {flat(r.title) for r in parse_experience(md)}
+    except ValueError:
+        return []
+    out = []
+    for language, functions in queries.items():
+        others = {flat(q) for f, qs in functions.items() if f != ADJACENT for q in qs}
+        for query in functions.get(ADJACENT, ()):
+            if flat(query) in held or flat(query) in others:
+                out.append(f"Search queries ({language}): the {ADJACENT} query '{query}' is a role the person already "
+                           "holds or searches for elsewhere; suggest a different role type.")
     return out
 
 
@@ -355,12 +606,34 @@ def _checkable(profile: str) -> str:
     return re.sub(r"\b[ABC][12]\b", "", body)
 
 
+def _source_dates(text: str) -> set[tuple[int, int, int]]:
+    """Every calendar date a text gives, as ISO or as `1 February 2027`, `February 1, 2027` or `1st of Feb. 2027`."""
+    found = {(int(y), int(m), int(d)) for y, m, d in ISO_DATE.findall(text)}
+    for m in re.finditer(rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\.?\s+(?:of\s+)?({MON})\.?,?\s+((?:19|20)\d{{2}})\b", text, re.I):
+        found.add((int(m[3]), _month(m[2]), int(m[1])))
+    for m in re.finditer(rf"\b({MON})\.?\s+(\d{{1,2}})(?:st|nd|rd|th)?,?\s+((?:19|20)\d{{2}})\b", text, re.I):
+        found.add((int(m[3]), _month(m[1]), int(m[2])))
+    return found
+
+
+def _month(name: str) -> int:
+    return next(i + 1 for i, m in enumerate(MONTHS) if m[:3].lower() == name[:3].lower())
+
+
+def _date_failures(text: str, everything: str) -> list[str]:
+    """An ISO date in the profile must be a date a source gives, in any written form."""
+    known = _source_dates(everything)
+    return [f"The date {y}-{m}-{d} is not in the sources. Use only a date a source gives."
+            for y, m, d in sorted(set(ISO_DATE.findall(text))) if (int(y), int(m), int(d)) not in known]
+
+
 def grounding_failures(profile: str, sources: dict[str, str]) -> list[str]:
     """Every number, date, email, phone and link must be in the sources, and no source year may be dropped."""
-    text = _checkable(profile)
     everything = "\n".join(sources.values())
+    dates = _date_failures(_checkable(profile), everything)
+    text = ISO_DATE.sub(" ", _checkable(profile))        # an ISO date was checked as a whole; its parts are not numbers
     seen = flat(everything)
-    out: list[str] = []
+    out: list[str] = dates
     for email in sorted(set(EMAIL.findall(text))):
         if flat(email) not in seen:
             out.append(f"The email {email} is not in the sources. Use only an email a source gives, or write 'not stated'.")
@@ -393,8 +666,100 @@ def language_failures(profile: str, sources: dict[str, str]) -> list[str]:
             if flat(l) not in seen]
 
 
+def project_failures(profile: str, sources: dict[str, str]) -> list[str]:
+    """A project is one a source describes: its name and every stack item appear in the sources."""
+    try:
+        projects = parse_projects(profile)
+    except ValueError:
+        return []
+    seen = flat("\n".join(sources.values()))
+    return [f"Project '{p.name}': {what} is not in the sources. List only projects and tools a source gives."
+            for p in projects for what in [f"the {kind} '{value}'" for kind, value in
+                                           [("name", p.name), *(("tool", t) for t in p.stack)] if flat(value) not in seen]]
+
+
+def reference_failures(profile: str, sources: dict[str, str]) -> list[str]:
+    """A referee's quote is the referee's own words: it appears verbatim in a source, and carries who said it."""
+    try:
+        references = parse_references(profile)
+    except ValueError:
+        return []
+    seen = flat("\n".join(sources.values()))
+    return [f"Reference '{r.name}': the quote is not word for word in the sources. Quote the reference letter exactly "
+            "or leave the quote out." for r in references if r.quote and flat(r.quote) not in seen]
+
+
+def diploma_failures(profile: str, sources: dict[str, str]) -> list[str]:
+    """Where a diploma is among the sources, the Education entry for its institution uses the diploma's own wording of
+    the degree title, its graduation year and its grade; a diploma that matches no entry is a finding."""
+    diplomas = {k: v for k, v in sources.items() if k.startswith("diplomas/")}
+    try:
+        entries = parse_education(profile) if diplomas else ()
+    except ValueError:
+        return []
+    out = []
+    for name, text in diplomas.items():
+        seen = flat(text)
+        matched = [e for e in entries if flat(e.institution) in seen]
+        if not matched:
+            out.append(f"The diploma {name} matches no Education entry: write the institution exactly as the diploma spells it.")
+        for e in matched:
+            year = YEAR.findall(e.period)[-1]
+            for what, value, ok in (("degree title", e.degree, flat(e.degree) in seen), ("graduation year", year, year in seen),
+                                    ("grade", e.grade, not e.grade or flat(e.grade) in seen)):
+                if not ok:
+                    out.append(f"Education '{e.degree}': the {what} '{value}' is not what the diploma {name} says. "
+                               "Use the diploma's official wording.")
+    return out
+
+
+def parse_patterns(md: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """The lines under `### Patterns observed` in `## Writing style`: (pattern, letters it was seen in)."""
+    body = sections(md).get("Writing style", "")
+    chunk = re.split(rf"(?m)^### {PATTERNS}\s*$", body)
+    if len(chunk) < 2:
+        return ()
+    out = []
+    for line in re.split(r"(?m)^### ", chunk[1])[0].splitlines():
+        if line.strip():
+            m = re.match(r"^- (?P<text>.+?) \(seen in: (?P<files>[^)]+)\)$", line)
+            if not m:
+                raise ValueError(f"pattern line '{line.strip()}' must be '- pattern (seen in: file, file)'")
+            out.append((m["text"], tuple(f.strip() for f in m["files"].split(",") if f.strip())))
+    return tuple(out)
+
+
+def style_failures(profile: str, sources: dict[str, str]) -> list[str]:
+    """An observed writing pattern needs two different past cover letters among the sources that show it."""
+    try:
+        patterns = parse_patterns(profile)
+    except ValueError as error:
+        return [f"Writing style: {error}"]
+    out = []
+    for text, files in patterns:
+        letters = {f for f in files if f in sources and "cover_letter" in f}
+        unknown = [f for f in files if f not in letters]
+        if unknown:
+            out.append(f"Pattern '{text}' cites {', '.join(unknown)}, which is not a cover letter among the sources.")
+        if len(letters) < 2:
+            out.append(f"Pattern '{text}' is seen in {len(letters)} cover letter(s): a pattern needs two different past "
+                       "letters, otherwise leave it out.")
+    return out
+
+
+def rules_failures(existing: str, new: str) -> list[str]:
+    """The Writing style rules in the current profile all survive: observed patterns are added, never substituted."""
+    rules = [l for l in re.split(rf"(?m)^### {PATTERNS}\s*$", sections(existing).get("Writing style", ""))[0].splitlines()
+             if l.strip()]
+    kept = set(sections(new).get("Writing style", "").splitlines())
+    return [f"The writing rule '{r.strip()}' from current-profile.md is missing; keep every rule word for word and add "
+            f"new observations only under '### {PATTERNS}'." for r in rules if r not in kept]
+
+
 def profile_failures(profile: str, sources: dict[str, str]) -> list[str]:
-    return structure_failures(profile) + grounding_failures(profile, sources) + language_failures(profile, sources)
+    return (structure_failures(profile) + grounding_failures(profile, sources) + language_failures(profile, sources)
+            + project_failures(profile, sources) + reference_failures(profile, sources)
+            + diploma_failures(profile, sources) + style_failures(profile, sources))
 
 
 # ── conflicts between sources: found by code, listed for the person ──
@@ -698,12 +1063,16 @@ QUESTIONS = (
     Question("languages", "Which languages do you speak, each with a level from A1 to C2, or native? Be honest: a "
                           "language you do not list counts as one you do not have, and a posting that needs a higher "
                           "level than yours is flagged for you to judge."),
-    Question("eligibility", "Your citizenship, where you may work without sponsorship, and any security clearance?"),
+    Question("eligibility", "Your citizenship, where you may work without sponsorship, any security clearance, and your "
+                            "employment status (employed, serving notice, between jobs, studying)?"),
     Question("limits", "Any limit on weekly hours, and the earliest date you could start, notice period included?"),
     Question("wants", "What do you want next, what are your deal-breakers, and what are your career goals?"),
     Question("energy", "In past roles, what gave you energy and what drained you?"),
     Question("work_style", "How do you work best: environment, communication, feedback, being managed?", optional=True),
     Question("function", "What do you do day to day that you want to keep doing? Describe the work, not job titles."),
+    Question("settings", "Which language should your CV be written in (English unless you say otherwise; cover letters "
+                         "follow each posting), and which places are ideal, acceptable, borderline or too far to work, "
+                         "with any commute or family limits?", optional=True),
     Question("achievements", "Two to four achievements you could tell as a story: what happened and why it mattered.",
              optional=True),
     Question("writing_style", "Any rules for how your applications should read: tone, words to avoid?", optional=True),
@@ -721,10 +1090,20 @@ def _answer(ask: Callable[[str], str], q: Question) -> str:
     return answer if answer or q.optional else ask(q.text + " (needed: answer, or write 'not stated')").strip()
 
 
-def run_interview(ask: Callable[[str], str]) -> dict[str, str]:
-    """The interview, driven by the question list in code. A skipped optional question is left out, never filled in."""
+SECTION_ASKS = {                # `--section NAME`: the questions asked, and the profile sections that may change
+    "contact": (("contact",), ("Contact",)), "summary": (("summary",), ("Summary",)),
+    "experience": (("experience",), ("Experience",)), "education": (("education",), ("Education",)),
+    "skills": (("skills",), ("Skills",)), "languages": (("languages",), ("Languages",)),
+    "eligibility": (("eligibility", "limits"), ("Eligibility",)), "preferences": (("wants",), ("Preferences",)),
+    "behavioural": (("energy", "work_style"), ("Behavioural profile",)), "style": (("writing_style",), ("Writing style",)),
+    "stubs": (("achievements",), ("STAR stubs",)), "search": (("function", "settings"), ("Search queries", "Settings"))}
+
+
+def run_interview(ask: Callable[[str], str], keys: tuple[str, ...] | None = None) -> dict[str, str]:
+    """The interview, driven by the question list in code (only `keys` when a section is updated). A skipped optional
+    question is left out, never filled in."""
     parts = []
-    for q in QUESTIONS:
+    for q in (q for q in QUESTIONS if keys is None or q.key in keys):
         answer = _answer(ask, q)
         if q.key == "experience" and len(answer.split()) < 25:
             answer = f"{answer}\n{ask(DEPTH).strip()}".strip()
@@ -753,27 +1132,68 @@ Format, exactly:
 ## Contact  (bullets: Email, Phone, Location, Links)
 ## Summary
 ## Experience  (### Title, Employer (City), Month Year - Month Year|present  then bullets, newest first, full month names)
-## Education  (bullets)
+## Education  (bullets '- Degree, Institution, Year', or 'Year - Year'; nested bullets '- Key topics:', '- Thesis:',
+'- Grade:' when a source gives them; where a diploma is attached, copy its degree title, institution, year and grade)
 ## Skills  (bullets: '- Strong: a, b', '- Working: ...', '- Not yet: ...')
 ## Languages  (a table '| Language | Level |' with a '|---|---|' row; Level is A1 to C2 or native)
-## Eligibility  (bullets: Citizenship, Work authorisation, Security clearance, Hours, Start date)
+## Eligibility  (bullets: Citizenship, Work authorisation, Security clearance, Employment status, Hours with a number
+of hours per week, Start date as YYYY-MM-DD, or 'immediately' or 'not stated')
 ## Preferences  (bullets: Wants, Deal-breakers separated by ';', Career goals)
 ## Behavioural profile  (bullets; every one ends '(stated)' when the person said it, or '(inferred)' with 'based on
 <source>' in the text when you infer it. Never present an inference as fact. If nothing: 'None stated yet.')
-## Writing style  (bullets: the rules a drafter must follow, from the sources)
+## Writing style  (bullets: the rules a drafter must follow, from the sources. Patterns seen in two or more different
+past cover letters go ONLY under a '### Patterns observed' heading as '- pattern (seen in: file, file)', naming the
+letters; never change a rule that is already there)
 ## STAR stubs  (one '### title' per achievement with '- Source:' and EMPTY '- Situation:', '- Task:', '- Action:',
 '- Result:'; the person fills them. If none: 'None yet.')
 ## Search queries  (a '### Language' heading for EVERY language in the table; under each, one line per FUNCTION the
-person performs: '- Function label: query; query'. Use the same English function labels in every language and write
-the queries themselves in that language. Organise by what the person does, not by job title.)
+person performs: '- Function label: query; query', most important first, with several plausible titles per function.
+Use the same English function labels in every language and write the queries themselves in that language, translated
+by meaning, not word for word. Organise by what the person does, not by job title. The LAST line in every language is
+'- Adjacent roles: ...': role types their skills suit but their history does not show; never a title they held.)
+Optional sections, only when the sources give the facts: ## Settings  (bullets: CV language, Ideal locations, Acceptable
+locations, Borderline locations, Too far, each ';' separated, Constraints), ## Projects  (### name with '- Description:',
+'- Stack:' comma separated, '- Outcome:' with a number), ## Certifications, ## Publications, ## Awards  (bullets),
+## References  (### name with '- Relationship:', '- Email:' or '- Phone:', and for a quote '- Quote:' word for word
+with '- Title:' and '- Organisation:'), ## Behavioural signals  (bullets: Fit keywords, Friction keywords, both ';'
+separated; Growth areas as 'Area -> how to frame it positively', ';' separated).
 Decisions the person made about conflicting sources are in resolutions.md; follow them. If current-profile.md is
 attached, keep what it says unless a source or resolution changes it. Failures you are sent come from code checks;
 fix every one."""
 
 
-def _brief(files: dict[str, str]) -> str:
+def _brief(files: dict[str, str], only: tuple[str, ...] = ()) -> str:
+    update = (f" current-profile.md is the person's profile: change only the section(s) {', '.join(only)}; write the "
+              "whole file, but the code keeps every other section exactly as it is." if only else "")
     return ("Write profile.md from these attached sources: " + ", ".join(files)
-            + ". Follow the format in your instructions and invent nothing.")
+            + ". Follow the format in your instructions and invent nothing." + update)
+
+
+def _chunks(md: str) -> list[tuple[str | None, str]]:
+    """The profile cut at its `## ` headings: (title or None for the preamble, the exact text)."""
+    out: list[tuple[str | None, str]] = []
+    title, current = None, []
+    for line in md.splitlines(keepends=True):
+        if line.startswith("## "):
+            out.append((title, "".join(current)))
+            title, current = line[3:].strip(), []
+        current.append(line)
+    return out + [(title, "".join(current))]
+
+
+def splice(existing: str, draft: str, titles: tuple[str, ...]) -> str:
+    """The existing profile with only the named sections taken from the draft; every other byte is the existing one. A
+    named section the draft lacks stays as it was; one the existing profile lacks is added at the end."""
+    new = dict(c for c in _chunks(draft) if c[0] in titles)
+    parts, used = [], set()
+    for title, text in _chunks(existing):
+        if title in new:
+            parts.append(new[title].rstrip("\n") + "\n\n")
+            used.add(title)
+        else:
+            parts.append(text)
+    parts += [new[t].rstrip("\n") + "\n\n" for t in titles if t in new and t not in used]
+    return "".join(parts).rstrip("\n") + "\n"
 
 
 def _summary(profile: str, notes: list[str], previous: str | None, path: Path) -> str:
@@ -803,8 +1223,9 @@ def _dropped_traits(existing: str, new: str) -> list[str]:
 
 def build(sources: dict[str, str], *, me: Path, turns: Turns, model: str, confirm: Callable[[str], bool],
           resolve: Callable[[Conflict], str], notes: tuple[str, ...] = (), rounds: int = 3,
-          ignored: Callable[[Path], bool | None] = git_ignored) -> Path | None:
-    """Draft, check, settle, confirm, write. Returns the written path, or None if nothing was written."""
+          ignored: Callable[[Path], bool | None] = git_ignored, only: tuple[str, ...] = ()) -> Path | None:
+    """Draft, check, settle, confirm, write. Returns the written path, or None if nothing was written. With `only`
+    (section titles) the existing profile is required and only those sections are taken from the draft."""
     me = Path(me)
     preflight(me, ignored)
     conflicts = detect_conflicts(sources)
@@ -812,6 +1233,9 @@ def build(sources: dict[str, str], *, me: Path, turns: Turns, model: str, confir
         say("No conflicts between your sources.", GREEN)
     decisions = resolve_conflicts(conflicts, resolve)
     existing = (me / "profile.md").read_text() if (me / "profile.md").is_file() else None
+    if only and existing is None:
+        raise ProfileError(f"There is no {me / 'profile.md'} to update: build the whole profile first (--docs, --cv or "
+                           "--interview).")
     files = dict(sources)
     if decisions:
         files["resolutions.md"] = "\n\n".join(decisions)
@@ -823,13 +1247,19 @@ def build(sources: dict[str, str], *, me: Path, turns: Turns, model: str, confir
         text = turns.files(record, "profile.md")["profile.md"]
         if text is None:
             return ["profile.md must exist in the working directory."]
-        failures = profile_failures(text, files) + (_dropped_traits(existing, text) if existing else [])
+        if only:
+            absent = [t for t in only if f"## {t}" not in text.splitlines() and t not in OPTIONAL_SECTIONS]
+            if absent:
+                return [f"profile.md must hold the '## {t}' section you were asked to update." for t in absent]
+            text = splice(existing, text, only)
+        failures = (profile_failures(text, files) + (_dropped_traits(existing, text) + rules_failures(existing, text)
+                                                     if existing else []))
         if not failures:
             best[:] = [text]
         return failures
 
     with turns:
-        record = turns.turn("PROFILE", model, _brief(files), DRAFTER, files=files)
+        record = turns.turn("PROFILE", model, _brief(files, only), DRAFTER, files=files)
         passed = turns.settle(record, validate, rounds, DRAFTER) if record else None
     if not passed or not best:
         say("The draft did not pass the checks; nothing was written.", RED)
@@ -851,6 +1281,8 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     way.add_argument("--docs", help="a folder of documents: cv, linkedin, diplomas, references, projects, applications")
     way.add_argument("--cv", help="a single CV file (.pdf, .txt, .md, .tex)")
     way.add_argument("--interview", action="store_true", help="answer questions instead")
+    way.add_argument("--section", choices=tuple(SECTION_ASKS),
+                     help="update only this section of the existing profile (search: queries, CV language, places)")
     parser.add_argument("--me", default="me", help="where personal data lives (gitignored)")
     parser.add_argument("--model", default="claude-code", help="a harness name, optionally harness/model")
     parser.add_argument("--server", default="http://127.0.0.1:8000", help="the harness-interface server")
@@ -891,11 +1323,16 @@ def main(args: argparse.Namespace, *, ask: Callable[[str], str] = _console_ask,
             sources, notes = fill_gaps(inventory.sources, ask), tuple(f"{n} not read" for n in inventory.unsupported)
         elif args.cv:
             sources = fill_gaps(read_cv(Path(args.cv), extract_pdf), ask)
+        elif args.section:
+            if not (me / "profile.md").is_file():
+                raise ProfileError(f"There is no {me / 'profile.md'} to update: build the whole profile first "
+                                   "(--docs, --cv or --interview).")
+            sources = run_interview(ask, SECTION_ASKS[args.section][0])
         else:
             sources = run_interview(ask)
         turns = Turns(api or Api(args.server), me / "state" / "profile-log.jsonl", args.minutes, args.budget)
         written = build(sources, me=me, turns=turns, model=args.model, confirm=confirm, resolve=resolve, notes=notes,
-                        rounds=args.rounds, ignored=ignored)
+                        rounds=args.rounds, ignored=ignored, only=SECTION_ASKS[args.section][1] if args.section else ())
     except ProfileError as error:
         say(str(error), RED)
         return 2

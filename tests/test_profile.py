@@ -57,7 +57,8 @@ def test_a_language_level_outside_cefr_or_native_is_rejected(level):
 def test_eligibility_roundtrips_hours_and_start_date_limits():
     e = P.parse_eligibility(GOOD)
     assert e == P.Eligibility("Dutch", "may work anywhere in the EU without sponsorship", "none",
-                              "full-time, at most 40 hours per week", "three months notice, earliest start 1 February 2027")
+                              "full-time, at most 40 hours per week", "three months notice, earliest start 2027-02-01",
+                              "employed, serving a three months notice period if I leave")
 
 
 def test_a_missing_eligibility_field_is_rejected():
@@ -639,6 +640,7 @@ def scripted(overrides=None):
               "languages": "English C1, Dutch native, German A2", "eligibility": text["eligibility"],
               "limits": text["limits"], "wants": text["wants"], "energy": "Owning things end to end gave energy.",
               "work_style": text["work_style"], "function": "Building and running data pipelines.",
+              "settings": "English CV. Ideal: Rotterdam, Delft. Acceptable: Utrecht. Borderline: Amsterdam. Too far: Groningen.",
               "achievements": "", "writing_style": text["writing_style"], **(overrides or {})}
     asked = []
 
@@ -728,7 +730,7 @@ def test_the_interview_draft_cannot_invent_beyond_the_answers(tmp_path):
     code, server = run_main(tmp_path, "--interview", ask=ask,
                             replies=[{"files": {"profile.md": bad_start}}] * 4)
     assert code == 1 and not (tmp_path / "me" / "profile.md").exists()
-    assert "numbers or dates are not in the sources" in server.requests[1]["input"][0]["text"]
+    assert "date 2027-02-01 is not in the sources" in server.requests[1]["input"][0]["text"]
 
 
 def test_declining_the_confirmation_exits_without_writing(tmp_path):
