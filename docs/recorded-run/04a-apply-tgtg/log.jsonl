@@ -1,0 +1,14 @@
+{"phase": "FIT", "model": "claude-deepseek/deepseek-chat", "response": "resp_cf56ffd57f0c42e2", "status": "completed", "cost_usd": 0.1006404, "files": ["fit.json"]}
+{"phase": "FIX FIT 1/3", "model": "claude-deepseek/deepseek-chat", "response": "resp_8911edf47b6f41b2", "status": "completed", "cost_usd": 0.10354759999999999, "files": ["fit.json"]}
+{"phase": "FIX FIT 2/3", "model": "claude-deepseek/deepseek-chat", "response": "resp_ef61cf72bf6a4f14", "status": "completed", "cost_usd": 0.09082960000000001, "files": ["fit.json"]}
+{"phase": "RESEARCH company Too Good To Go", "model": "claude-research/deepseek-chat", "response": "resp_55793641bb9a4a5a", "status": "completed", "cost_usd": 0.20736680000000002, "files": []}
+{"phase": "DRAFT", "model": "claude-deepseek/deepseek-chat", "response": "resp_78c1300d7c624450", "status": "completed", "cost_usd": 0.3964725999999999, "files": ["cover.tex", "cv.tex"]}
+{"phase": "FIX 1/8", "model": "claude-deepseek/deepseek-chat", "response": "resp_68cd3a803668475a", "status": "completed", "cost_usd": 0.145812, "files": ["cover.tex", "cv.tex"]}
+{"phase": "FIX 2/8", "model": "claude-deepseek/deepseek-chat", "response": "resp_c84eb6cbabd74a1f", "status": "completed", "cost_usd": 0.124566, "files": ["cv.tex"]}
+{"phase": "FIX 3/8", "model": "claude-deepseek/deepseek-chat", "response": "resp_1628e01e4f4e454a", "status": "completed", "cost_usd": 0.1631664, "files": ["cover.tex", "cv.tex"]}
+{"phase": "FIX 4/8", "model": "claude-deepseek/deepseek-chat", "response": "resp_84f11cd13fd24cbc", "status": "completed", "cost_usd": 0.16023199999999999, "files": ["cv.tex"]}
+{"phase": "FIX 5/8", "model": "claude-deepseek/deepseek-chat", "response": "resp_9145102caada4d61", "status": "completed", "cost_usd": 0.21082679999999998, "files": ["cv.tex"]}
+{"phase": "REVIEW", "model": "codex", "response": "resp_e539f70b19d24ca7", "status": "completed", "cost_usd": null, "files": []}
+{"phase": "REVISE", "model": "claude-deepseek/deepseek-chat", "response": "resp_0bb37c647a0845a0", "status": "completed", "cost_usd": 0.341988, "files": ["cover.tex", "cv.tex"]}
+{"phase": "FIX 1/8", "model": "claude-deepseek/deepseek-chat", "response": "resp_6ff490bbd50c4698", "status": "completed", "cost_usd": 0.21755239999999995, "files": ["cover.tex", "cv.tex"]}
+{"phase": "FIX 2/8", "model": "claude-deepseek/deepseek-chat", "response": "resp_9d98231eedd04dff", "status": "completed", "cost_usd": 0.229141, "files": ["cv.tex"]}
