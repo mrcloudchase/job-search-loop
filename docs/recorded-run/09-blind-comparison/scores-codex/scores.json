@@ -1,0 +1,206 @@
+{
+ "X": {
+  "items": {
+   "1": {
+    "verdict": "fail",
+    "evidence": "The letter calls CI/CD and stakeholder management gaps despite the profile documenting GitHub Actions deployments, a five-team data contract and analyst training."
+   },
+   "2": {
+    "verdict": "pass",
+    "evidence": "All three employers, role titles, employment months and cities match the profile, as do the education dates and institution."
+   },
+   "3": {
+    "verdict": "pass",
+    "evidence": "The email, phone number, Copenhagen location and GitHub username match the profile."
+   },
+   "4": {
+    "verdict": "pass",
+    "evidence": "References to Too Good To Go, its Parcels domain and the Copenhagen role are supported by the posting, with no additional corporate claims."
+   },
+   "5": {
+    "verdict": "pass",
+    "evidence": "The letter names the Senior Data Engineer role at Too Good To Go and connects it directly to the candidate's current logistics pipeline ownership."
+   },
+   "6": {
+    "verdict": "pass",
+    "evidence": "The CV prioritises logistics data, Airflow, Python, SQL, dbt, Terraform, deployments and data quality with relevant quantified experience."
+   },
+   "7": {
+    "verdict": "fail",
+    "evidence": "Although logistics, warehouse work and infrastructure are covered and Redshift is acknowledged, the letter incorrectly presents demonstrated CI/CD and stakeholder experience as gaps."
+   },
+   "8": {
+    "verdict": "pass",
+    "evidence": "The application highlights relevant warehouse optimisation and modelling experience while honestly acknowledging the lack of production Redshift experience."
+   },
+   "9": {
+    "verdict": "pass",
+    "evidence": "The CV uses a conventional two-page layout with a contact header, competencies, reverse-chronological experience, education and supplementary sections."
+   },
+   "10": {
+    "verdict": "pass",
+    "evidence": "The letter includes a contact header, date, salutation, opening, evidence, availability and a signed closing."
+   },
+   "11": {
+    "verdict": "pass",
+    "evidence": "Both documents use a restrained professional tone and concrete statements about logistics engineering results."
+   },
+   "12": {
+    "verdict": "fail",
+    "evidence": "The CV presents GitHub Actions deployments and cross-team collaboration as competencies while the letter calls CI/CD and stakeholder management gaps."
+   },
+   "13": {
+    "verdict": "pass",
+    "evidence": "The extractions contain no stray LaTeX commands or broken characters, and the occasional line-end hyphenation is readable."
+   },
+   "14": {
+    "verdict": "fail",
+    "evidence": "The letter's phrase 'Google BigQuery, which I support on a migration from on-premise PostgreSQL' is grammatically awkward and obscures the supported migration experience."
+   },
+   "15": {
+    "verdict": "pass",
+    "evidence": "The letter uses 'Dear Hiring Manager,' as required when the posting names no recipient."
+   },
+   "16": {
+    "verdict": "pass",
+    "evidence": "The cover extraction contains the complete letter on one page and pages.txt reports one cover page."
+   },
+   "17": {
+    "verdict": "pass",
+    "evidence": "All CV headings, including Core Competencies, Professional Experience and Education, are in English."
+   },
+   "18": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports 'cv.pdf: 2 pages' and the CV extraction has matching 1/2 and 2/2 footers."
+   },
+   "19": {
+    "verdict": "pass",
+    "evidence": "Marlow's entry finishes before the first page break and Delft's title appears with its role and bullets on page two."
+   },
+   "20": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports one cover page and the closing and Alex Fernsby signature precede the final page break."
+   },
+   "21": {
+    "verdict": "pass",
+    "evidence": "The CV extraction contains neither '(cid:' markers nor replacement characters."
+   },
+   "22": {
+    "verdict": "pass",
+    "evidence": "The CV header extracts alex.fernsby@example.com and +1 555 0100 as literal text."
+   },
+   "23": {
+    "verdict": "pass",
+    "evidence": "The extracted CV proceeds from the header through profile, competencies, employment and supplementary sections in a sensible order."
+   },
+   "24": {
+    "verdict": "pass",
+    "evidence": "The CV covers supported Python, SQL, Airflow, dbt, Terraform, GitHub Actions and logistics experience without inserting unsupported AWS, Redshift or GitOps expertise."
+   }
+  },
+  "overall": 7,
+  "reasons": "The application presents strong, well-supported logistics achievements in a complete two-page CV and one-page letter. Before sending, correct the inaccurate CI/CD and stakeholder gap statements and rewrite the awkward BigQuery migration sentence."
+ },
+ "Y": {
+  "items": {
+   "1": {
+    "verdict": "fail",
+    "evidence": "The letter asserts 'I push back on requirements that will not survive the data model,' a behaviour not established by the profile, and the CV adds unverified GitOps-style experience."
+   },
+   "2": {
+    "verdict": "pass",
+    "evidence": "The employers, titles, cities, education and employment years match the profile, although the CV omits employment months."
+   },
+   "3": {
+    "verdict": "pass",
+    "evidence": "The email, phone number and Copenhagen location match the profile, although the CV's GitHub label exposes no account address."
+   },
+   "4": {
+    "verdict": "na",
+    "evidence": "The claim about 300,000 UK parcels delivered with CEVA Logistics since 2024 is neither supported nor attributed in the supplied files, so its factual accuracy cannot be determined."
+   },
+   "5": {
+    "verdict": "pass",
+    "evidence": "The CV describes embedded product-team ownership and the letter explicitly targets the Parcels role and parcel latency and inventory use cases."
+   },
+   "6": {
+    "verdict": "pass",
+    "evidence": "The CV groups relevant logistics, warehouse architecture, infrastructure, data quality and communication experience around the posting's requirements."
+   },
+   "7": {
+    "verdict": "pass",
+    "evidence": "The application addresses logistics, Python and SQL, Airflow, dbt, Terraform, deployment automation and collaboration while explicitly distinguishing BigQuery experience from Redshift."
+   },
+   "8": {
+    "verdict": "pass",
+    "evidence": "Warehouse optimisation and migration experience are highlighted as relevant to the preferred warehouse expertise, with Redshift explicitly acknowledged as a gap."
+   },
+   "9": {
+    "verdict": "pass",
+    "evidence": "The CV follows a conventional two-page banking-style structure with a contact header, reverse-chronological experience and compact education and supplementary sections."
+   },
+   "10": {
+    "verdict": "pass",
+    "evidence": "The letter includes a contact header, date, salutation, role-specific opening, evidence, availability, closing and signature."
+   },
+   "11": {
+    "verdict": "pass",
+    "evidence": "The CV and letter consistently use direct professional language focused on operational ownership and quantified results."
+   },
+   "12": {
+    "verdict": "pass",
+    "evidence": "The documents agree on current employment, pipeline scale, warehouse technologies and the stated operational achievements."
+   },
+   "13": {
+    "verdict": "fail",
+    "evidence": "The CV contact header contains visible icon-name artefacts 'MOBILE-ALT' and 'Envelope' alongside the contact details."
+   },
+   "14": {
+    "verdict": "pass",
+    "evidence": "The CV and letter contain no clear spelling or grammatical errors in their prose."
+   },
+   "15": {
+    "verdict": "fail",
+    "evidence": "The letter uses 'Dear Too Good To Go hiring team,' rather than the rubric's required 'Dear Hiring Manager' when no person is named."
+   },
+   "16": {
+    "verdict": "pass",
+    "evidence": "The extracted cover letter fits on one page and pages.txt reports one cover page."
+   },
+   "17": {
+    "verdict": "pass",
+    "evidence": "All CV section headings, including Professional Experience, Certifications and References, are in English."
+   },
+   "18": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports 'cv.pdf: 2 pages' and the CV extraction contains 1/2 and 2/2 footers."
+   },
+   "19": {
+    "verdict": "pass",
+    "evidence": "The first page ends after Marlow's completed bullets and the Delft entry begins with its title and content on page two."
+   },
+   "20": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports one cover page and the extracted signature follows 'Kind regards' before the page break."
+   },
+   "21": {
+    "verdict": "pass",
+    "evidence": "The CV text contains no '(cid:' markers or replacement characters, despite separate icon-name artefacts in the header."
+   },
+   "22": {
+    "verdict": "pass",
+    "evidence": "The CV header contains the literal email alex.fernsby@example.com and phone +1 555 0100."
+   },
+   "23": {
+    "verdict": "pass",
+    "evidence": "The CV's header, summary, competencies, dated roles and remaining sections extract in a sensible sequence despite isolated bullet symbols."
+   },
+   "24": {
+    "verdict": "fail",
+    "evidence": "The CV adds 'Git-based deployments (GitOps-style)' although the profile establishes GitHub Actions and Terraform deployments without establishing GitOps practices."
+   }
+  },
+  "overall": 6,
+  "reasons": "The application targets the embedded Parcels role well and supports most requirements with strong quantified evidence. Before sending, remove or substantiate the pushback and GitOps claims, verify and attribute the external company claim, fix the contact-header artefacts and use the required salutation."
+ }
+}
