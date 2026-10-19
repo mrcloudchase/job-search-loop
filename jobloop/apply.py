@@ -284,6 +284,12 @@ class Application:
         result = self.check(cv, cover)
         if result.passed:
             self.run.best = (cv, cover, result)
+        else:                               # kept for the person: what the last failing attempt looked like
+            attempt = self.folder / "last-failed-attempt"
+            attempt.mkdir(exist_ok=True)
+            (attempt / "cv.tex").write_text(cv)
+            (attempt / "cover.tex").write_text(cover)
+            (attempt / "failures.txt").write_text("\n\n".join(result.failures) + "\n")
         return list(result.failures)
 
     def draft(self) -> dict | None:
