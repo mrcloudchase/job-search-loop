@@ -397,6 +397,7 @@ class Application:
         self.last_failures = list(result.failures)
         if result.passed:
             self.run.best = (cv, cover, result)
+            self.first_pass = self.first_pass or self.verifications == 1
         else:                               # kept for the person: what the last failing attempt looked like
             attempt = self.failed_dir or (self.folder / "last-failed-attempt" if self.folder else None)
             if attempt is not None:
