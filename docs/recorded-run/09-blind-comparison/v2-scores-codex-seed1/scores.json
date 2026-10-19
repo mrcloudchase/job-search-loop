@@ -1,0 +1,206 @@
+{
+ "X": {
+  "items": {
+   "1": {
+    "verdict": "pass",
+    "evidence": "The pipeline volumes, performance gains, skills, mentoring, qualifications and availability match profile.md without unsupported achievements."
+   },
+   "2": {
+    "verdict": "pass",
+    "evidence": "All three employers, job titles, locations and month-level employment dates match the profile, as do education dates."
+   },
+   "3": {
+    "verdict": "pass",
+    "evidence": "The CV and letter give alex.fernsby@example.com, +1 555 0100 and Copenhagen, matching the profile."
+   },
+   "4": {
+    "verdict": "pass",
+    "evidence": "The letter describes the Parcels logistics focus supported by posting.md and adds no unsupported company partnerships or metrics."
+   },
+   "5": {
+    "verdict": "pass",
+    "evidence": "The CV opens with shipment-event ownership and mentoring, while the letter explicitly targets the Senior Data Engineer role and Parcels logistics."
+   },
+   "6": {
+    "verdict": "pass",
+    "evidence": "Experience emphasizes logistics pipelines, batch latency, CI/CD, data contracts, governance and operational analytics with profile-supported results."
+   },
+   "7": {
+    "verdict": "pass",
+    "evidence": "The letter connects relevant logistics, orchestration, infrastructure and collaboration experience while explicitly acknowledging AWS, Redshift, GitOps, SLA and stakeholder-experience gaps."
+   },
+   "8": {
+    "verdict": "pass",
+    "evidence": "The application highlights relevant warehouse internals through PostgreSQL, BigQuery partitioning and clustering, while explicitly acknowledging the preferred Redshift gap."
+   },
+   "9": {
+    "verdict": "pass",
+    "evidence": "The two-page CV uses a conventional contact header, clear sections, reverse-chronological employment, aligned dates and achievement bullets."
+   },
+   "10": {
+    "verdict": "pass",
+    "evidence": "The letter includes a contact header, date, salutation, role-specific body, closing and signed name."
+   },
+   "11": {
+    "verdict": "pass",
+    "evidence": "Both documents use a direct, factual tone grounded in quantified experience and plain descriptions."
+   },
+   "12": {
+    "verdict": "pass",
+    "evidence": "The letter repeats the CV\u2019s pipeline metrics, tools and collaboration examples without conflicting claims."
+   },
+   "13": {
+    "verdict": "pass",
+    "evidence": "The extracts contain no stray LaTeX commands or broken characters; wrapped words and page footers remain understandable."
+   },
+   "14": {
+    "verdict": "pass",
+    "evidence": "No clear spelling or grammar errors appear in the CV or letter."
+   },
+   "15": {
+    "verdict": "pass",
+    "evidence": "The letter uses \u201cDear Hiring Manager,\u201d and the posting names no individual recipient."
+   },
+   "16": {
+    "verdict": "pass",
+    "evidence": "X/pages.txt reports cover.pdf as one page and the extracted page includes the closing and name."
+   },
+   "17": {
+    "verdict": "pass",
+    "evidence": "All CV headings, including Profile, Professional Experience and Education, are in English as required."
+   },
+   "18": {
+    "verdict": "pass",
+    "evidence": "X/pages.txt reports cv.pdf as two pages, consistent with the 1/2 and 2/2 footers and page break."
+   },
+   "19": {
+    "verdict": "pass",
+    "evidence": "The first CV page ends with substantive Marlow bullets rather than an orphaned title, and the second page continues that entry before the next employer."
+   },
+   "20": {
+    "verdict": "pass",
+    "evidence": "The letter\u2019s single extracted page includes \u201cYours sincerely\u201d and Alex Fernsby, matching the reported one-page count."
+   },
+   "21": {
+    "verdict": "pass",
+    "evidence": "The CV text is legible and contains neither (cid: markers nor replacement characters."
+   },
+   "22": {
+    "verdict": "pass",
+    "evidence": "The CV extraction contains the literal email alex.fernsby@example.com and phone +1 555 0100."
+   },
+   "23": {
+    "verdict": "pass",
+    "evidence": "The CV extracts in a coherent order from contact details through profile, competencies, employment and supporting sections, with a sensible continued entry across pages."
+   },
+   "24": {
+    "verdict": "pass",
+    "evidence": "The CV covers supported logistics, Python, SQL, Airflow, dbt, Terraform, CI/CD and governance keywords without claiming AWS, Redshift or other missing stack experience."
+   }
+  },
+  "overall": 8,
+  "reasons": "The application is accurate, clearly targeted to Parcels logistics, and meets the supplied page-count and extraction checks. The letter needs editing to reduce its lengthy catalogue of gaps and irrelevant security-clearance disclosure before sending."
+ },
+ "Y": {
+  "items": {
+   "1": {
+    "verdict": "fail",
+    "evidence": "The CV claims \u201cGitOps-style\u201d deployments and the letter asserts \u201cI push back on requirements,\u201d neither established by the candidate profile."
+   },
+   "2": {
+    "verdict": "pass",
+    "evidence": "Employer names, roles, locations and year-level employment dates match the profile, although employment months are omitted."
+   },
+   "3": {
+    "verdict": "pass",
+    "evidence": "The email alex.fernsby@example.com, phone +1 555 0100 and Copenhagen location match the profile."
+   },
+   "4": {
+    "verdict": "na",
+    "evidence": "The claimed 300,000 UK parcels, CEVA Logistics partnership and 2024 timing are absent from the supplied posting and cannot be verified from the permitted inputs."
+   },
+   "5": {
+    "verdict": "pass",
+    "evidence": "The CV opening targets operational supply-chain pipelines and embedded product ownership, and the letter explicitly names the Parcels Senior Data Engineer role."
+   },
+   "6": {
+    "verdict": "pass",
+    "evidence": "The CV emphasizes delivery analytics, data contracts, warehouse performance, orchestration and infrastructure achievements relevant to the posting."
+   },
+   "7": {
+    "verdict": "fail",
+    "evidence": "The letter acknowledges Redshift, dlt and Metaflow gaps but implies unsupported requirements-pushback experience and the CV claims GitOps-style experience instead of acknowledging that gap."
+   },
+   "8": {
+    "verdict": "pass",
+    "evidence": "Warehouse modelling, partitioning, clustering and cost-control experience address the warehouse-depth preference, with the letter explicitly noting the Redshift gap."
+   },
+   "9": {
+    "verdict": "pass",
+    "evidence": "The CV has two pages with a conventional contact header, competencies, reverse-chronological employment, education and supporting sections, despite awkward isolated bullet markers."
+   },
+   "10": {
+    "verdict": "pass",
+    "evidence": "The letter contains contact details, a date, salutation, structured body, closing and signed name."
+   },
+   "11": {
+    "verdict": "pass",
+    "evidence": "Both documents use a professional, direct tone centered on operational ownership and quantified results."
+   },
+   "12": {
+    "verdict": "pass",
+    "evidence": "The letter\u2019s employment history, pipeline metrics, tools and availability do not contradict the CV, although some claims lack profile support."
+   },
+   "13": {
+    "verdict": "fail",
+    "evidence": "The CV header exposes icon labels \u201cMOBILE-ALT\u201d and \u201cEnvelope\u201d as text, leaving visible extraction artifacts in the contact line."
+   },
+   "14": {
+    "verdict": "pass",
+    "evidence": "No clear spelling or grammar errors appear in the extracted CV or letter."
+   },
+   "15": {
+    "verdict": "fail",
+    "evidence": "The letter uses \u201cDear Too Good To Go hiring team\u201d instead of the rubric\u2019s required \u201cDear Hiring Manager\u201d when no person is named."
+   },
+   "16": {
+    "verdict": "pass",
+    "evidence": "Y/pages.txt reports cover.pdf as one page and its extraction includes the closing and name."
+   },
+   "17": {
+    "verdict": "pass",
+    "evidence": "CV section headings such as Core Competencies, Professional Experience and Education are consistently English."
+   },
+   "18": {
+    "verdict": "pass",
+    "evidence": "Y/pages.txt reports cv.pdf as two pages, consistent with the extracted 1/2 and 2/2 footers."
+   },
+   "19": {
+    "verdict": "pass",
+    "evidence": "The first CV page ends with Marlow\u2019s migration-guide bullet and the second begins with the complete Delft entry, with no stranded entry title."
+   },
+   "20": {
+    "verdict": "pass",
+    "evidence": "The reported one-page letter includes \u201cKind regards\u201d and Alex Fernsby before its final page break."
+   },
+   "21": {
+    "verdict": "pass",
+    "evidence": "The CV contains no (cid: markers or replacement characters, and its substantive text remains legible despite extracted icon labels."
+   },
+   "22": {
+    "verdict": "pass",
+    "evidence": "The CV extraction includes the literal email alex.fernsby@example.com and phone +1 555 0100."
+   },
+   "23": {
+    "verdict": "pass",
+    "evidence": "Contact details, summary, competencies, jobs and subsequent sections extract in a coherent sequence despite stray hollow bullets."
+   },
+   "24": {
+    "verdict": "fail",
+    "evidence": "The CV inserts \u201cGit-based deployments (GitOps-style)\u201d without profile evidence, obscuring a genuine posting-keyword gap."
+   }
+  },
+  "overall": 5,
+  "reasons": "The application presents strong relevant logistics achievements and meets the page counts, but unsupported GitOps and requirements-pushback claims need correction. The unverified CEVA statistics, extracted contact-icon labels and rubric-noncompliant salutation also require review before sending."
+ }
+}

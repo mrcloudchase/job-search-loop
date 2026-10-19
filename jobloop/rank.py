@@ -1,0 +1,206 @@
+"""`rank`: triage the postings the search found, from their text, and present a shortlist a person can act on.
+
+For each selected posting (new, or unreachable and being retried) it fetches the text (fetch.py's ladder), has a harness
+report FACTS about the posting against the profile (fit.evaluate; the score, band and vetoes are computed by code), and
+writes the result into the posting store with rankstate. Then, always, it expires ranked postings whose stored deadline has
+passed (no fetch). It promises: a posting that was not fetched is never scored; a 404 or a 403 is never "closed"; a job
+past --limit is deferred, not dropped; a vetoed job is never in the shortlist and is listed with the reason; nothing is
+marked applied and the tracker is never written. The scores are triage from posting text, nothing more."""
+from __future__ import annotations
+
+import hashlib
+import json
+from dataclasses import dataclass, field
+from datetime import date, datetime
+from pathlib import Path
+from typing import Callable
+
+from . import fetch as fetching
+from . import fit as fitting
+from . import rankstate as rs
+from .term import BOLD, DIM, GREEN, OFF, RED, YELLOW, say
+from .text import slug
+
+HARNESS = True
+
+URGENT = "\U0001F525"
+WARN = "⚠"
+TRIAGE = ("These are triage scores from the posting text alone. When you apply, the full evaluation runs again with "
+          "company research; a triage score never replaces it.")
+
+
+@dataclass
+class Run:
+    selection: rs.Selection
+    ranked: list[str] = field(default_factory=list)
+    expired: list[str] = field(default_factory=list)
+    unreachable: list[str] = field(default_factory=list)
+    gave_up: list[str] = field(default_factory=list)
+    unscored: list[str] = field(default_factory=list)       # fetched but no fit passed, or the run ran out of time or money
+    errors: list[str] = field(default_factory=list)
+    reasons: dict[str, str] = field(default_factory=dict)  # why a posting is expired
+    touched: set[str] = field(default_factory=set)
+    swept: rs.Swept = rs.Swept(0, (), (), ())
+
+
+def fit_key(key: str) -> str:
+    """A file-safe, unique name for a store key (keys may hold characters a fit key may not)."""
+    return f"{slug(key, 60) or 'posting'}-{hashlib.sha1(key.encode()).hexdigest()[:8]}"
+
+
+def drafted_fit_key(me: Path | str, application: str) -> str:
+    """The name of the fit stored for an application the loop drafted. Fits are named by their posting (`fit_key`) and an application
+    by company and role: draft.json in the application's archive folder says which posting it came from. "" when it did not."""
+    try:
+        posting = json.loads((Path(me) / "applications" / application / "draft.json").read_text(encoding="utf-8")).get("posting_key")
+    except (OSError, ValueError, AttributeError):
+        return ""
+    return fit_key(posting) if isinstance(posting, str) and posting else ""
+
+
+def scored(key: str, fit, deadline: str | None) -> rs.Scored:
+    return rs.Scored(key, fit.total, fit.band, tuple({"name": g.name, "verdict": g.verdict, "notes": list(g.notes)} for g in fit.gates),
+                     fit.strengths, fit.gaps, deadline)
+
+
+def run(state: dict[str, dict], *, today: date, now: datetime, score: Callable, stopped: Callable[[], str],
+        fit_dir: Path, postings_dir: Path, limit: int = 10, focus: str = "", include_all: bool = False,
+        tracker_keys=(), fetcher: Callable = fetching.fetch_posting, careers_for: Callable[[dict], tuple[str, ...]] = lambda e: (),
+        acknowledged: bool = False) -> Run:
+    """Select, fetch, score and write back; then sweep. `score(posting_text, fit_key) -> Fit | None` runs the harness
+    turn. Mutates `state`; the caller saves it. Never raises for one bad posting: that posting is listed instead."""
+    out = Run(rs.candidates(state, limit, focus, include_all, tracker_keys))
+    say(f"Ranking {len(out.selection.selected)} postings; {len(out.selection.deferred)} deferred to the next run.")
+    for key in out.selection.selected:
+        entry = state[key]
+        if stopped():
+            out.unscored.append(key)
+            continue
+        got = fetcher(entry.get("url") or "", board=entry.get("board") or "", title=entry.get("title") or "",
+                      careers=careers_for(entry), acknowledged=acknowledged)
+        if isinstance(got, fetching.Fetched):
+            name = fit_key(key)
+            fit = score(got.text, name)
+            if fit is None:
+                out.unscored.append(key)
+                continue
+            postings_dir.mkdir(parents=True, exist_ok=True)
+            (postings_dir / f"{name}.txt").write_text(got.text)
+            fitting.save(fit, fit_dir)
+            result = scored(key, fit, got.deadline)
+        elif isinstance(got, fetching.Closed):
+            result = rs.Closed(key, got.reason)
+            out.reasons[key] = got.reason
+        else:
+            result = rs.Failed(key, got.reason)
+        try:
+            what = rs.apply_result(state, result, now)
+        except rs.ResultError as error:
+            out.errors.append(str(error))
+            continue
+        out.touched.add(key)
+        getattr(out, what).append(key)
+        if what == "expired" and key not in out.reasons:
+            out.reasons[key] = "its deadline has passed"
+    out.swept = rs.sweep(state, today, exclude=out.selection.selected)
+    out.touched.update(out.swept.expired)
+    return out
+
+
+# ── presentation ────────────────────────────────────────────────────────────────────────────────
+def where(entry: dict) -> str:
+    return f"{entry.get('title') or '?'} — {entry.get('company') or '?'}"
+
+
+def marks(entry: dict, today: date) -> list[str]:
+    f = rs.flags(entry, today)
+    return ([f"{URGENT} {f.urgent}"] if f.urgent else []) + ([f"{WARN} {f.old}"] if f.old else [])
+
+
+def mass_posting(entry: dict) -> str:
+    """The caution for a posting the search tagged `mass_posted`: it says so, never that the company is doing wrong."""
+    if "mass_posted" not in (entry.get("tags") or []):
+        return ""
+    places = len(entry.get("locations") or [])
+    return f"mass posting: the same role is posted in {places or 'several'} places; check it is a real opening (a caution, not a veto)"
+
+
+def signal_notes(keys, state: dict[str, dict], signals, postings_dir: Path) -> dict[str, list[str]]:
+    """Fit and friction keyword lines (profile.posting_signals) for each key whose stored posting text can be read."""
+    from .profile import posting_signals
+
+    out: dict[str, list[str]] = {}
+    for key in keys:
+        try:
+            text = (postings_dir / f"{fit_key(key)}.txt").read_text()
+        except OSError:
+            continue
+        if lines := posting_signals(text, signals).lines():
+            out[key] = lines
+    return out
+
+
+def row(state: dict, key: str, today: date, number: int | None = None, notes: dict[str, list[str]] | None = None) -> list[str]:
+    entry = state[key]
+    head = f"{number}. " if number else "- "
+    lines = [f"{head}{entry.get('rank_score')}  {entry.get('rank_verdict')}  {where(entry)}  {'  '.join(marks(entry, today))}".rstrip(),
+             f"   {entry.get('url')}"]
+    lines += [f"   {WARN} {note}" for note in rs.gate_flags(entry)]
+    lines += [f"   {WARN} {mass_posting(entry)}"] if mass_posting(entry) else []
+    return lines + [f"   {line}" for line in (notes or {}).get(key, [])]
+
+
+def render(out: Run, state: dict[str, dict], today: date, top: int = 5, notes: dict[str, list[str]] | None = None) -> str:
+    """The report, built only from stored fields (never from a harness's prose) and always with each posting's URL."""
+    arranged = rs.arrange(state, out.ranked, today, top)
+    swept, sel = out.swept, out.selection
+    lines = [f"{BOLD}Rank{OFF}: {len(out.ranked)} ranked ({len(arranged.shortlist)} shortlisted, {len(arranged.below)} below "
+             f"the shortlist, {len(arranged.vetoed)} vetoed), {len(out.expired)} expired, {len(out.unreachable)} could not be "
+             f"fetched, {len(out.gave_up)} gave up, {len(out.unscored)} not scored.",
+             f"Sweep: {swept.checked} ranked postings checked against their stored deadlines, {len(swept.expired)} expired, "
+             f"{len(swept.closing_soon)} closing soon."]
+    if sel.excluded_by_tracker:
+        lines.append(f"{sel.excluded_by_tracker} already in the tracker, left out.")
+    if sel.deferred:
+        lines.append(f"{len(sel.deferred)} more are waiting (deferred, still {', '.join(sorted({state[k]['status'] for k in sel.deferred}))}): "
+                     "run rank again to continue.")
+    if not sel.selected:
+        lines.append("Nothing to rank. Run the search to find new postings.")
+    if arranged.shortlist:
+        lines += ["", f"{GREEN}{BOLD}Shortlist{OFF}"]
+        for n, key in enumerate(arranged.shortlist, 1):
+            lines += row(state, key, today, n, notes)
+            lines += [f"   + {s}" for s in state[key].get("strengths") or []] + [f"   - {g}" for g in state[key].get("gaps") or []]
+    if arranged.below:
+        lines += ["", "Below the shortlist"] + [l for k in arranged.below for l in row(state, k, today, None, notes)]
+    if arranged.vetoed or out.expired:
+        lines += ["", f"{RED}Excluded{OFF} (a veto holds whatever the score)"]
+        for key in arranged.vetoed:
+            lines += [f"- {state[key].get('rank_score')}  {where(state[key])}  {state[key].get('url')}"]
+            lines += [f"   VETO {v}" for v in rs.vetoes(state[key])]
+        for key in out.expired:
+            lines += [f"- expired: {where(state[key])}  {state[key].get('url')}", f"   {out.reasons.get(key, '')}"]
+    if swept.expired:
+        lines += ["", "Retired by the sweep (stored deadline passed)"] + [f"- {where(state[k])}  {state[k].get('url')}" for k in swept.expired]
+    if swept.closing_soon:
+        lines += ["", f"{YELLOW}Closing soon{OFF}"] + [f"- {URGENT} {state[k]['deadline']}  {where(state[k])}  {state[k].get('url')}"
+                                                       for k in swept.closing_soon]
+    if out.unreachable:
+        lines += ["", f"{YELLOW}Could not fetch, will retry{OFF}"]
+        lines += [l for k in out.unreachable for l in (f"- {where(state[k])}  {state[k].get('url')}",
+                                                       f"   attempt {state[k].get('fetch_attempts')}: {state[k].get('last_fetch_error')}")]
+    if out.gave_up:
+        lines += ["", f"{RED}Gave up, check manually{OFF} (they may still be live)"]
+        lines += [l for k in out.gave_up for l in (f"- {where(state[k])}  {state[k].get('url')}",
+                                                   f"   last error: {state[k].get('last_fetch_error')}")]
+    if out.unscored:
+        lines += ["", "Not scored this run (fetched, but no passing evaluation or the run stopped); they stay as they were"]
+        lines += [f"- {where(state[k])}  {state[k].get('url')}" for k in out.unscored]
+    if out.errors:
+        lines += ["", f"{RED}Errors{OFF}"] + [f"- {e}" for e in out.errors]
+    unread = {(state[k].get("board") or "?", f) for k in out.ranked for f in rs.flags(state[k], today).unparseable}
+    unread |= {(board or "?", "deadline") for _, board in swept.unparseable}
+    if unread:
+        lines += ["", f"{DIM}Dates that could not be read (treated as absent): "
+                  + ", ".join(f"{what} from {board}" for board, what in sorted(unread)) + OFF]
+    return "\n".join([*lines, "", TRIAGE])

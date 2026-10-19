@@ -1,0 +1,3 @@
+Dear Brightwell team,
+I built the first Airflow deployment at Marlow Retail Group and migrated 45 cron jobs onto it.
+I would bring the same ownership of a pipeline end to end to your platform team.

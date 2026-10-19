@@ -1,0 +1,37 @@
+{
+  "built": "2026-10-19",
+  "claims": [],
+  "company": "Flatpay",
+  "deadline": "",
+  "delivered_hashes": {
+    "cover.tex": "de80a363ca859c1c6fa5014e0a57bad3ac398cdd107d2b00cf8b7598f7115ae8",
+    "cv.tex": "499c50506b0643fe021d9761a13684951249ee102dd080b133023cf7a39da7fe"
+  },
+  "fit": 78,
+  "forms_status": "",
+  "gaps": [
+    "Databricks",
+    "Prefect",
+    "Azure Data Factory",
+    "AWS",
+    "Azure",
+    "observability"
+  ],
+  "host_kind": "portal",
+  "judge_mean": 7.0,
+  "key": "flatpay__data_engineer",
+  "left_for_you": [],
+  "notes": [],
+  "reasons": [],
+  "role": "Data Engineer",
+  "sources": {
+    "cover.pdf": "66c15fca01e6ccecf774d08efc719876c2d453d1769a99f96845209e9d22c864",
+    "cv.pdf": "94b66bd48550a941370db2d515484473f0072b3055ff602bf5f9415d3701e40c",
+    "draft.json": "4e220bc035c710871fb6842e057c8c325819596d95ce5359c452a15733edbabe",
+    "questions": ""
+  },
+  "status": "ready",
+  "title": "Flatpay — Data Engineer",
+  "url": "https://dk.linkedin.com/jobs/view/data-engineer-at-flatpay-4480979067",
+  "why": "Fits because: Python and SQL are core strengths, covering the required Python and SQL skills; data pipelines: owns the shipment-events pipeline handling 40 million events per day; CI/CD backed by GitHub Actions and Terraform deployments."
+}

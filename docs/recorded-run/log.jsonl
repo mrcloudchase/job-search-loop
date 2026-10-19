@@ -1,4 +1,0 @@
-{"phase": "DRAFT", "model": "claude-deepseek/deepseek-chat", "response": "resp_5dda76c26d9a41f3", "status": "completed", "cost_usd": 0.18283599999999997, "files": ["cover.tex", "cv.tex"]}
-{"phase": "FIX 1/3", "model": "claude-deepseek/deepseek-chat", "response": "resp_5e4d3d1671c04ede", "status": "completed", "cost_usd": 0.23279259999999993, "files": ["cv.tex"]}
-{"phase": "REVIEW", "model": "codex", "response": "resp_785a4d9a5e2942e2", "status": "completed", "cost_usd": null, "files": []}
-{"phase": "REVISE", "model": "claude-deepseek/deepseek-chat", "response": "resp_40de8d7a70de4b0d", "status": "completed", "cost_usd": 0.2515486, "files": ["cover.tex", "cv.tex"]}

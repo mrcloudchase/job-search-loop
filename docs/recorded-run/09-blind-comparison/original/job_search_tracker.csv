@@ -1,0 +1,2 @@
+date,company,sector,role,role_type,channel,status,contact_person,fit_rating,notes,cv_file,cover_letter_file,source,deadline
+2026-10-19,Too Good To Go,Social impact / food waste,Senior Data Engineer,,,drafted,,82,"Strong fit. Logistics and Airflow/dbt/Python match. Honest gaps: AWS Redshift, dlt, Metaflow, Lambda/Kinesis/S3/Glue, inventory systems. Earliest start 2027-02-01; 4 days in office within limit.",cv/main_too_good_to_go_senior_data_engineer.tex,cover_letters/cover_too_good_to_go_senior_data_engineer.tex,,

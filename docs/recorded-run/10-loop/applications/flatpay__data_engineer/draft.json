@@ -1,0 +1,71 @@
+{
+  "key": "flatpay__data_engineer",
+  "company": "Flatpay",
+  "role": "Data Engineer",
+  "url": "https://dk.linkedin.com/jobs/view/data-engineer-at-flatpay-4480979067",
+  "fit": 78,
+  "deadline": null,
+  "host_kind": "portal",
+  "gaps": [
+    "Databricks",
+    "Prefect",
+    "Azure Data Factory",
+    "AWS",
+    "Azure",
+    "observability"
+  ],
+  "claims": [],
+  "posting_key": "flatpay_data-engineer",
+  "judge": {
+    "mean": 7.0,
+    "judges": [
+      {
+        "judge": "codex",
+        "overall": 7.0,
+        "failed": [
+          [
+            1,
+            "Remove or substantiate the claim of daily English use and the categorical lack of experience with additional platforms, since the profile establishes C1 English and Google Cloud experience but does not establish those assertions."
+          ],
+          [
+            11,
+            "Replace the letter’s conditional senior-versus-junior framing with a direct explanation of interest in the advertised scope to maintain the CV’s professional, evidence-led tone."
+          ],
+          [
+            14,
+            "Change the environment-setup result from “20 of them” to “20 minutes” and make the Operations bullet grammatically complete."
+          ]
+        ]
+      },
+      {
+        "judge": "claude-reviewer/deepseek-chat",
+        "overall": 7.0,
+        "failed": [
+          [
+            7,
+            "The letter mentions no experience or plan regarding the posting's must-have of building internal libraries and shared platform components, and the irrelevant security-clearance sentence crowds out that point; add a line on shared/internal tooling."
+          ],
+          [
+            14,
+            "'I have seven years of experience to the 1-3 asked for' is ungrammatical; rewrite it as 'I have seven years of experience, well beyond the 1-3 years asked for.'"
+          ]
+        ]
+      }
+    ]
+  },
+  "first_pass": false,
+  "harnesses": {
+    "drafter": "claude-deepseek/deepseek-chat",
+    "reviewer": "codex"
+  },
+  "best_of": 2,
+  "notes": [
+    "2 of 2 drafts passed every check",
+    "judge means: claude-deepseek/deepseek-chat 7.0, codex 6.0; picked claude-deepseek/deepseek-chat",
+    "judge revision kept: mean 7.0 to 7.0",
+    "no verified company research: the letter makes no company claims",
+    "the reviewer sent 8 edits; the loop applied 8 and rejected 0",
+    "posting archived verbatim",
+    "tracker: added flatpay__data_engineer as drafted"
+  ]
+}

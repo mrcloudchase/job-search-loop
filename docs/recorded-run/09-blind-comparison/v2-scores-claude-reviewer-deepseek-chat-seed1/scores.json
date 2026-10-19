@@ -1,0 +1,206 @@
+{
+ "X": {
+  "items": {
+   "1": {
+    "verdict": "fail",
+    "evidence": "The opening bullet claims \"real-time Kafka intake\" and \"lower latency for batch data pipelines\", but the profile only says events flow through Kafka and neither describes streaming latency gains; the letter's \"process 40 million shipment events daily\" also presents a batch pipeline as ongoing processing."
+   },
+   "2": {
+    "verdict": "pass",
+    "evidence": "Tidewater Logistics, Senior Data Engineer, March 2022 - present, Copenhagen; Marlow Retail Group, Data Engineer, June 2018 - February 2022, Utrecht; Delft Energy Cooperative, Junior Analyst, September 2016 - May 2018, Delft all match the profile."
+   },
+   "3": {
+    "verdict": "pass",
+    "evidence": "Phone +1 555 0100, email alex.fernsby@example.com, Copenhagen, Denmark and GitHub handle afernsby-example all match the profile."
+   },
+   "4": {
+    "verdict": "na",
+    "evidence": "The application makes no company-specific claim about Too Good To Go (no products, partnerships or expansions), so there is nothing to verify."
+   },
+   "5": {
+    "verdict": "pass",
+    "evidence": "The letter opens by naming the Too Good To Go Senior Data Engineer role and the Parcels logistics focus, tied to the shipment-events pipeline."
+   },
+   "6": {
+    "verdict": "pass",
+    "evidence": "Bullets are reworded in posting language (\"real-time\", \"lower latency\", \"CI/CD\", \"data governance\", \"technical requirements\"), though some rewordings are awkward or overstated."
+   },
+   "7": {
+    "verdict": "pass",
+    "evidence": "The letter explicitly addresses the Redshift/dlt/Metaflow/AWS/GitOps gaps, missing SLA and platform-standard experience, security clearance and start date."
+   },
+   "8": {
+    "verdict": "pass",
+    "evidence": "Terraform, GitHub Actions CI/CD and Docker are highlighted under the CI/CD requirement, and the cross-team data contract is presented as the link to a central platform team."
+   },
+   "9": {
+    "verdict": "pass",
+    "evidence": "Two-page CV with contact header, profile, core competencies, experience with company-role-dates-location, education and 1/2 and 2/2 page markers in a standard banking layout."
+   },
+   "10": {
+    "verdict": "pass",
+    "evidence": "Header, date, salutation, body, \"Yours sincerely\" and a typed name are all present."
+   },
+   "11": {
+    "verdict": "pass",
+    "evidence": "Both documents are plain, factual and active-voice with no tone mismatch."
+   },
+   "12": {
+    "verdict": "pass",
+    "evidence": "Figures agree between CV and letter (6h to 55 min, 35% bill cut, 70% failed-load drop, 40M events, 30 tables)."
+   },
+   "13": {
+    "verdict": "pass",
+    "evidence": "Extraction shows only standard Unicode bullets, middle dots, curly apostrophes and em dashes; no LaTeX commands or mojibake."
+   },
+   "14": {
+    "verdict": "fail",
+    "evidence": "Ungrammatical or incoherent rewrites appear, e.g. \"Deliver lower latency for batch data pipelines\" (an instruction, not a description), \"Include real-time\" phrasings, and the letter's contradictory \"I also cannot claim experience guaranteeing high data availability, defining SLAs or enforcing platform standards, nor documented experience being asked to push back on requirements\"."
+   },
+   "15": {
+    "verdict": "pass",
+    "evidence": "No person is named in the posting, so \"Dear Hiring Manager\" is correct."
+   },
+   "16": {
+    "verdict": "pass",
+    "evidence": "The cover is about 300 words with a single form feed at the end, well within one page."
+   },
+   "17": {
+    "verdict": "pass",
+    "evidence": "The CV is in English and all headings (Profile, Core Competencies, Professional Experience, Education) are English."
+   },
+   "18": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports cv.pdf: 2 pages, and the text contains explicit 1/2 and 2/2 markers."
+   },
+   "19": {
+    "verdict": "pass",
+    "evidence": "Page 1 ends inside the Marlow Retail Group bullet list, so no entry title is stranded at the foot of a page."
+   },
+   "20": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports cover.pdf: 1 pages and the letter closes with a signature line (Alex Fernsby) on the same page."
+   },
+   "21": {
+    "verdict": "pass",
+    "evidence": "No (cid: markers or replacement characters; the text layer is clean UTF-8."
+   },
+   "22": {
+    "verdict": "pass",
+    "evidence": "The CV header contains literal \"M +1 555 0100\" and \"E alex.fernsby@example.com\"."
+   },
+   "23": {
+    "verdict": "pass",
+    "evidence": "Reading order follows the visual order: name and contact, profile, competencies, experience newest-first, then projects, certifications, education."
+   },
+   "24": {
+    "verdict": "pass",
+    "evidence": "Airflow, Python, SQL, dbt, Terraform, GitHub Actions, Docker, Kafka and logistics/latency keywords appear from real experience, and absent Redshift/dlt are declared honestly rather than stuffed."
+   }
+  },
+  "overall": 6,
+  "reasons": "Structure, dates, contact details and layout are correct, with no extraction artefacts or ATS problems. It needs a rewrite: the letter stacks a contradictory list of things it \"cannot claim\" (including high availability and pushback), and the CV invents a \"real-time\" claim and contains ungrammatical, keyword-stuffed rewrites."
+ },
+ "Y": {
+  "items": {
+   "1": {
+    "verdict": "fail",
+    "evidence": "The CV relabels ordinary GitHub Actions and Terraform use as \"Git-based deployments (GitOps-style)\", lists \"Stakeholder management\" as a competency, and the letter claims \"I push back on requirements that will not survive the data model\" and puts data-quality tests under \"Data quality and SLAs\" with no basis in the profile."
+   },
+   "2": {
+    "verdict": "pass",
+    "evidence": "Employers, titles and locations are correct, and the year-only dates (2022-Present, 2018-2022, 2016-2018) are consistent with the profile."
+   },
+   "3": {
+    "verdict": "pass",
+    "evidence": "Email alex.fernsby@example.com and phone +1 555 0100 are correct."
+   },
+   "4": {
+    "verdict": "fail",
+    "evidence": "The letter asserts \"Parcels has delivered 300,000 parcels of surplus food from FMCG manufacturers in the UK with CEVA Logistics since 2024\", a specific partnership, volume and geography that neither the posting nor any input supports."
+   },
+   "5": {
+    "verdict": "pass",
+    "evidence": "The CV profile is rewritten around owning a pipeline inside a product team and parcel/inventory data, and the letter opens with the Parcels domain and parcel latency."
+   },
+   "6": {
+    "verdict": "pass",
+    "evidence": "CV competency groups (logistics and order data, DataOps/CI-CD, data quality and governance) and the letter's five labelled areas map directly onto the posting's requirements."
+   },
+   "7": {
+    "verdict": "pass",
+    "evidence": "The letter plainly acknowledges BigQuery depth instead of Redshift and no production use of dlt or Metaflow."
+   },
+   "8": {
+    "verdict": "pass",
+    "evidence": "Terraform and GitHub Actions are surfaced under DataOps/CI-CD, and Kafka, Airflow and dbt match the stack."
+   },
+   "9": {
+    "verdict": "fail",
+    "evidence": "The CV is two pages but the layout shows a stray bullet marker and two blank lines before every role's bullet list and before each degree, which is broken rather than standard banking style."
+   },
+   "10": {
+    "verdict": "pass",
+    "evidence": "Header, date, salutation, body, closing and typed name are all present."
+   },
+   "11": {
+    "verdict": "pass",
+    "evidence": "Both documents use the same plain, direct, first-person voice."
+   },
+   "12": {
+    "verdict": "pass",
+    "evidence": "Figures and claims (40M events, 6h to 55 min, 30 tables, 70%, 12 analysts, 40 models) agree between CV and letter; no internal contradiction."
+   },
+   "13": {
+    "verdict": "pass",
+    "evidence": "No LaTeX commands or broken encoding; extraction shows only ordinary Unicode bullets and punctuation."
+   },
+   "14": {
+    "verdict": "pass",
+    "evidence": "No spelling or grammar errors found; sentences are well formed."
+   },
+   "15": {
+    "verdict": "pass",
+    "evidence": "No person is named, so \"Dear Too Good To Go hiring team\" is an appropriate address."
+   },
+   "16": {
+    "verdict": "pass",
+    "evidence": "The letter is roughly 380 words with one form feed, within one page."
+   },
+   "17": {
+    "verdict": "pass",
+    "evidence": "CV language is English and all headings (Core Competencies, Professional Experience, Education, Projects) are English."
+   },
+   "18": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports cv.pdf: 2 pages, matching the 1/2 and 2/2 markers."
+   },
+   "19": {
+    "verdict": "fail",
+    "evidence": "The orphaned bullets in the Tidewater and Marlow lists are the profile's design (a title line with a blank bullet marker is dropped from the page layout), leaving a role title at a page boundary with an empty bullet marker beneath it."
+   },
+   "20": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports cover.pdf: 1 pages and \"Alex Fernsby\" is typed after \"Kind regards\" on that page."
+   },
+   "21": {
+    "verdict": "pass",
+    "evidence": "No (cid: markers or replacement characters."
+   },
+   "22": {
+    "verdict": "pass",
+    "evidence": "The cover contains \"alex.fernsby@example.com | +1 555 0100\" as literal text."
+   },
+   "23": {
+    "verdict": "pass",
+    "evidence": "Order runs header, profile, competencies, experience, education, projects, certifications, languages; only the stray bullet markers add noise."
+   },
+   "24": {
+    "verdict": "pass",
+    "evidence": "Posting keywords (Airflow, Python, SQL, dbt, Terraform, GitHub Actions, Docker, Kafka, parcel latency, inventory) appear from real experience, and Redshift, dlt and Metaflow are honestly absent, though \"GitOps-style\" stretches a non-keyword."
+   }
+  },
+  "overall": 7,
+  "reasons": "The writing is clean, well tailored and honest about the Redshift and dlt/Metaflow gaps, and both PDFs meet the page limits. It loses points because the letter invents a specific CEVA Logistics / 300,000-parcel claim, the CV and letter overstate GitOps, SLAs and stakeholder management, and the CV layout has stray bullet markers with an empty marker left under role titles."
+ }
+}

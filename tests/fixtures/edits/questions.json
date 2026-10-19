@@ -1,0 +1,6 @@
+{"employer": "Northwind Analytics",
+ "questions": [
+  {"id": "intro", "question": "Tell us about yourself", "limit": 600, "unit": "characters"},
+  {"id": "pitch", "question": "Why you, in one sentence", "limit": 140, "unit": "characters without spaces"},
+  {"id": "motivation", "question": "Why this program", "limit": 60, "unit": "words"}
+ ]}

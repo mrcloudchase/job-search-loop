@@ -1,0 +1,33 @@
+% Filled sample of the letter template with fictional content. It proves the template compiles to one page.
+\documentclass{jobletter}
+\begin{document}
+\jlname{Alex Example}
+\jlcontact{Copenhagen \textbullet{} +45 00 00 00 00 \textbullet{} alex@example.invalid}
+\jlreference{Ref.: EX-2026-014}
+\makeletterhead
+
+\letterdate{19 October 2026}
+\salutation{Dear Hiring Manager,}
+
+\lettercontent{I am applying for the Senior Backend Engineer role at Fjord Analytics because the work you describe,
+reliable data services at scale, is the work I have enjoyed most for eight years. In my current role I led the rewrite
+of an ingestion service that now handles four times the volume it did, and I would like to bring that care for
+reliability to your team.}
+
+\begin{letterbullets}
+  \item \textbf{Reliability}: introduced service objectives for twelve services and halved alert noise.
+  \item \textbf{Cost}: cut cloud spend by 18\% by right-sizing databases and removing unused queues.
+  \item \textbf{Teamwork}: onboarded eleven engineers with a written first-month plan, now reused by two other teams.
+\end{letterbullets}
+
+\lettercontent{Your recent post about replacing nightly batch jobs with streaming caught my eye, because I have made
+the same move twice and learned where it goes wrong: late events, replays and ownership of the data contract. I would
+enjoy sharing that experience with your platform group and learning how you solved those problems at your scale.}
+
+\lettercontent{I work best in small teams that write things down and review each other's changes kindly. I am curious,
+I ask for help early, and I like leaving a system easier to operate than I found it.}
+
+\closingline{I would be glad to talk about how I can help, and I can start with three months' notice.}
+
+\signoff{Yours sincerely,}{Alex Example}
+\end{document}

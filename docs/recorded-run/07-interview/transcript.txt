@@ -1,0 +1,176 @@
+
+Interview date (blank if unknown)? 
+> 
+Interview people (blank if unknown)? 
+> 
+━━ PREP · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 00:00 · $0.00
+  resp_0aaa9665f3a2454a · claude-deepseek/deepseek-chat · streaming
+  ⚙ Bash ls -la /srv/hi-data/workspaces/resp_0aaa9665f3a2454a
+  ⚙ Read /srv/hi-data/workspaces/resp_0aaa9665f3a2454a/AGENTS.md
+  ⚙ Read /srv/hi-data/workspaces/resp_0aaa9665f3a2454a/profile.md
+  ⚙ Read /srv/hi-data/workspaces/resp_0aaa9665f3a2454a/posting.md
+  ⚙ Read /srv/hi-data/workspaces/resp_0aaa9665f3a2454a/cv.txt
+  ⚙ Read /srv/hi-data/workspaces/resp_0aaa9665f3a2454a/cover_letter.txt
+  ⚙ Read /srv/hi-data/workspaces/resp_0aaa9665f3a2454a/questions.json
+  ⚙ Read /srv/hi-data/workspaces/resp_0aaa9665f3a2454a/gaps.json
+  ⚙ Read /srv/hi-data/workspaces/resp_0aaa9665f3a2454a/research.json
+  ⚙ Read /srv/hi-data/workspaces/resp_0aaa9665f3a2454a/stubs.json
+  ⚙ TodoWrite 
+  ⚙ Bash python3 - <<'PY' import json pack = { "star": [ { "qid": "q2", "situation": "At Tidewater Logistics one desig…
+  ⚙ TodoWrite 
+  ⚙ Bash python3 - <<'PY' import json, re pack = json.load(open("pack.json")) profile = open("profile.md").read() for …
+  ⚙ Bash python3 - <<'PY' import json p = json.load(open("pack.json")) p["star"][0]["evidence"][1] = "Owns the shipmen…
+  ⚙ Bash python3 - <<'PY' import json p = json.load(open("pack.json")) for c in p["consistency"]: if c["quote"].starts…
+  ⚙ TodoWrite 
+  I wrote `pack.json`. All quotes check out against their source files, and the STAR answers fall within the 60…
+  completed · 50.321s · $0.268 · changed pack.json
+  diff --git a/pack.json b/pack.json
+  new file mode 100644
+  index 0000000..7ad4a3a
+  --- /dev/null
+  +++ b/pack.json
+  @@ -0,0 +1,161 @@
+  +{
+  +  "star": [
+  +    {
+  +      "qid": "q2",
+  +      "situation": "At Tidewater Logistics one design decision stands out: moving the delivery-performance mart onto incremental dbt mode
+  +      "task": "I owned the pipeline end to end, and my task was to make the nightly rebuild of the delivery-performance mart fast enough 
+  +      "action": "I rebuilt the mart as incremental dbt models, so each nightly run processed new data and updated the tables it needed to
+  +      "result": "The nightly rebuild of the delivery-performance mart went from 6 hours to 55 minutes with the incremental dbt models. Th
+  +      "lesson": "The lesson for me was to treat the incremental model as a data contract with the team that reads the mart: state what ea
+  +      "evidence": [
+  +        "Cut the nightly rebuild of the delivery-performance mart from 6 hours to 55 minutes with incremental dbt models.",
+  +        "Owns the shipment-events pipeline: 40 million events per day from Kafka into a PostgreSQL and\n  BigQuery warehouse, orchestrate
+  +        "Introduced data-quality tests with Great Expectations on 30 core tables; failed loads dropped 70 percent in the first quarter.",
+  +        "Likes owning a pipeline end to end (stated)"
+  +      ],
+  +      "stub": ""
+  +    },
+  +    {
+  +      "qid": "q3",
+  +      "situation": "Testing and monitoring have been part of all three of my roles. At Tidewater Logistics the shipment-events pipeline, 
+  +      "task": "My task was to make failures visible and to keep the output of the pipeline trustworthy, both for my own changes and for a
+  +      "action": "On quality I introduced Great Expectations tests on 30 core tables, so a bad load was caught by a test rather than disco
+  +      "result": "At Tidewater, failed loads dropped 70 percent in the first quarter after the Great Expectations tests went in. At Marlow
+  +      "lesson": "The lesson was that testing and monitoring are the same job: a test catches bad data early, an alert catches a late job,
+  +      "evidence": [
+  +        "Introduced data-quality tests with Great Expectations on 30 core tables; failed loads dropped 70 percent in the first quarter.",
+  +        "Defined the shipment-events data contract with five producing teams and wrote the on-call runbook for the pipeline.",
+  +        "Moved the team's deployments to GitHub Actions and Terraform, so a new environment takes 20 minutes instead of two days.",
+  +        "Added alerting on the 45 Airflow jobs so late partner feeds are noticed within 15 minutes instead of the next morning.",
+  +        "Open-source dbt package for freight-rate data tests, 120 GitHub stars, github.com/afernsby-example/freight-tests"
+  +      ],
+  +      "stub": ""
+  +    },
+  +    {
+  +      "qid": "q1",
+  +      "situation": "",
+  +      "task": "",
+  +      "action": "",
+  +      "result": "",
+  +      "lesson": "",
+  +      "evidence": [],
+  +      "stub": "Scala is a stub in the profile with no facts. No STAR answer can be written; use the Scala bridge in this pack."
+  +    }
+  +  ],
+  +  "bridges": [
+  +    {
+  +      "gap": "Scala",
+  +      "acknowledge": "I have not used Scala. It is listed as not yet in my own skills, and I will not claim experience I do not have.",
+  +      "adjacent": "What I do have is a record of picking up new tools in production. At Marlow Retail Group I built the first Airflow dep
+  +      "adjacent_quote": "Built the first Airflow deployment at the company and migrated 45 cron jobs onto it.",
+  +      "learning_path": "I would learn Scala by using it in small, real pieces of the job rather than through a course alone: reading the 
+  +    }
+  +  ],
+  +  "consistency": [
+  verify: 2 failing
+    ✗ star[q1]: situation, task, action, result, lesson must be non-empty text (the answer ends with a lesson).
+    ✗ tough: 'why_company' is not a question to answer here. There is no verified hook, so 'why_company' stays unan…
+
+━━ FIX PACK 1/3 · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 00:50 · $0.27
+  resp_ae13d05012d6432d · claude-deepseek/deepseek-chat · streaming
+  ⚙ Bash cat stubs.json; echo; cat gaps.json; echo; cat questions.json; echo; cat research.json
+  ⚙ Read /srv/hi-data/workspaces/resp_0aaa9665f3a2454a/profile.md
+  ⚙ Bash python3 - <<'PY' import json p = json.load(open("pack.json")) stubs = json.load(open("stubs.json")) q1 = next…
+  I need to reconsider: q1 is itself the Scala gap (the stub the a customer left unfilled is the nightly rebuil…
+  ⚙ Bash python3 - <<'PY' import json, re p = json.load(open("pack.json")) q1 = next(s for s in p["star"] if s["qid"] …
+  q1 is 348 words, over the limit. Trimming it.
+  ⚙ Bash python3 - <<'PY' import json, re p = json.load(open("pack.json")) q1 = next(s for s in p["star"] if s["qid"] …
+  Both problems are fixed in `pack.json`. - **star[q1]:** all five parts now have text, ending with a lesson (2…
+  completed · 24.968s · $0.159 · changed pack.json
+  diff --git a/pack.json b/pack.json
+  index 7ad4a3a..0c7ebd0 100644
+  --- a/pack.json
+  +++ b/pack.json
+  @@ -33,13 +33,19 @@
+       },
+       {
+         "qid": "q1",
+  -      "situation": "",
+  -      "task": "",
+  -      "action": "",
+  -      "result": "",
+  -      "lesson": "",
+  -      "evidence": [],
+  -      "stub": "Scala is a stub in the profile with no facts. No STAR answer can be written; use the Scala bridge in this pack."
+  +      "situation": "I have not worked with Scala. It is listed as not yet in my own skills, and I will not invent a Scala story. What I c
+  +      "task": "My task as the owner of that pipeline was to make its output something operations could trust, with a data contract with f
+  +      "action": "I introduced Great Expectations tests on 30 core tables, so a bad load failed a test instead of reaching the delivery-pe
+  +      "result": "Failed loads dropped 70 percent in the first quarter after the Great Expectations tests went in, and the BigQuery bill f
+  +      "lesson": "The lesson is that a pipeline design is as much a contract with its producers and consumers as it is a technical choice.
+  +      "evidence": [
+  +        "Not yet: Scala, Spark, Kubernetes",
+  +        "Owns the shipment-events pipeline: 40 million events per day from Kafka into a PostgreSQL and\n  BigQuery warehouse, orchestrate
+  +        "Defined the shipment-events data contract with five producing teams and wrote the on-call runbook for the pipeline.",
+  +        "Introduced data-quality tests with Great Expectations on 30 core tables; failed loads dropped 70 percent in the first quarter.",
+  +        "Cut the BigQuery bill for the events warehouse by 35 percent by partitioning and clustering the five largest tables."
+  +      ],
+  +      "stub": "Scala is a stub in the profile with no facts, so there is no Scala story to tell. This answer is the strongest profile-bac
+       }
+     ],
+     "bridges": [
+  @@ -109,11 +115,6 @@
+         "id": "weakness",
+         "answer": "A weakness I have noticed is that I can go deep into the pipeline before checking in with the people who will read the o
+         "hook": ""
+  -    },
+  -    {
+  -      "id": "why_company",
+  -      "answer": "Two reasons. The first is the work: the Parcels domain needs a dedicated data engineer for direct-to-consumer logistics,
+  -      "hook": ""
+       }
+     ],
+     "ask": [
+  verify: 2 failing
+    ✗ star[q1]: evidence must be a non-empty list of quotes that are literally in the profile (a 'Not yet' line bac…
+    ✗ star[q1]: stub 'Scala is a stub in the profile with no facts, so there is no Scala story to tell. This answer…
+
+━━ FIX PACK 2/3 · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 01:15 · $0.43
+  resp_102b479b40e84e28 · claude-deepseek/deepseek-chat · streaming
+  ⚙ Bash python3 - <<'PY' import json, re p = json.load(open("pack.json")) q1 = next(s for s in p["star"] if s["qid"] …
+  Both issues with star[q1] are fixed in `pack.json`. - **Evidence:** now five quotes that appear word for word…
+  completed · 10.907s · $0.105 · changed pack.json
+  diff --git a/pack.json b/pack.json
+  index 0c7ebd0..c2ad146 100644
+  --- a/pack.json
+  +++ b/pack.json
+  @@ -39,13 +39,13 @@
+         "result": "Failed loads dropped 70 percent in the first quarter after the Great Expectations tests went in, and the BigQuery bill f
+         "lesson": "The lesson is that a pipeline design is as much a contract with its producers and consumers as it is a technical choice.
+         "evidence": [
+  -        "Not yet: Scala, Spark, Kubernetes",
+  +        "Data engineer with 7 years of experience building batch and streaming pipelines for retail and logistics\ncompanies. Strongest i
+           "Owns the shipment-events pipeline: 40 million events per day from Kafka into a PostgreSQL and\n  BigQuery warehouse, orchestrate
+           "Defined the shipment-events data contract with five producing teams and wrote the on-call runbook for the pipeline.",
+           "Introduced data-quality tests with Great Expectations on 30 core tables; failed loads dropped 70 percent in the first quarter.",
+           "Cut the BigQuery bill for the events warehouse by 35 percent by partitioning and clustering the five largest tables."
+         ],
+  -      "stub": "Scala is a stub in the profile with no facts, so there is no Scala story to tell. This answer is the strongest profile-bac
+  +      "stub": ""
+       }
+     ],
+     "bridges": [
+  verify: all checks pass
+saved me/applications/too_good_to_go__senior_data_engineer/interview_prep_technical-2.md
+After the interview, log the stage and its feedback with `python -m jobloop tracker` (outcome.md): it sharpens the next round's pack. A fact you recalled while preparing belongs in the profile first (the person confirms it).

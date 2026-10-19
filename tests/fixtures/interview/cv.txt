@@ -1,0 +1,5 @@
+Alex Fernsby
+Senior Data Engineer, Tidewater Logistics (Rotterdam), March 2022 - present
+- Owns the shipment-events pipeline: 40 million events per day from Kafka into a PostgreSQL and BigQuery warehouse.
+- Cut the nightly rebuild of the delivery-performance mart from 6 hours to 55 minutes with incremental dbt models.
+- Mentors two junior engineers; leads the weekly data-modelling review.

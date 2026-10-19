@@ -1,0 +1,118 @@
+{
+ "items": [
+  {
+   "title": "Postdoc Position in Computational Materials Chemistry at the Mads Clausen Institute",
+   "companyName": "Syddansk Universitet",
+   "companyLogo": null,
+   "companyLogoSvgMarkup": null,
+   "overlayColor": "",
+   "companyAddress": "Campusvej 55, 5230 Odense M",
+   "jobTypes": [
+    "fuldtid"
+   ],
+   "boostJob": false,
+   "publishedDate": "15-10-2026",
+   "applicationDeadline": "30-11-2026",
+   "url": "/job/postdoc-position-in-computational-materials-chemistry-at-the-mads-clausen-institute",
+   "coverImage": null,
+   "silhouetteLogo": false
+  },
+  {
+   "title": "Ph.d.-stipendiat i data science og AI-baserede prædiktionsmodeller",
+   "companyName": "Svendborg Sygehus",
+   "companyLogo": {
+    "key": "3a4c1034-3cbc-473c-b033-8637899255f3",
+    "url": "/media/giieyov2/region-syddanmark-logo_cmyk1.png",
+    "focalPoint": null
+   },
+   "companyLogoSvgMarkup": null,
+   "overlayColor": "",
+   "companyAddress": "Baagøes Allé 15, 5700 Svendborg",
+   "jobTypes": [
+    "fuldtid"
+   ],
+   "boostJob": false,
+   "publishedDate": "15-10-2026",
+   "applicationDeadline": "30-10-2026",
+   "url": "/job/phd-stipendiat-i-data-science-og-ai-baserede-praediktionsmodeller",
+   "coverImage": {
+    "key": "116fc824-1510-4e51-97a3-9142cf8f93da",
+    "url": "/media/eleg4eiq/handic-mater-billede-1.jpg",
+    "focalPoint": null
+   },
+   "silhouetteLogo": false
+  },
+  {
+   "title": "Four-year fixed term academic employee position in bioacoustics and signal processing",
+   "companyName": "Natural Sciences - Institut for Biologi",
+   "companyLogo": null,
+   "companyLogoSvgMarkup": null,
+   "overlayColor": "",
+   "companyAddress": "Ny Munkegade 116, 8000 Århus C",
+   "jobTypes": [
+    "fuldtid"
+   ],
+   "boostJob": false,
+   "publishedDate": "15-10-2026",
+   "applicationDeadline": "02-11-2026",
+   "url": "/job/four-year-fixed-term-academic-employee-position-in-bioacoustics-and-signal-processing",
+   "coverImage": null,
+   "silhouetteLogo": false
+  },
+  {
+   "title": "FE søger DevOps-profiler i Nordjylland til drift og udvikling til afdelingen for Elektronisk Indhentning",
+   "companyName": "Forsvarets Efterretningstjeneste",
+   "companyLogo": null,
+   "companyLogoSvgMarkup": null,
+   "overlayColor": "",
+   "companyAddress": "Kastellet 30, 2100 København Ø",
+   "jobTypes": [
+    "fuldtid"
+   ],
+   "boostJob": false,
+   "publishedDate": "15-10-2026",
+   "applicationDeadline": "08-11-2026",
+   "url": "/job/fe-soeger-devops-profiler-i-nordjylland-til-drift-og-udvikling-til-afdelingen-for-elektronisk-indhentning",
+   "coverImage": null,
+   "silhouetteLogo": false
+  },
+  {
+   "title": "Senior developer til Forsvarets AI Center",
+   "companyName": "Forsvarskommandoen",
+   "companyLogo": null,
+   "companyLogoSvgMarkup": null,
+   "overlayColor": "",
+   "companyAddress": "Lyngby Hovedgade 4, 2800 Lyngby-Taarbæk",
+   "jobTypes": [
+    "fuldtid"
+   ],
+   "boostJob": false,
+   "publishedDate": "15-10-2026",
+   "applicationDeadline": "30-11-2026",
+   "url": "/job/senior-developer-til-forsvarets-ai-center",
+   "coverImage": null,
+   "silhouetteLogo": false
+  },
+  {
+   "title": "AI engineer til Forsvarets AI Center",
+   "companyName": "Forsvarskommandoen",
+   "companyLogo": null,
+   "companyLogoSvgMarkup": null,
+   "overlayColor": "",
+   "companyAddress": "Holmens Kanal 9, 2800 København K",
+   "jobTypes": [
+    "fuldtid"
+   ],
+   "boostJob": false,
+   "publishedDate": "15-10-2026",
+   "applicationDeadline": "30-11-2026",
+   "url": "/job/ai-engineer-til-forsvarets-ai-center",
+   "coverImage": null,
+   "silhouetteLogo": false
+  }
+ ],
+ "currentPage": 1,
+ "totalItems": 74,
+ "itemsPrPage": 30,
+ "totalPages": 3
+}

@@ -1,0 +1,25 @@
+Alex Fernsby
+alex.fernsby@example.com | +1 555 0100
+Rotterdam, Holland
+
+Datastrømme, som prognoserne kan stole på: dbt, Airflow og test af datakvalitet
+
+19. oktober 2026
+
+Kære rekrutteringsansvarlig,
+
+Jeg søger stillingen som Senior Data Engineer hos Nordlys Analyse (reference NL-DE-0231). Jeres prognoser hviler på de datastrømme, der løber hver nat, og at eje netop sådan en platform har været mit arbejde i syv år, senest hos Tidewater Logistics i Rotterdam.
+
+I opslaget efterspørger I erfaring med produktionsklare datastrømme i Python og SQL, styret med Airflow, og med tabeller, der er testet og overvåget. Det har jeg gjort, og det kan jeg bringe ind i jeres team:
+
+- Datastrømme i stor skala: Jeg ejer forsendelsesstrømmen hos Tidewater, som flytter 40 millioner hændelser om dagen fra Kafka til et lager i PostgreSQL og BigQuery, styret med Apache Airflow.
+- Hurtigere modeller med dbt: Jeg skar den natlige genopbygning af vores leveringsmart fra 6 timer til 55 minutter ved at flytte den over på inkrementelle dbt-modeller.
+- Kvalitet, der kan måles: Jeg indførte tests med Great Expectations på 30 centrale tabeller, og antallet af mislykkede indlæsninger faldt med 70 procent over to kvartaler.
+- At udvikle andre ingeniører: Jeg vejleder to juniorer og leder den ugentlige gennemgang af datamodellering, hvilket passer til de designgennemgange, som jeres seniormedarbejder skal lede.
+
+Jeg vil være åben om ét hul. Jeg har endnu ikke arbejdet med Scala eller Spark, som jeres tunge transformationer bruger. Min nærmeste erfaring er de store transformationer i Python og SQL bag vores lager, og jeg lærer nye værktøjer hurtigt, når et team har brug for dem. Jeg vil planlægge mine første uger omkring at lukke hullet sammen med jeres dataforskere.
+
+Jeg vil meget gerne fortælle jer om forsendelsesstrømmen og høre, hvordan jeres prognoser bruger jeres tabeller. Tak for jeres tid og opmærksomhed.
+
+Med venlig hilsen
+Alex Fernsby

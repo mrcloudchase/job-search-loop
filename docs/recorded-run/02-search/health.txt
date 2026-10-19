@@ -1,0 +1,1 @@
+/home/user/job-search-loop/.venv/bin/python3: No module named jobloop

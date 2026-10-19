@@ -1,0 +1,35 @@
+\documentclass{jobletter}
+\begin{document}
+\jlname{Alex Fernsby}
+\jlcontact{Copenhagen \textbullet{} +1 555 0100 \textbullet{} alex.fernsby@example.com}
+\jlreference{}
+\makeletterhead
+
+\letterdate{19 October 2026}
+\salutation{Dear Hiring Manager,}
+
+\lettercontent{I am applying for the Data Engineer role at Flatpay because it centres on the work I have done for seven
+years: owning a data pipeline and its data models, and testing both so other teams can rely on them.}
+
+\begin{letterbullets}
+  \item \textbf{Ownership}: I run a data pipeline carrying 40 million Kafka events a day into PostgreSQL and BigQuery, orchestrated with Apache Airflow; I cut its BigQuery bill by 35\% with partitioning and clustering.
+  \item \textbf{Modeling}: incremental dbt models cut our nightly rebuild from 6 hours to 55 minutes, and I designed a star schema used by 12 analysts.
+  \item \textbf{Quality}: Great Expectations tests on 30 core tables reduced failed loads by 70\% in the first quarter. GitHub Actions and Terraform cut environment setup from two days to 20 minutes.
+  \item \textbf{Operations}: I wrote the shipment-events pipeline's on-call runbook and added alerts on 45 Airflow jobs so late partner feeds are noticed within 15 minutes.
+\end{letterbullets}
+
+\lettercontent{My cloud infrastructure experience is on Google Cloud, with BigQuery, dbt and Airflow. Databricks,
+Prefect, Azure Data Factory, AWS, Azure and observability platforms are gaps; I would bring tested pipelines and
+a habit of learning tools on the job.}
+
+\lettercontent{I bring seven years of experience, and with it mentoring and collaboration. I mentor two junior engineers
+patiently, lead our weekly data-modelling review and have trained 12 analysts on dbt. My English is C1.}
+
+\lettercontent{I live in Copenhagen and can consider Herlev within a commute of one hour each way, up to four days on
+site per week. I am a Dutch citizen, need no sponsorship, and hold no security clearance. With three months'
+notice, my earliest start is 2027-02-01.}
+
+\closingline{I would be glad to talk about how I can help Flatpay build its data platform.}
+
+\signoff{Best regards,}{Alex Fernsby}
+\end{document}

@@ -1,0 +1,48 @@
+{
+  "built": "2026-10-19",
+  "claims": [],
+  "company": "dpgmedia",
+  "deadline": "",
+  "delivered_hashes": {
+    "cover.tex": "73256d4524136cac908efae5f5d187f527ae98a8d619a18a70fda6bad3a95a53",
+    "cv.tex": "69a9c86e9d0405286f816775405d30ab9f2587d0a3c2da9c4ff7c84c82cf39dd"
+  },
+  "fit": 67,
+  "forms_status": "",
+  "gaps": [
+    "Big Data",
+    "AWS",
+    "Software Engineering",
+    "Domain-Driven Design",
+    "DevOps",
+    "AWS Certification",
+    "Scala",
+    "Java",
+    "Kubernetes",
+    "Monitoring",
+    "Logging",
+    "Functional Programming"
+  ],
+  "host_accepted": "vacatures.dpgmedia.nl is the employer's own site (its name is dpgmedia's)",
+  "host_kind": "ats",
+  "host_trust": "employer",
+  "judge_mean": 6.0,
+  "key": "dpgmedia__streaming_data_engineer",
+  "left_for_you": [],
+  "notes": [],
+  "reasons": [],
+  "role": "Streaming Data Engineer",
+  "sources": {
+    "cover.pdf": "26ac28472e6a412d54d1f684c3ee1745b2f16e8e5f0bc42177e25874f89b5d72",
+    "cv.pdf": "76e3e0874de2ab77677fe6e6928669673ee0dffbb36ab589f7533af334eba7de",
+    "draft.json": "c0e69b94cb3f82ce308aecea0e5a35f1b795b75c63e0d2affae181fccd902080",
+    "questions": ""
+  },
+  "status": "ready",
+  "stretch": [
+    "flag: \"Built the company's first Apache Airflow deployment and migrated 45 cron jobs onto it, replacing legacy scheduled batch jobs.\": \"Apache\" comes from a different role or from Education than the rest of the bullet"
+  ],
+  "title": "dpgmedia — Streaming Data Engineer",
+  "url": "https://vacatures.dpgmedia.nl/o/streaming-data-engineer-1?utm_source=freehire.me",
+  "why": "Fits because: Python: listed as a strong skill and used for ingestion services; Streaming: builds batch and streaming pipelines, with Kafka into the warehouse; Infrastructure as Code via Terraform (working level)."
+}

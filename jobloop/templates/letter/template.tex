@@ -1,0 +1,41 @@
+% COVER LETTER TEMPLATE: class jobletter, compiled with xelatex. Exactly 1 page, signature included.
+% DRAFTER: replace every [[LIKE THIS]]. Keep the blocks in this order. Rules:
+%  - Write the letter in the language of the POSTING (not of the CV). Translate the closing and the date format to
+%    local convention (for example "Med venlig hilsen,").
+%  - Body 250-300 words in total. Never shrink the margins or the font to fit: cut sentences instead.
+%  - 3-5 bullets, each starting with a bold label or an action verb. Bullets go ONLY in letterbullets.
+%  - Escape \& \% \$ \# \_ in all text. An unescaped % silently deletes the rest of the line.
+%  - No em-dashes. Facts only from the profile.
+\documentclass{jobletter}
+\begin{document}
+\jlname{[[FULL NAME]]}
+\jlcontact{[[CITY]] \textbullet{} [[PHONE]] \textbullet{} [[EMAIL]]}
+% Label and id of the posting's reference, in the posting's language; leave the braces empty if it has none.
+\jlreference{[[Ref.: ID]]}
+\makeletterhead
+
+\letterdate{[[DATE]]}
+% A named person if the posting names one, otherwise the generic greeting in the posting's language.
+\salutation{[[Dear NAME or Dear Hiring Manager,]]}
+
+% 1. Opening: the role and company by name, and why now.
+\lettercontent{[[OPENING PARAGRAPH]]}
+
+% 2. What you bring: 3-5 bullets.
+\begin{letterbullets}
+  \item \textbf{[[LABEL]]}: [[EVIDENCE FROM THE PROFILE]]
+  \item \textbf{[[LABEL]]}: [[EVIDENCE]]
+  \item \textbf{[[LABEL]]}: [[EVIDENCE]]
+\end{letterbullets}
+
+% 3. The company connection: something specific and verified about this company.
+\lettercontent{[[COMPANY CONNECTION]]}
+
+% 4. Personal fit, forward looking.
+\lettercontent{[[PERSONAL FIT]]}
+
+% 5. Closing line.
+\closingline{[[CLOSING SENTENCE]]}
+
+\signoff{[[Yours sincerely,]]}{[[FULL NAME]]}
+\end{document}

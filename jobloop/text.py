@@ -1,9 +1,8 @@
-"""Text as the loop compares it: folded and flattened, and mined for the numbers and terms its checks
-need. Pure functions, no I/O."""
+"""Text as the loop compares it: folded and flattened, and mined for the numbers its checks need. Pure functions, no I/O."""
 from __future__ import annotations
 
-import hashlib
 import re
+import sys
 import unicodedata
 
 
@@ -30,10 +29,10 @@ def slug(text: str, width: int) -> str:
     return re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower()).strip("-")[:width].strip("-")
 
 
-def jobkey(company: str, title: str, url: str = "") -> str:
-    """One stable, filename-safe key per posting, the same on every run: a long title keeps a hash of its full
-    text so two different long titles never collide, and a title with no Latin letters falls back to the url."""
-    name, full = slug(company, 30), slug(title, 999)
-    if not (name and full):
-        return "job-" + hashlib.sha1(f"{company}|{title}|{url}".encode()).hexdigest()[:10]
-    return f"{name}_{full}" if len(full) <= 50 else f"{name}_{full[:44].strip('-')}-{hashlib.sha1(full.encode()).hexdigest()[:5]}"
+def utf8_io() -> None:
+    """Make every stream a tool prints on or reads from UTF-8, whatever the host's default encoding is, so a Cyrillic company,
+    a CJK file name or a Polish line never crashes a command. Unencodable output is replaced, never raised."""
+    for stream in (sys.stdout, sys.stderr, sys.stdin):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="strict" if stream is sys.stdin else "replace")

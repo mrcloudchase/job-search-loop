@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /bin/
+Disallow: /umbraco/
+Sitemap: https://jobdanmark.dk/sitemap

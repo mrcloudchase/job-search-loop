@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Midlertidigt begrænset adgang</title>
+
+    <style>
+body {
+    margin: 0;
+    padding: 0;
+    color: #fff;
+    font-family: Courier, monospace;
+    font-size: 28px;
+}
+
+#container {
+    position: fixed;
+    top: 10%;
+    left: 50%;
+    transform: translate(-50%, 0%);
+}
+
+#bubble {
+    position: relative;
+    min-width: 300px;
+    max-width: 350px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 10px;
+    color: #000;
+    font-family: sans-serif;
+    font-size: 16px;
+    margin: 10px auto 25px auto;
+}
+
+#bubble:after {
+    content: '';
+    position: absolute;
+    border-style: solid;
+    border-width: 18px 18px 0;
+    border-color: #fff transparent;
+    width: 0;
+    bottom: -17px;
+    left: 40px;
+}
+</style>
+
+<script>
+var colors = {
+    "jobindex.dk": "#b41018",
+    "stepstone.dk": "#336dbe",
+    "it-jobbank.dk": "#1a4759",
+    "example.com": "#000"
+};
+
+var messages = [];
+messages["jobindex.dk"] =
+    "Midlertidigt begrænset adgang – vi beklager!"
+    + "<p>Du ser denne side, fordi vi oplever ekstremt mange besøg lige nu, og derfor ikke kan lukke flere ind."
+    + '<p>Ønsker du adgang til Jobindex, så kontakt os på <a href="tel:+4538323355">38 32 33 55</a> eller <a href="mailto:support@jobindex.dk?subject=Begrænset%20adgang&body=Hej%20jeg%20kan%20ikke%20få%20adgang%20til%20jobindex.dk.%20Skriv%20gerne%20hvad%20jeg%20kan%20gøre.">support@jobindex.dk</a>'
+    + "<p>Vi svarer på hverdage kl. 8-17."
+    + "<p>Venlig hilsen<br>Jobindex";
+messages["stepstone.dk"] =
+    "Midlertidigt begrænset adgang – vi beklager!"
+    + "<p>Du ser denne side, fordi vi oplever ekstremt mange besøg lige nu, og derfor ikke kan lukke flere ind."
+    + '<p>Ønsker du adgang til StepStone, så kontakt os på <a href="tel:+4572251525">72 25 15 25</a> eller <a href="mailto:kontakt@stepstone.dk?subject=Begrænset%20adgang&body=Hej%20jeg%20kan%20ikke%20få%20adgang%20til%20stepstone.dk.%20Skriv%20gerne%20hvad%20jeg%20kan%20gøre.">kontakt@stepstone.dk</a>'
+    + "<p>Vi svarer på hverdage kl. 8-17."
+    + "<p>Venlig hilsen<br>StepStone";
+messages["it-jobbank.dk"] =
+    "Midlertidigt begrænset adgang – vi beklager!"
+    + "<p>Du ser denne side, fordi vi oplever ekstremt mange besøg lige nu, og derfor ikke kan lukke flere ind."
+    + '<p>Ønsker du adgang til it-jobbank, så kontakt os på <a href="tel:+4570229300">70 22 93 00</a> eller <a href="mailto:kontakt@it-jobbank.dk?subject=Begrænset%20adgang&body=Hej%20jeg%20kan%20ikke%20få%20adgang%20til%20it-jobbank.dk.%20Skriv%20gerne%20hvad%20jeg%20kan%20gøre.">kontakt@it-jobbank.dk</a>'
+    + "<p>Vi svarer på hverdage kl. 8-17."
+    + "<p>Venlig hilsen<br>it-jobbank";
+messages["example.com"] = messages["jobindex.dk"];
+
+var site = document.location.hostname.replace(/.*\.(.*\..*)$/, "$1");
+if (!site) {
+    var sites = Object.keys(colors);
+    site = sites[Math.floor(Math.random() * sites.length)];
+}
+var tld = site.replace(/.*\./, "");
+var message = messages[site] || messages["example.com"];
+var color = colors[site] || colors["example.com"];
+
+</script>
+
+<script type="text/javascript">
+if (site == "jobindex.dk")
+(function(window, document, dataLayerName, id) {
+window[dataLayerName]=window[dataLayerName]||[],window[dataLayerName].push({start:(new Date).getTime(),event:"stg.start"});var scripts=document.getElementsByTagName('script')[0],tags=document.createElement('script');
+var qP=[];dataLayerName!=="dataLayer"&&qP.push("data_layer_name="+dataLayerName);var qPString=qP.length>0?("?"+qP.join("&")):"";
+tags.async=!0,tags.src="https://jobindex.containers.piwik.pro/"+id+".js"+qPString,scripts.parentNode.insertBefore(tags,scripts);
+!function(a,n,i){a[n]=a[n]||{};for(var c=0;c<i.length;c++)!function(i){a[n][i]=a[n][i]||{},a[n][i].api=a[n][i].api||function(){var a=[].slice.call(arguments,0);"string"==typeof a[0]&&window[dataLayerName].push({event:n+"."+i+":"+a[0],parameters:[].slice.call(arguments,1)})}}(i[c])}(window,"ppms",["tm","cm"]);
+})(window, document, 'dataLayer', '16519185-fa0e-444d-82fc-f2cdb30f82fc');
+</script>
+
+<script type="text/javascript">
+if (site == "stepstone.dk")
+(function(window, document, dataLayerName, id) {
+window[dataLayerName]=window[dataLayerName]||[],window[dataLayerName].push({start:(new Date).getTime(),event:"stg.start"});var scripts=document.getElementsByTagName('script')[0],tags=document.createElement('script');
+var qP=[];dataLayerName!=="dataLayer"&&qP.push("data_layer_name="+dataLayerName);var qPString=qP.length>0?("?"+qP.join("&")):"";
+tags.async=!0,tags.src="https://jobindex.containers.piwik.pro/"+id+".js"+qPString,scripts.parentNode.insertBefore(tags,scripts);
+!function(a,n,i){a[n]=a[n]||{};for(var c=0;c<i.length;c++)!function(i){a[n][i]=a[n][i]||{},a[n][i].api=a[n][i].api||function(){var a=[].slice.call(arguments,0);"string"==typeof a[0]&&window[dataLayerName].push({event:n+"."+i+":"+a[0],parameters:[].slice.call(arguments,1)})}}(i[c])}(window,"ppms",["tm","cm"]);
+})(window, document, 'dataLayer', 'a06118c8-1da1-45cd-949f-1e69f079fada');
+</script>
+
+
+<script type="text/javascript">
+if (site == "it-jobbank.dk")
+(function(window, document, dataLayerName, id) {
+window[dataLayerName]=window[dataLayerName]||[],window[dataLayerName].push({start:(new Date).getTime(),event:"stg.start"});var scripts=document.getElementsByTagName('script')[0],tags=document.createElement('script');
+var qP=[];dataLayerName!=="dataLayer"&&qP.push("data_layer_name="+dataLayerName);var qPString=qP.length>0?("?"+qP.join("&")):"";
+tags.async=!0,tags.src="https://jobindex.containers.piwik.pro/"+id+".js"+qPString,scripts.parentNode.insertBefore(tags,scripts);
+!function(a,n,i){a[n]=a[n]||{};for(var c=0;c<i.length;c++)!function(i){a[n][i]=a[n][i]||{},a[n][i].api=a[n][i].api||function(){var a=[].slice.call(arguments,0);"string"==typeof a[0]&&window[dataLayerName].push({event:n+"."+i+":"+a[0],parameters:[].slice.call(arguments,1)})}}(i[c])}(window,"ppms",["tm","cm"]);
+})(window, document, 'dataLayer', '59483c4c-3e0e-4b50-84cc-2a60c5a82ede');
+</script>
+
+</head>
+
+<body>
+
+<div id="container">
+    <div id="bubble">
+        <noscript>
+        Midlertidigt begrænset adgang – vi beklager!
+        </noscript>
+    </div>
+    <script>
+        document.write(site);
+    </script>
+</div>
+
+<script>
+var body = document.getElementsByTagName("body")[0];
+body.style.backgroundColor = color;
+
+var bubble = document.getElementById("bubble");
+bubble.innerHTML = message;
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "moderncv-banking",
+  "kind": "cv",
+  "source": "template.tex",
+  "sample": "sample.tex",
+  "extension": ".tex",
+  "compile": "lualatex",
+  "page_limit": 2
+}

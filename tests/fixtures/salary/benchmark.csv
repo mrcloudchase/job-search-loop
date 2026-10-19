@@ -1,0 +1,7 @@
+company,city,category,count,index,notes
+Acme A/S,København,engineers,"1 234","1.234,56",ok
+Acme A/S,København,managers,3,"1,234",ambiguous index
+Acme A/S,København,support,,,empty
+Beta Group,Aarhus,,12,"118,5",bare pair
+ ,Aarhus,engineers,1,100,blank company
+Gamma ApS,,engineers,Infinity,NaN,nonfinite

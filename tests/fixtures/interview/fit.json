@@ -1,0 +1,6 @@
+{"key": "senior-data-engineer",
+ "requirements": [
+  {"term": "Python", "kind": "required", "backed": true, "quote": "Python and SQL"},
+  {"term": "Airflow", "kind": "required", "backed": true, "quote": "Apache Airflow"},
+  {"term": "Scala", "kind": "required", "backed": false, "quote": ""},
+  {"term": "Kubernetes", "kind": "preferred", "backed": false, "quote": ""}]}

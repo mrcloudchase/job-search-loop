@@ -1,0 +1,34 @@
+   Jane Example
+jane@example.test   +45 12 34 56 78
+
+
+Experience
+Platform Engineer, Acme A/S                              2019-2024
+
+
+  • Built the deployment pipeline for twelve services.
+
+  • Cut build times by half.
+
+Developer, Beta ApS                                      2016–2019
+
+  • Maintained the billing service.
+
+
+
+
+Education
+MSc Computer Science, Example University                 2014-2016
+
+
+
+
+                                                1
+Skills
+Python, Go, Kubernetes. The office of finance.
+
+
+
+
+                                                 2
+

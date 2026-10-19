@@ -1,0 +1,36 @@
+{
+  "built": "2026-10-19",
+  "claims": [],
+  "company": "A.P. Moller - Maersk",
+  "deadline": "",
+  "delivered_hashes": {
+    "cover.tex": "e1183bcac63773c29e19cbfe650b9ec30dac27db6691386e86e30f5f55be568b",
+    "cv.tex": "0fbea86461d34a58e831de620bc9b1104eb673e9347b7ed2ff4932ccd5430cca"
+  },
+  "fit": 81,
+  "forms_status": "",
+  "gaps": [
+    "PySpark",
+    "distributed data processing",
+    "data engineering experience",
+    "AI/ML engineering",
+    "LLM-based applications"
+  ],
+  "host_kind": "portal",
+  "judge_mean": 6.0,
+  "key": "a_p_moller_maersk__senior_data_engineer",
+  "left_for_you": [],
+  "notes": [],
+  "reasons": [],
+  "role": "Senior Data Engineer",
+  "sources": {
+    "cover.pdf": "c53a7f80b7afb63e749c57e9387c52c7169d4a68e9cc2490dc7791d0f67c50f8",
+    "cv.pdf": "a39b2ae4f8fa72e9012e580dec43b17e9e0a97d58894ca82e2f044621ec2a47a",
+    "draft.json": "e8b363d3f5eee6124f22467857d90c152e1f3d62da7da7dca144a4c748614402",
+    "questions": ""
+  },
+  "status": "ready",
+  "title": "A.P. Moller - Maersk — Senior Data Engineer",
+  "url": "https://dk.linkedin.com/jobs/view/senior-data-engineer-at-a-p-moller-maersk-4462863386",
+  "why": "Fits because: SQL and Python are named core skills in the profile; orchestration backed by Apache Airflow, including migrating 45 cron jobs and adding alerting; ETL/ELT pipelines backed by incremental dbt models and a nightly mart rebuild cut from 6 hours to 55 minutes."
+}

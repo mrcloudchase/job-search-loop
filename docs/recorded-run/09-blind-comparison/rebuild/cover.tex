@@ -1,0 +1,38 @@
+\documentclass{jobletter}
+\begin{document}
+\jlname{Alex Fernsby}
+\jlcontact{Copenhagen \textbullet{} +1 555 0100 \textbullet{} alex.fernsby@example.com}
+\jlreference{}
+\makeletterhead
+
+\letterdate{19 October 2026}
+\salutation{Dear Hiring Manager,}
+
+\lettercontent{I am applying for the Senior Data Engineer role at Too Good To Go. Owning the data pipelines behind
+logistics operations is the work I do today at Tidewater Logistics, and it is the work I want to keep doing.}
+
+\begin{letterbullets}
+  \item \textbf{Logistics data}: At Tidewater Logistics, I own the shipment-events pipeline, 40 million events per day from Kafka into a
+    PostgreSQL and BigQuery warehouse with Apache Airflow, and cut the delivery-performance mart rebuild from 6
+    hours to 55 minutes with incremental dbt models.
+  \item \textbf{Operations self-service}: I built a Looker explore so logistics planners answer delivery-delay
+    questions themselves instead of filing tickets.
+  \item \textbf{Shipment data}: I defined the pipeline's data contract with five producing teams and wrote its
+    on-call runbook.
+  \item \textbf{Data quality}: Great Expectations tests on 30 core tables made failed loads drop by 70 percent in
+    a quarter.
+\end{letterbullets}
+
+\lettercontent{Redshift is the one preferred item I have not used in production. My warehouse work is on Google
+BigQuery, which I support on a migration from on-premise PostgreSQL, and I cut its events-warehouse cost by 35
+percent through partitioning and clustering. GitOps, CI/CD, DataOps and stakeholder management are also gaps.
+There, my adjacent work rests on GitHub Actions and Terraform deployments and the five-team data contract
+above.}
+
+\lettercontent{I am based in Copenhagen, the city of the role, and can work four days a week at the office. After three
+months' notice, I can start on 1 February 2027.}
+
+\closingline{I would be glad to discuss how my logistics pipeline experience could contribute to the Parcels domain.}
+
+\signoff{Yours sincerely,}{Alex Fernsby}
+\end{document}

@@ -1,0 +1,1 @@
+{"permissions": {"deny": ["Write", "Edit", "MultiEdit", "NotebookEdit"]}, "skipWebFetchPreflight": true}

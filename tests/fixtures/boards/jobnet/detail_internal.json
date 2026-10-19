@@ -1,0 +1,75 @@
+{
+ "title": "Sygeplejerske til Friplejehjemmet Hesselvang i Hvalpsund.",
+ "body": "<p>Er du sygeplejerske og banker dit hjerte for sundhedsfaglig praksis og omsorg for ældre ?</p><p>Så har vi jobbet til dig.</p><p>Du arbejder kun i dagvagt i hverdagene, ingen weekend og helligdage.</p><p>Se hele stillingsopslaget på www.hesselvang-friplejehjem.dk</p>",
+ "publicationDateTime": "2026-10-19T00:00:00+02:00",
+ "unpublicationDateTime": "2026-10-27T12:38:32+01:00",
+ "job": {
+  "type": "Ordinaert",
+  "address": {
+   "streetName": "Hesselvej",
+   "houseNumber": "5A",
+   "city": "Farsø",
+   "postalCode": "9640",
+   "municipality": "Vesthimmerlands",
+   "countryCode": "DK",
+   "countryName": "Danmark"
+  },
+  "noFixedWorkplace": false,
+  "isLimitedPeriod": false,
+  "isDisabilityFriendly": false,
+  "isPartTime": true,
+  "maximumWeeklyHours": 32,
+  "minimumWeeklyHours": 30,
+  "employmentDate": "2026-12-01T00:00:00+01:00",
+  "conceptUriDa": "http://data.star.dk/esco/occupation/56f5d45c-ce48-43ac-9720-34831a1c8302",
+  "preferredLabelDa": "Sygeplejerske",
+  "driversLicenses": [],
+  "classifications": [],
+  "shifts": [
+   "Dagarbejde"
+  ],
+  "isFavorite": false,
+  "isJoblogged": false
+ },
+ "application": {
+  "deadlineDate": "2026-10-27T12:38:32+01:00",
+  "availablePositions": 1,
+  "contactPersons": [
+   {
+    "firstNames": "Fornavn",
+    "lastName": "Efternavn",
+    "title": "Leder",
+    "emailAddress": "kontakt@example.invalid",
+    "phoneNumber": "00000000"
+   }
+  ],
+  "emailAddress": "kontakt@example.invalid",
+  "urlText": "",
+  "isApplicationDeadlineASAP": false
+ },
+ "isAnonymousEmployer": false,
+ "id": "9cfc37d8-7e59-4632-a230-5fdbe95bbc94",
+ "approvalStatus": "Godkendt",
+ "views": 4,
+ "user": "JobAG",
+ "createdDateTime": "2026-10-14T12:51:40.199923+02:00",
+ "updatedDateTime": "2026-10-14T12:51:40.199923+02:00",
+ "employer": {
+  "cvrNumber": "32370322",
+  "pNumber": "1015506497",
+  "name": "Friplejehjemmet Hesselvang",
+  "hasCompanyLogo": false,
+  "address": {
+   "streetName": "Hesselvej",
+   "houseNumber": "5A",
+   "city": "Farsø",
+   "postalCode": "9640",
+   "municipality": "Vesthimmerlands",
+   "countryCode": "DK",
+   "countryName": "Danmark"
+  }
+ },
+ "organisationTypeId": 24,
+ "hasLogo": false,
+ "isJoblogged": false
+}
