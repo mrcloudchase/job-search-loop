@@ -1,6 +1,7 @@
 """The parity matrix's index. The rows live in docs/parity/*.md, one file per area, so the people building different
 areas edit different files. This script checks every row and writes docs/parity.md: the legend and a count of rows by
-status per area. `--check` fails if the index is stale or any row is malformed; `--done` also fails if a row is
+status per area. `--check` fails if the index is stale, a row is malformed, or a `done` / `stricter here` row names a test
+that does not exist; `--done` also fails if a row is
 still `planned`. Run it before every commit that changes behaviour."""
 from __future__ import annotations
 
@@ -11,6 +12,7 @@ from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+TESTS = re.compile(r"\btest_\w+")
 HEADER = "| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |"
 STATUS = re.compile(r"^(done|planned(?: \(.+\))?|stricter here|not ported, because .+)$")
 
@@ -35,8 +37,12 @@ def rows(path: Path) -> list[tuple[int, list[str]]]:
     return out
 
 
+def defined_tests() -> set[str]:
+    return {m for f in (ROOT / "tests").rglob("*.py") for m in re.findall(r"^\s*(?:async )?def (test_\w+)", f.read_text(), re.M)}
+
+
 def build() -> tuple[str, list[str], int]:
-    problems, planned, lines = [], 0, []
+    problems, planned, lines, tests = [], 0, [], defined_tests()
     for path in sorted((ROOT / "docs" / "parity").glob("*.md")):
         counts = Counter()
         for n, cells in rows(path):
@@ -46,6 +52,11 @@ def build() -> tuple[str, list[str], int]:
             kind = "planned" if cells[3].startswith("planned") else "not ported" if cells[3].startswith("not ported") else cells[3]
             if not STATUS.match(cells[3]):
                 problems.append(f"{path.name}:{n}: bad status {cells[3]!r}")
+            elif kind in ("done", "stricter here"):
+                named = TESTS.findall(cells[2])
+                missing = [t for t in named if t not in tests]
+                if not named or missing:
+                    problems.append(f"{path.name}:{n}: a `{kind}` row must name tests that exist" + (f"; missing {missing}" if missing else ""))
             counts[kind] += 1
         planned += counts["planned"]
         lines.append(f"| [{path.stem}](parity/{path.name}) | {sum(counts.values())} | {counts['done']} | {counts['stricter here']} | "
