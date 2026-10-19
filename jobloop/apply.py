@@ -140,9 +140,15 @@ def cv_language(profile_md: str) -> str:
         return "en"
 
 
+def _profile_cell(r) -> str:
+    if not r.backed:
+        return "gap"
+    return f"have (profile says: {', '.join(r.synonyms)})" if r.synonyms else "have"
+
+
 def requirements_file(fit: fitting.Fit) -> str:
     rows = ["# Requirements (from the fit evaluation)", "", "| Term | Priority | Profile |", "|---|---|---|"]
-    rows += [f"| {r.term} | {r.kind} | {'have' if r.backed else 'gap'} |" for r in fit.requirements]
+    rows += [f"| {r.term} | {r.kind} | {_profile_cell(r)} |" for r in fit.requirements]
     return "\n".join(rows) + "\n"
 
 
@@ -253,7 +259,7 @@ class Application:
     # step 3 ─ draft and verify
     def context(self) -> verify.Context:
         run, a = self.run, self.args
-        reqs = tuple(keywords.Requirement(r.term, r.kind) for r in run.fit.requirements)
+        reqs = tuple(keywords.Requirement(r.term, r.kind, tuple(r.synonyms)) for r in run.fit.requirements)
         return verify.Context(
             profile=self.profile, posting=run.posting, requirements=reqs, company=run.facts.company, role=run.facts.role,
             today=self.deps.today(), reference=run.facts.reference, addressee=a.addressee, cv_language=cv_language(self.profile),

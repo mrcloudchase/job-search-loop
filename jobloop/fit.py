@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
+from .keywords import mentions
 from .term import GREEN, OFF, RED, YELLOW, say
 from .text import claimed, flat, slug, visible
 from .turns import Api, Turns
@@ -53,7 +54,7 @@ RUBRIC = {
     "career": "Alignment with the candidate's goals: the motivation filter (tasks that energise or drain, leadership "
               "style, culture, values, autonomy) and life situation (security, flexibility, development).",
 }
-LIMITS = {"quote": 300, "note": 400, "items": 12, "term_words": 3, "term_chars": 40}
+LIMITS = {"quote": 300, "note": 400, "items": 12, "term_words": 3, "term_chars": 40, "synonyms": 3}
 
 
 # ── the score ───────────────────────────────────────────────────────────────────────────────────
@@ -88,6 +89,7 @@ class Requirement:
     kind: str                   # "required" or "preferred"
     backed: bool                # decided by code from the profile, not by the harness
     quote: str                  # the profile's own words, when backed
+    synonyms: tuple[str, ...] = ()      # the profile's other words for the skill; only ones code found in the profile
 
 
 @dataclass(frozen=True)
@@ -157,8 +159,8 @@ class Fit:
                 "band": self.band, "recommendation": self.recommendation, "shortlisted": self.shortlisted,
                 "vetoes": list(self.vetoes), "flags": list(self.flags),
                 "gates": [{"name": g.name, "verdict": g.verdict, "notes": list(g.notes)} for g in self.gates],
-                "requirements": [{"term": r.term, "kind": r.kind, "backed": r.backed, "quote": r.quote}
-                                 for r in self.requirements],
+                "requirements": [{"term": r.term, "kind": r.kind, "backed": r.backed, "quote": r.quote,
+                                  "synonyms": list(r.synonyms)} for r in self.requirements],
                 "strengths": list(self.strengths), "gaps": list(self.gaps)}
 
 
@@ -403,6 +405,23 @@ def _items(data: dict, name: str, failures: list[str]) -> list:
     return value
 
 
+def _raw_synonyms(row: dict) -> list[str]:
+    value = row.get("synonyms")
+    return [v.strip() for v in value if isinstance(v, str) and v.strip()] if isinstance(value, list) else []
+
+
+def _synonyms(value: object, where: str, failures: list[str]) -> tuple[str, ...] | None:
+    """The harness's proposed synonyms, shape-checked: at most 3 short strings. None (and a failure) if malformed."""
+    if value is None:
+        return ()
+    if (not isinstance(value, list) or len(value) > LIMITS["synonyms"]
+            or not all(_text(v, LIMITS["term_chars"]) and len(v.split()) <= LIMITS["term_words"] for v in value)):
+        failures.append(f"{where}: synonyms must be a list of at most {LIMITS['synonyms']} short strings "
+                        f"(1-{LIMITS['term_words']} words) that profile.md itself uses for the skill.")
+        return None
+    return tuple(dict.fromkeys(v.strip() for v in value))
+
+
 def _requirements(rows: list, profile: str, posting: str, failures: list[str]) -> list[Requirement]:
     mine, shown = flat(claimed(profile)), flat(posting)
     found = []
@@ -420,17 +439,29 @@ def _requirements(rows: list, profile: str, posting: str, failures: list[str]) -
         elif kind not in ("required", "preferred") or verdict not in ("backed", "gap"):
             failures.append(f"{where}: kind must be required or preferred, verdict backed or gap.")
         else:
-            backed = _has(term, mine)
-            if verdict == "backed" and not backed:
+            syns = _synonyms(row.get("synonyms"), where, failures) if verdict == "backed" else ()
+            if syns is None:
+                continue
+            claimed_text = claimed(profile)
+            accepted = tuple(s for s in syns if mentions(s, claimed_text))
+            lost = [s for s in syns if s not in accepted]
+            via_term = _has(term, mine)
+            backed = via_term or bool(accepted)
+            if lost:
+                failures.append(f"{where}: synonym(s) {lost!r} are not in profile.md on a line that counts (a 'Not yet' "
+                                "line backs nothing). A synonym must be the profile's own word for the skill; drop it.")
+            elif verdict == "backed" and not backed:
                 failures.append(f"{where}: profile.md does not back {term!r} on a line that counts (a 'Not yet' line "
                                 "backs nothing). Report it as a gap.")
-            elif verdict == "gap" and backed:
+            elif verdict == "gap" and (_has(term, mine) or any(mentions(s, claimed_text) for s in _raw_synonyms(row))):
                 failures.append(f"{where}: profile.md backs {term!r}. Report it as backed and quote the profile line.")
-            elif backed and not (_text(quote, LIMITS["quote"]) and flat(quote) in mine and _has(term, flat(quote))):
-                failures.append(f"{where}: quote must be profile.md's own words, containing {term!r}, from a line "
-                                f"that is not 'Not yet': got {quote!r}.")
+            elif backed and not (_text(quote, LIMITS["quote"]) and flat(quote) in mine
+                                 and (_has(term, flat(quote)) or any(mentions(s, quote) for s in accepted))):
+                failures.append(f"{where}: quote must be profile.md's own words, containing {term!r}"
+                                + (f" or one of your synonyms {list(accepted)!r}" if accepted else "")
+                                + f", from a line that is not 'Not yet': got {quote!r}.")
             else:
-                found.append(Requirement(term.strip(), kind, backed, quote if backed else ""))
+                found.append(Requirement(term.strip(), kind, backed, quote if backed else "", accepted))
     if not found and not failures:
         failures.append("requirements is empty: list the posting's requirements.")
     return found
@@ -542,9 +573,13 @@ gate verdict itself from your facts; do not report them.
 - fit.json is one JSON object:
   "scores": {{"technical": n, "experience": n, "behavioural": n, "career": n}}
   "requirements": [{{"term": "Airflow", "kind": "required" or "preferred", "verdict": "backed" or "gap",
-      "quote": "profile.md's own words containing the term (backed only)"}}]
-     terms are short names of 1-3 words that appear in the posting's text; profile.md backs a term only if the term
-     itself is on a line that is not "Not yet"
+      "quote": "profile.md's own words containing the term or a synonym (backed only)",
+      "synonyms": ["profile.md's own word for the skill", ...]}}]   synonyms optional, at most 3
+     terms are short names of 1-3 words that appear in the posting's text. profile.md backs a term if the term itself
+     is on a line that is not "Not yet", or if the profile expresses the same skill in different words: then report it
+     as backed, put those profile words in "synonyms" (e.g. term "CI/CD", synonyms ["GitHub Actions"]) and quote the
+     profile line containing them. The loop accepts a synonym only if it is literally on a profile line that is not
+     "Not yet". Never use synonyms for a skill the profile lacks; a real gap is reported as a gap, without synonyms
   "strengths": ["...", ...], "gaps": ["...", ...]   each names at least one backed / gap requirement term
   "eligibility": [{{"kind": "citizenship"|"work_authorisation"|"security_clearance"|"hours"|"start_date",
       "stance": "requires"|"welcomes", "scope": "role"|"company", "value": "what is required", "text": "posting's words"}}]

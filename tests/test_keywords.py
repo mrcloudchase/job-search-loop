@@ -125,3 +125,12 @@ def test_a_term_wrapped_at_its_hyphen_in_a_pdf_still_matches():
     assert mentions("team-level standards", "On team- level standards for code, I have not yet contributed.")
     assert mentions("team-level standards", "On team-\nlevel standards for code")
     assert not mentions("team-level standards", "On team standards for code")
+
+
+def test_a_synonym_backed_requirement_needs_no_letter_acknowledgement_but_a_true_gap_does():
+    profile = PROFILE + "\n- Moved deployments to GitHub Actions."
+    syn = Requirement("CI/CD", synonyms=("GitHub Actions",))
+    c = cover([syn], profile, "Moved deployments to GitHub Actions.", letter="I love pipelines.")
+    assert c.failures == () and status(c, "CI/CD") == "synonym-only" and c.findings
+    gap = cover([Requirement("CI/CD", synonyms=("Jenkins",))], profile, CV, letter="I love pipelines.")
+    assert gap.failures and "does not acknowledge" in gap.failures[0]

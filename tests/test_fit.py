@@ -498,3 +498,75 @@ def test_language_fail_vetoes():
     fit = ok(d)
     assert not fit.shortlisted and fit.vetoes == tuple(v for v in fit.vetoes if v.startswith("language:"))
     assert "Fluent English with our international team" in fit.vetoes[0]
+
+
+# ── synonyms: the profile's own words for the posting's term ──
+SYN_PROFILE = PROFILE.replace("## Skills", "- Moved the team's deployments to GitHub Actions and Terraform.\n\n## Skills")
+SYN_POSTING = POSTING + "\nWe expect CI/CD experience.\n"
+DEPLOY_LINE = "Moved the team's deployments to GitHub Actions and Terraform"
+
+
+def syn_data(term="CI/CD", verdict="backed", quote=DEPLOY_LINE, synonyms=("GitHub Actions",), **extra):
+    d = data(strengths=GOOD["strengths"] + [f"{term} through the profile's own tooling"], gaps=GOOD["gaps"])
+    row = {"term": term, "kind": "required", "verdict": verdict, "quote": quote if verdict == "backed" else ""}
+    if synonyms is not None:
+        row["synonyms"] = list(synonyms)
+    d["requirements"] = d["requirements"] + [row]
+    d.update(extra)
+    return d
+
+
+def test_a_synonym_in_the_profile_backs_the_requirement_and_is_recorded():
+    fit = ok(syn_data(), SYN_PROFILE, SYN_POSTING)
+    r = fit.requirements[-1]
+    assert r.backed and r.quote == DEPLOY_LINE and r.synonyms == ("GitHub Actions",)
+    assert fit.as_dict()["requirements"][-1]["synonyms"] == ["GitHub Actions"]
+    assert "CI/CD" in F.keywords(fit)
+
+
+def test_a_synonym_not_in_the_profile_is_a_failure_sent_back():
+    text = refused(syn_data(synonyms=("Jenkins",)), SYN_PROFILE, SYN_POSTING)
+    assert "synonym(s) ['Jenkins'] are not in profile.md on a line that counts" in text
+
+
+def test_a_synonym_only_on_a_not_yet_line_is_still_a_gap():
+    profile = SYN_PROFILE.replace("- Moved the team's deployments to GitHub Actions and Terraform.", "- Not yet: GitHub Actions")
+    assert "synonym(s)" in refused(syn_data(), profile, SYN_POSTING)
+    gap = syn_data(verdict="gap", synonyms=None, gaps=GOOD["gaps"] + ["CI/CD is not in the profile"], strengths=GOOD["strengths"])
+    fit = ok(gap, profile, SYN_POSTING)
+    assert not fit.requirements[-1].backed and fit.requirements[-1].synonyms == ()
+
+
+def test_a_gap_whose_synonym_is_on_a_counted_line_must_be_reported_as_backed():
+    d = syn_data(verdict="gap")
+    d["requirements"][-1]["synonyms"] = ["GitHub Actions"]
+    assert "profile.md backs 'CI/CD'" in refused(d, SYN_PROFILE, SYN_POSTING)
+
+
+def test_more_than_three_synonyms_or_long_ones_are_refused():
+    four = ("GitHub Actions", "Terraform", "deployments", "team")
+    assert "at most 3" in refused(syn_data(synonyms=four), SYN_PROFILE, SYN_POSTING)
+    assert "synonyms must be a list" in refused(syn_data(synonyms=("x" * 41,)), SYN_PROFILE, SYN_POSTING)
+    d = syn_data()
+    d["requirements"][-1]["synonyms"] = "GitHub Actions"
+    assert "synonyms must be a list" in refused(d, SYN_PROFILE, SYN_POSTING)
+    assert ok(syn_data(synonyms=("GitHub Actions", "Terraform", "deployments")), SYN_PROFILE, SYN_POSTING).requirements[-1].synonyms \
+        == ("GitHub Actions", "Terraform", "deployments")
+
+
+def test_the_quote_must_hold_the_term_or_an_accepted_synonym():
+    text = refused(syn_data(quote="Wrote Python and SQL ingestion services"), SYN_PROFILE, SYN_POSTING)
+    assert "quote must be profile.md's own words" in text
+    assert "backs nothing" not in text
+
+
+def test_a_synonym_does_not_make_a_different_skill_count():
+    # a backed claim with no synonym still needs the term itself
+    assert "does not back 'CI/CD'" in refused(syn_data(synonyms=None), SYN_PROFILE, SYN_POSTING)
+
+
+def test_a_term_in_the_profile_needs_no_synonyms_and_old_json_loads():
+    fit = ok()
+    assert all(r.synonyms == () for r in fit.requirements)
+    assert F.Requirement("Python", "required", True, "Python").synonyms == ()
+    assert "synonyms" in F.ROLE and "never use synonyms for a skill the profile lacks".lower() in F.ROLE.lower()

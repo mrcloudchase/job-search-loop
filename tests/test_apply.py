@@ -417,3 +417,11 @@ def test_synonym_findings_are_sent_to_the_drafter_in_the_revise_turn(tmp_path):
     assert env.app.execute() == 0
     revise = env.server.requests[2]
     assert revise["previous_response_id"] == "resp_1" and "use the posting's own term where it is true" in revise["input"][0]["text"]
+
+
+def test_synonyms_reach_the_keyword_check_and_the_drafters_requirements_file():
+    fit = make_fit()
+    ci = fitting.Requirement("CI/CD", "required", True, "GitHub Actions", ("GitHub Actions",))
+    fit = replace(fit, requirements=fit.requirements + (ci,))
+    assert "| CI/CD | required | have (profile says: GitHub Actions) |" in apply.requirements_file(fit)
+    assert "| Python | required | have |" in apply.requirements_file(fit)
