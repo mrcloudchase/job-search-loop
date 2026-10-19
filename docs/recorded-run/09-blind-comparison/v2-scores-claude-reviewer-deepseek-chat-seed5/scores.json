@@ -1,0 +1,206 @@
+{
+ "X": {
+  "items": {
+   "1": {
+    "verdict": "pass",
+    "evidence": "Every CV claim (roles, bullets, 6h to 55min, 70%, 35%, 45 cron jobs, 60 tables, 120 stars, certifications) matches profile.md; no fabricated skills or achievements."
+   },
+   "2": {
+    "verdict": "pass",
+    "evidence": "Companies, titles and locations match the profile; dates are written as 2022-Present etc. rather than month-year, but none is wrong."
+   },
+   "3": {
+    "verdict": "pass",
+    "evidence": "Email alex.fernsby@example.com and phone +1 555 0100 appear correctly in both CV and letter, with Copenhagen, Denmark."
+   },
+   "4": {
+    "verdict": "fail",
+    "evidence": "The letter states 'Parcels has delivered 300,000 parcels of surplus food from FMCG manufacturers in the UK with CEVA Logistics since 2024', a specific partnership claim found nowhere in the posting and presented as fact rather than modestly."
+   },
+   "5": {
+    "verdict": "pass",
+    "evidence": "Summary and opening paragraph focus on owning a pipeline inside a product team where logistics data shapes the product, matching the Parcels embedded role."
+   },
+   "6": {
+    "verdict": "pass",
+    "evidence": "Bullets are reframed to the posting: 'Logistics and order data', 'DataOps and CI/CD', 'GitOps-style' deployments and 15-minute feed alerting under data quality."
+   },
+   "7": {
+    "verdict": "fail",
+    "evidence": "The letter names the Redshift, dlt and Metaflow gaps but makes no modest statement about the missing AWS/Kinesis/Glue experience the posting lists in its stack."
+   },
+   "8": {
+    "verdict": "pass",
+    "evidence": "Docker, GitHub Actions, Terraform, data quality/governance and stakeholder communication from the posting are surfaced in Core Competencies and the letter."
+   },
+   "9": {
+    "verdict": "pass",
+    "evidence": "Standard two-page format with role/company/dates in a right-hand column and a Core Competencies block near the top."
+   },
+   "10": {
+    "verdict": "pass",
+    "evidence": "The letter has name/contact header, date, salutation, body and 'Kind regards' sign-off with name."
+   },
+   "11": {
+    "verdict": "pass",
+    "evidence": "Both documents use the same plain, result-led first-person voice with the same metrics."
+   },
+   "12": {
+    "verdict": "pass",
+    "evidence": "Dates, metrics, titles and locations agree between CV and letter."
+   },
+   "13": {
+    "verdict": "pass",
+    "evidence": "No stray LaTeX commands; only the 'MOBILE-ALT' and 'Envelope' icon alt-text labels and empty '\u25cb' bullets look odd."
+   },
+   "14": {
+    "verdict": "pass",
+    "evidence": "No spelling or grammar errors found in the CV or letter."
+   },
+   "15": {
+    "verdict": "fail",
+    "evidence": "No person is named in the posting, yet the letter opens 'Dear Too Good To Go hiring team,' rather than 'Dear Hiring Manager'."
+   },
+   "16": {
+    "verdict": "pass",
+    "evidence": "The extracted letter is about 40 lines and the PDF is reported as 1 page."
+   },
+   "17": {
+    "verdict": "pass",
+    "evidence": "Headings (Professional Experience, Education, Projects, etc.) are in English, matching the English CV."
+   },
+   "18": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports cv.pdf as 2 pages and the extract ends with a 2/2 footer."
+   },
+   "19": {
+    "verdict": "pass",
+    "evidence": "Page 1 ends with a completed Marlow bullet and page 2 starts with the full Delft Energy Cooperative entry title, so no title is orphaned."
+   },
+   "20": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports cover.pdf as 1 page and the signature 'Alex Fernsby' is present."
+   },
+   "21": {
+    "verdict": "pass",
+    "evidence": "No '(cid:' markers or replacement characters; curly quotes and dashes extract as proper Unicode."
+   },
+   "22": {
+    "verdict": "pass",
+    "evidence": "'alex.fernsby@example.com' and '+1 555 0100' appear as literal text in both CV and letter."
+   },
+   "23": {
+    "verdict": "pass",
+    "evidence": "Order is header, summary, competencies, roles in reverse chronology, then education, projects, certifications and the rest."
+   },
+   "24": {
+    "verdict": "pass",
+    "evidence": "Real matches (Airflow, Python, SQL, dbt, Terraform, Docker, GitHub Actions) are used with evidence; absent AWS/Redshift/dlt/Metaflow keywords are not stuffed and are partly named as gaps in the letter."
+   }
+  },
+  "overall": 7,
+  "reasons": "Well-targeted and honest on most technology gaps, with a clean, ATS-friendly extraction. It is held back by an invented company claim (300,000 parcels with CEVA Logistics since 2024) and a non-standard salutation, both one-line fixes."
+ },
+ "Y": {
+  "items": {
+   "1": {
+    "verdict": "pass",
+    "evidence": "Every CV and letter claim (40M Kafka events, 6h to 55min, 70%, 35%, 45 cron jobs, 60 tables, 120 stars) matches profile.md."
+   },
+   "2": {
+    "verdict": "pass",
+    "evidence": "Titles, companies, locations and full month-year dates (March 2022 - present, June 2018 - February 2022, September 2016 - May 2018) match the profile exactly."
+   },
+   "3": {
+    "verdict": "pass",
+    "evidence": "Email alex.fernsby@example.com, phone +1 555 0100 and Copenhagen match profile.md in both documents."
+   },
+   "4": {
+    "verdict": "pass",
+    "evidence": "Neither document makes company-specific claims beyond the role title and location given in the posting; the letter makes no partnership or product assertions."
+   },
+   "5": {
+    "verdict": "pass",
+    "evidence": "The letter ties the shipment pipeline and freight dbt package to the Parcels logistics focus and to linking with a central Data Platform team."
+   },
+   "6": {
+    "verdict": "pass",
+    "evidence": "Bullets are reframed with posting language: 'real-time Kafka intake', 'lower latency for batch data pipelines', 'CI/CD', 'data governance' and 'technical requirements'."
+   },
+   "7": {
+    "verdict": "pass",
+    "evidence": "The letter explicitly names missing dlt, AWS, Redshift, Lambda, Kinesis, S3, Glue, GitOps and Metaflow plus gaps in SLAs, availability and agile delivery."
+   },
+   "8": {
+    "verdict": "fail",
+    "evidence": "Docker, Terraform, GitHub Actions and data quality appear in the CV, but the letter's highlighting leaves these nice-to-have matches buried in a gap-acknowledgement paragraph."
+   },
+   "9": {
+    "verdict": "pass",
+    "evidence": "Two-page banking-style layout with company/location and role/dates at the top of each entry; 'Profile' is used instead of Summary and there is no References line."
+   },
+   "10": {
+    "verdict": "pass",
+    "evidence": "The letter has a header, date, salutation, body and 'Yours sincerely' sign-off with the name."
+   },
+   "11": {
+    "verdict": "pass",
+    "evidence": "Both documents use a factual, plain first-person tone with the same metrics."
+   },
+   "12": {
+    "verdict": "pass",
+    "evidence": "Titles, dates, metrics and locations are consistent between CV and letter."
+   },
+   "13": {
+    "verdict": "pass",
+    "evidence": "No LaTeX commands or broken characters; only the 'M'/'E'/'gh' contact-icon labels and inline bullets are unusual."
+   },
+   "14": {
+    "verdict": "fail",
+    "evidence": "The letter breaks a sentence with an inline bullet: 'focus. \u2022 Logistics: process 40 million shipment events daily', producing a malformed fragment."
+   },
+   "15": {
+    "verdict": "pass",
+    "evidence": "The letter opens 'Dear Hiring Manager,' as required when no person is named."
+   },
+   "16": {
+    "verdict": "pass",
+    "evidence": "The extracted letter is about 35 lines and the PDF is reported as 1 page."
+   },
+   "17": {
+    "verdict": "pass",
+    "evidence": "CV headings (Profile, Professional Experience, Education, Languages, Honors and Awards) are in English."
+   },
+   "18": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports cv.pdf as 2 pages and the extract ends with a 2/2 footer."
+   },
+   "19": {
+    "verdict": "pass",
+    "evidence": "Page 1 ends mid-Marlow with a complete bullet and page 2 continues with Marlow bullets before Delft, so no entry title is stranded."
+   },
+   "20": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports cover.pdf as 1 page and the signature 'Alex Fernsby' is present."
+   },
+   "21": {
+    "verdict": "pass",
+    "evidence": "No '(cid:' markers or replacement characters; text and bullets extract normally."
+   },
+   "22": {
+    "verdict": "pass",
+    "evidence": "'alex.fernsby@example.com' and '+1 555 0100' appear as literal text in both CV and letter."
+   },
+   "23": {
+    "verdict": "pass",
+    "evidence": "Order is header, profile, competencies, roles in reverse chronology, then projects, certifications, education and the rest."
+   },
+   "24": {
+    "verdict": "pass",
+    "evidence": "Matches (Airflow, Python, SQL, dbt, Terraform, Docker, GitHub Actions, Kafka) are shown with evidence, and missing AWS/Redshift/dlt/Metaflow/Glue are plainly listed as gaps with no stuffing."
+   }
+  },
+  "overall": 7,
+  "reasons": "Factually accurate throughout, with no invented company claims, a correct 'Dear Hiring Manager' salutation, exact dates and a clean page layout. The letter is weakened by a malformed inline bullet and a gap-focused paragraph that buries its strongest matches instead of highlighting them."
+ }
+}

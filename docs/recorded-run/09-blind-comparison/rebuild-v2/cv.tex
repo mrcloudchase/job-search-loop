@@ -1,0 +1,91 @@
+\documentclass[11pt,a4paper,sans]{moderncv}
+\moderncvstyle{banking}
+\moderncvcolor{blue}
+% Plain-text contact labels, so the text layer reads "Mobile" and not an icon name.
+\moderncvicons{letters}
+
+\usepackage[scale=0.80]{geometry}
+\usepackage{needspace}
+
+% Name and section headings are forced to the moderncv blue; without these they render black.
+\definecolor{cvblue}{rgb}{0.22,0.45,0.70}
+\renewcommand*{\namefont}{\fontsize{26}{28}\mdseries\upshape\color{cvblue}}
+\colorlet{firstnamecolor}{cvblue}
+\colorlet{familynamecolor}{cvblue}
+\colorlet{namecolor}{cvblue}
+\renewcommand*{\sectionstyle}[1]{{\color{cvblue}\sectionfont #1}}
+
+\AtEndPreamble{%
+  \hypersetup{pdfpagemode=UseNone,pdfauthor={Alex Fernsby},pdftitle={Alex Fernsby, CV},colorlinks=false,pdfborder={0 0 0}}}
+
+% A plain bullet, so the text layer holds a bullet and not a symbol-font character.
+\AtBeginDocument{\renewcommand*{\labelitemi}{\textbullet}}
+
+\firstname{Alex}
+\familyname{Fernsby}
+\address{Copenhagen, Denmark}{}{}
+\mobile{+1 555 0100}
+\email{alex.fernsby@example.com}
+\social[github]{afernsby-example}
+\begin{document}
+\makecvtitle
+\section{Profile}
+Data engineer with 7 years of experience building batch and streaming pipelines for retail and logistics companies. Owns shipment-event processing end to end; mentors two junior engineers and leads the weekly data-modelling review.
+
+\section{Core Competencies}
+\begin{itemize}
+\item \textbf{Pipeline engineering}: Python, SQL, Apache Airflow, dbt and Kafka.
+\item \textbf{Data warehouse}: PostgreSQL and BigQuery; partitioning and clustering.
+\item \textbf{Deployments}: Terraform and GitHub Actions; Docker.
+\item \textbf{Data quality}: Great Expectations tests and pipeline alerting.
+\item \textbf{Collaboration}: data contracts, documentation and mentoring.
+\end{itemize}
+
+\section{Professional Experience}
+\cventry{March 2022 - present}{Senior Data Engineer}{Tidewater Logistics}{Copenhagen}{}{}
+\begin{itemize}
+\item Own the shipment-events pipeline end to end in logistics, including real-time Kafka intake: 40 million events per day from Kafka into a PostgreSQL and BigQuery data warehouse, orchestrated with Apache Airflow.
+\item Deliver lower latency for batch data pipelines: cut the nightly delivery-performance mart rebuild from 6 hours to 55 minutes with incremental dbt models.
+\item Mentor two junior engineers and lead the weekly data-modelling review.
+\item Introduced data-quality tests with Great Expectations on 30 core tables; failed loads dropped 70\% in the first quarter.
+\item Moved the team's deployments to GitHub Actions for CI/CD and Terraform; new environments take 20 minutes instead of two days.
+\item Defined technical requirements in the shipment-events data contract with five producing teams, supporting data governance; wrote the pipeline's on-call runbook.
+\item Cut the BigQuery events warehouse bill by 35\% through partitioning and clustering the five largest tables.
+\item Built a Looker explore so operations planners answer delivery-delay questions themselves instead of filing tickets.
+\item Ran interviews for three data-engineering hires and wrote the team's take-home exercise.
+\end{itemize}
+
+\cventry{June 2018 - February 2022}{Data Engineer}{Marlow Retail Group}{Utrecht}{}{}
+\begin{itemize}
+\item Built the company's first Airflow deployment and migrated 45 cron jobs onto it.
+\item Designed a customer-orders star schema in PostgreSQL used by 12 analysts.
+\item Wrote Python ingestion services for partner price feeds over REST and SFTP, handling about 2 million rows a day.
+\item Supported the warehouse migration from on-premise PostgreSQL to BigQuery, validating 60 tables row by row.
+\item Trained 12 analysts on dbt and reviewed their first 40 models.
+\item Added alerting on 45 Airflow jobs so late partner feeds are noticed within 15 minutes instead of the next morning.
+\item Wrote the migration guide for moving reports off the old warehouse, used by four teams.
+\end{itemize}
+\cventry{September 2016 - May 2018}{Junior Analyst}{Delft Energy Cooperative}{Delft}{}{}
+\begin{itemize}
+\item Built automated data solutions with Python and SQL for monthly consumption reports, saving about 3 days each month.
+\item Built a small Flask dashboard used by 25 cooperative members to read their consumption.
+\item Cleaned five years of meter readings with Pandas and documented the resulting 14 data-quality rules.
+\item Presented consumption findings to the cooperative's board twice a year.
+\end{itemize}
+
+\section{Projects}
+\cvitem{}{Open-source dbt package for freight-rate data tests, 120 GitHub stars: \href{https://github.com/afernsby-example/freight-tests}{freight-tests}.}
+\cvitem{2024}{``Data contracts in practice'', Rotterdam Data Meetup talk.}
+\section{Certifications}
+\cvitem{2023}{Google Cloud Professional Data Engineer}
+\cvitem{2022}{dbt Analytics Engineering Certification}
+\section{Education}
+\cventry{2016}{MSc Computer Science (data systems)}{Delft University of Technology}{}{}{}
+\cventry{2014}{BSc Computer Science}{Delft University of Technology}{}{}{}
+\section{Languages}
+\cvitem{}{English: C1; Dutch: native; German: A2.}
+\section{Publications}
+\cvitem{2024}{``Testing freight data with dbt'', Data Engineering Weekly guest post.}
+\section{Honors and Awards}
+\cvitem{2023}{Tidewater Logistics Engineering Excellence Award}
+\end{document}

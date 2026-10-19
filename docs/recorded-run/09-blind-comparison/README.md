@@ -40,3 +40,25 @@ synonyms) would let the letter bridge instead of deny. Not fixed in this round. 
 **Where the original scored lower**, per the scorers: an invented company fact in its letter ("300,000 parcels with CEVA
 Logistics since 2024", in no input), dates cut to years, icon-name artefacts in the CV header text layer ("MOBILE-ALT",
 "Envelope"), a generic salutation variant, an unsupported "GitOps-style" claim on the CV, and a long letter likely to spill.
+
+## Round 2: after fixing what the first round found
+
+The CI/CD-versus-GitHub-Actions weakness was fixed in code (`jobloop/fit.py`: a requirement the profile words differently is backed
+through synonyms the code finds literally in a counted profile line; `docs/parity/B-search-rank.md`), and the application was
+rebuilt from the same candidate and posting: `rebuild-v2/` (recorded transcript, PDFs, review). **Different makers this time, said
+plainly:** the drafter, fit scorer and facts reader were **Codex (OpenAI)** and the reviewer was Claude Code on DeepSeek, because the DeepSeek
+drafter kept missing the CV's page-fill limits (its attempt is `../04-apply-attempts/run14-…`). The original was made with DeepSeek, so round 2 is
+not a same-maker comparison. Same rubric, same two scorers, both orders (`v2-scores-*`):
+
+| Scorer run | Order | Rebuild-v2: pass / fail / na, overall | Original: pass / fail / na, overall |
+|---|---|---|---|
+| `claude-reviewer-deepseek-chat-seed1` | rebuild-v2 first | 21 / 2 / 1, **6/10** | 20 / 4 / 0, **7/10** |
+| `claude-reviewer-deepseek-chat-seed5` | original first | 22 / 2 / 0, **7/10** | 21 / 3 / 0, **7/10** |
+| `codex-seed1` | rebuild-v2 first | 24 / 0 / 0, **8/10** | 18 / 5 / 1, **5/10** |
+| `codex-seed5` | original first | 23 / 1 / 0, **8/10** | 18 / 5 / 1, **6/10** |
+
+Rebuild-v2 is at or above the original on pass count in all four runs and above it on overall in three; in one (`claude-reviewer`, rebuild
+first) it is 6 against 7. The CI/CD gap contradiction no longer appears in any scorer's failures. **What is left where rebuild-v2
+scores lower** is writing quality of the letter (rubric item 14, grammar and awkward phrasing, in 3 of 4 runs; one scorer also says the
+nice-to-have matches are buried in the gap paragraph, item 8). The loop checks structure, grounding, style rules and length, not
+prose quality; a stronger drafter or a prose-reviewer pass would be the place to improve it, and I did not do that here.

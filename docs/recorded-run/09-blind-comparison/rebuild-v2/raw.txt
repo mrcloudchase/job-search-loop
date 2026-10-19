@@ -1,8 +1,0 @@
-
-[1m[36m━━ FACTS · codex ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 00:00 · $0.00[0m
-[2m  resp_9c181816bfb14367 · codex · streaming[0m
-[2m  ! Reading API key from stdin...[0m
-[2m  ! Successfully logged in[0m
-[2m  ! Reading additional input from stdin...[0m
-[2m  ! 2026-10-19T11:13:55.556627Z ERROR codex_models_manager::manager: failed to refresh available models: Connecti…[0m
-[2m  ! 2026-10-19T11:13:55.774566Z ERROR codex_models_manager::manager: failed to refresh available models: Connecti…[0m
