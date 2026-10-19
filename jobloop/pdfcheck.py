@@ -286,12 +286,15 @@ def check_ascii_dates(raw_text: str) -> list[Finding]:
     )]
 
 
-def check_date_pairs(raw_text: str) -> list[Finding]:
+def check_date_pairs(raw_text: str, lone_years_ok: tuple[str, ...] = ()) -> list[Finding]:
     """A line that ends on one lone year (or a year and a dash) is a start with no end: an ATS imports it without an
-    end date. Each role and degree needs a start and an end (or Present)."""
+    end date. Each role and degree needs a start and an end (or Present), EXCEPT a year the person's own profile gives
+    alone (a graduation year): requiring a start year there would make the drafter invent one."""
     findings = []
     for line in raw_text.splitlines():
         text = " ".join(line.split())
+        if any(text.endswith(year) and re.search(rf"[^\d]{year}$", text) for year in lone_years_ok):
+            continue
         if len(re.findall(_YEAR, text)) == 1 and re.search(rf"(?:^|[\s(/])(?:19|20)\d\d\)?(?:\s*[-{DASHES}])?$", text):
             findings.append(Finding(
                 "date-pairs",
@@ -313,6 +316,7 @@ class TextLayerSpec:
     headings: tuple[str, ...]
     required: tuple[str, ...] = ()
     min_chars: int = 400
+    lone_years_ok: tuple[str, ...] = ()       # years the profile gives alone on an entry, such as a graduation year
 
     def __post_init__(self) -> None:
         if self.pages < 1 or not self.name.strip() or not self.email.strip() or not self.headings:
@@ -338,5 +342,5 @@ def verify_cv_text_layer(pdfinfo: str | None, text: str | None, spec: TextLayerS
     findings += check_reading_order(text, spec.name, spec.headings)
     findings += check_required_text(text, spec.required)
     findings += check_ascii_dates(text)
-    findings += check_date_pairs(text)
+    findings += check_date_pairs(text, spec.lone_years_ok)
     return verdict_of(findings, extractor)
