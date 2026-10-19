@@ -264,6 +264,10 @@ def _verdict(verdicts: list[str]) -> str:
     return "FAIL" if "FAIL" in verdicts else "FLAG" if "FLAG" in verdicts else "PASS"
 
 
+AUTHORISATION_WORDS = re.compile(r"authori[sz]|permit|visa|citizen|right to work|eligib|clearance|sponsor|resident|national|passport|"
+                                 r"work in|work within|legally|security check|vetting|background check", re.I)
+
+
 def _agrees(required: str, held: str) -> bool:
     """The profile's held value covers what the posting requires ("EU citizen" within "Dutch, EU citizen")."""
     r, h = flat(required), flat(held)
@@ -482,6 +486,10 @@ def build(data: object, profile: str, posting: str, key: str) -> tuple[Fit | Non
             failures.append(f"eligibility[{i}]: kind is citizenship, work_authorisation, security_clearance, hours or "
                             "start_date; stance requires or welcomes; scope role or company; a requirement has a value. "
                             "Leave out what the posting does not state.")
+        elif (item["kind"] in ("citizenship", "work_authorisation", "security_clearance") and item["stance"] == "requires"
+              and not AUTHORISATION_WORDS.search(item["text"])):
+            failures.append(f"eligibility[{i}]: the quote {item['text']!r} does not talk about {item['kind'].replace('_', ' ')}; "
+                            "quote the sentence that states the requirement, or leave the item out. A location is not a permit requirement.")
     languages = _posting_fields(_items(data, "languages", failures), "languages",
                                 {"language": str, "level": str, "required": bool, "text": str}, posting, failures)
 

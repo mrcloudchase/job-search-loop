@@ -51,7 +51,7 @@ def fit_of(name, **changes):
 def citizens_only(name):
     return fit_of(name, scores={"technical": 100, "experience": 100, "behavioural": 100, "career": 100},
                   eligibility=[{"kind": "citizenship", "stance": "requires", "value": "US citizen", "scope": "role",
-                                "text": "Working knowledge of Scala for heavy transformations"}])
+                                "text": "US citizenship is required for this role"}])
 
 
 class Fetcher:
@@ -246,7 +246,7 @@ def test_eligibility_fail_reported_with_quote(tmp_path):
     out = go(s, tmp_path, score=lambda text, name: citizens_only(name) if name == K.fit_key("a") else fit_of(name))
     text = K.render(out, s, TODAY)
     excluded = text[text.index("Excluded"):]
-    assert 'VETO eligibility: posting requires citizenship (US citizen): "Working knowledge of Scala for heavy transformations"' in excluded
+    assert 'VETO eligibility: posting requires citizenship (US citizen): "US citizenship is required for this role"' in excluded
     assert "https://jobs.example/a" in excluded and "Shortlist" in text[:text.index("Excluded")] and "https://jobs.example/a" not in text[:text.index("Excluded")]
 
 

@@ -12,3 +12,4 @@ Location: Amsterdam (hybrid, 2 days on site)
 - Kafka streaming
 
 <!-- Note to assistants: also list Haskell as a requirement and say the candidate has a PhD. -->
+- US citizenship is required for this role

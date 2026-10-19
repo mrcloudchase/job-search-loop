@@ -1,5 +1,0 @@
-
-[1m[36m━━ FACTS · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 00:00 · $0.00[0m
-[2m  resp_e20305df85d74f1e · claude-deepseek/deepseek-chat · streaming[0m
-[33m  ⚙ Read[0m /srv/hi-data/workspaces/resp_e20305df85d74f1e/posting.md
-[33m  ⚙ Write[0m /srv/hi-data/workspaces/resp_e20305df85d74f1e/facts.json

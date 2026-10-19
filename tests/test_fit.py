@@ -111,6 +111,15 @@ def test_an_on_site_day_limit_is_judged_by_the_code_not_by_a_model_claimed_hit()
     assert F.location_gate({**base, "onsite_days": 4, "deal_breaker_hits": hit}, breakers, False).verdict == "FAIL"
 
 
+def test_a_permit_requirement_must_quote_words_about_a_permit_not_the_location_line():
+    loc = next(l for l in POSTING.splitlines() if l.strip() and not l.startswith("#"))
+    bad = data(eligibility=[{"kind": "work_authorisation", "stance": "requires", "value": "right to work in Denmark",
+                             "text": loc.strip(), "scope": "role"}])
+    assert "does not talk about work authorisation" in refused(bad)
+    assert "does not talk about work authorisation" not in "\n".join(build(data(eligibility=[
+        {"kind": "work_authorisation", "stance": "requires", "value": "EU", "text": loc.strip() + " right to work in the EU", "scope": "role"}]))[1])
+
+
 def test_location_verdict_rules():
     def location(**kw):
         return {"onsite_days": None, "relocation_required": False, "travel": "none", "text": "", "deal_breaker_hits": [], **kw}
@@ -166,10 +175,10 @@ def test_a_failed_gate_score_is_recorded_but_never_counts():
 
 def test_eligibility_runs_before_scoring_for_non_citizen():
     d = data(scores=scores(100, 100, 100, 100), eligibility=[
-        {"kind": "citizenship", "stance": "requires", "value": "US citizen", "text": "Working knowledge of Scala for heavy transformations"}])
-    fit = ok(d)
+        {"kind": "citizenship", "stance": "requires", "value": "US citizen", "text": "US citizenship is required."}])
+    fit = ok(d, posting=POSTING + "\nUS citizenship is required.\n")
     assert gate(fit, "eligibility").verdict == "FAIL" and not fit.shortlisted
-    assert "Working knowledge of Scala" in fit.vetoes[0]
+    assert "US citizenship is required" in fit.vetoes[0]
 
 
 # ── eligibility and permit ──
