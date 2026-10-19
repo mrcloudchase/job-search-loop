@@ -241,6 +241,7 @@ def check(doc: str, sources: Iterable[str], today: date | None = None) -> list[s
                 ok = any(p.endswith(value) for p, *_ in src.phones) and len(value) >= 7
             elif kind == "link":
                 ok = any(l == value or l.startswith(value.rstrip("/") + "/") for l, *_ in src.links)
+                ok = ok or (value.endswith("-") and len(value) >= 12 and any(l.startswith(value) for l, *_ in src.links))   # a PDF wraps a link at its hyphen
             else:
                 ok = value in theirs
             if not ok:

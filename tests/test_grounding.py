@@ -132,6 +132,13 @@ def test_a_pdf_role_heading_may_put_its_employer_on_the_line_below():
     assert any("names no employer" in f for f in check(far))
 
 
+def test_a_link_a_pdf_wrapped_at_its_hyphen_is_grounded_but_a_stranger_is_not():
+    sources = ["Package: github.com/afernsby-example/freight-tests"]
+    assert check("see github.com/afernsby-example/freight- tests", *sources) == []
+    assert check("see github.com/other-person/freight- tests", *sources)
+    assert check("see github.com/a-", *sources)
+
+
 def test_a_letter_may_carry_today_and_nothing_else_new():
     letter = "19 October 2026\nDear Hiring Manager,"
     assert check(letter, today=date(2026, 10, 19)) == []
