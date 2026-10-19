@@ -191,6 +191,7 @@ def _role_lines(text: str, known: tuple[Role, ...]) -> list[str]:
     them (and has no dates of its own) is read as part of the heading."""
     employers = [flat(r.employer) for r in known]
     terms = {flat(v) for r in known for v in (r.title, r.employer, r.city)}
+    titles_and_cities = {flat(v) for r in known for v in (r.title, r.city)}
     lines = text.split("\n")
 
     def neighbour(candidates) -> str | None:
@@ -206,7 +207,9 @@ def _role_lines(text: str, known: tuple[Role, ...]) -> list[str]:
         pos = dates(line)
         if not pos or len(_blank(line, [(f.start, f.end) for f in pos]).split()) > 14:
             continue
-        if len(pos) >= 2 or re.search(rf"\b(?:{PRESENT})\b", line, re.I) or any(e in flat(line) for e in employers):
+        folded = flat(line)
+        names_role = any(e in folded for e in employers) and any(t in folded for t in titles_and_cities)   # an award at an employer is no role
+        if len(pos) >= 2 or re.search(rf"\b(?:{PRESENT})\b", line, re.I) or names_role:
             before, after = neighbour(reversed(lines[:i])), neighbour(lines[i + 1:])
             out.append(" | ".join(p for p in (before, line.rstrip(), after) if p))
     return out

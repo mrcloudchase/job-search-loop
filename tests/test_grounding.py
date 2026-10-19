@@ -153,6 +153,11 @@ def test_a_city_and_a_title_set_side_by_side_are_known_words_but_an_invented_tit
     assert check("Rotterdam Chief Wizard | Tidewater Logistics March 2022 - present")
 
 
+def test_an_award_or_a_project_at_an_employer_is_not_a_role_heading():
+    assert check("2023: Engineering Excellence Award, Tidewater Logistics", "Award 2023") == []
+    assert check("Senior Data Engineer, Tidewater Logistics (Rotterdam)    2021")        # a real heading with a wrong year still fails
+
+
 def test_a_letter_may_carry_today_and_nothing_else_new():
     letter = "19 October 2026\nDear Hiring Manager,"
     assert check(letter, today=date(2026, 10, 19)) == []
