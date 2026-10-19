@@ -78,3 +78,46 @@ guarantees of the original project (`docs/parity.md`, no row `planned`). Harness
 The blind comparison is one application per system, with two scorers that are not a true third harness (only two harness
 families exist here). The rebuild's letter can call a keyword a gap where adjacent evidence exists (a synonym table would fix
 it). The documents-folder and interview profile paths and the `--section` path have offline tests but no recorded live run.
+
+---
+
+# Part 2: rebuilding it as a loop (loop engineering on harness-interface)
+
+The first build (above) was a set of commands a person runs one at a time. The second makes the loop the product: one outer
+loop that takes a candidate through the whole search and stops short of one thing, submitting an application.
+
+## What changed in the design
+- **One loop, 13 stages.** `jobloop/engine/` is the loop (spec, sqlite store, policy, gateway to harness-interface with role
+  ladders and a cost ledger, runner, invariants, digest, judge panels, playbook); `jobloop/stages/` holds one loop spec per
+  stage. The person's surface shrank to 12 commands. Contract: `docs/loop-spec.md`, `docs/loop-stages.md`.
+- **Models judge and improve; code owns facts.** Judge panels of other harness families score postings and drafts; best-of-N
+  drafting picks the best; a planner harness proposes changes to a versioned **playbook** (weights, style rules, queries,
+  strategy) from outcomes, the person's edits, and judge scores; code bounds each change and rolls back a version that makes the
+  tracked metrics worse. Every number, date, employer and link in a document is still checked against the candidate's own sources.
+- **Named terminal states and brakes** (success, no-op, blocked, stalled, exhausted; budget ceiling in dollars and unpriced
+  tokens; no-progress detector; per-item attempt limits) as the loop-engineering write-ups define them
+  (arXiv 2607.00038), and an **escalation ladder**: a stalled item's next attempt runs on the next harness. harness-interface's
+  own `examples/build-loop` was the shape to follow.
+- **Invariants checked from outside the stages** after every action: the loop writes `drafted` and nothing else to the tracker,
+  never edits the profile, never drafts a vetoed posting. A stage that lies about it trips the wire and the pass stops.
+
+## How it was built
+Specification and engine first (me), then 11 builder agents in parallel, one stage each, against a written contract; then a
+whole-loop **simulation** with a role-aware fake harness-interface (offline, ~20 s, 42 scenarios incl. failure injection and a
+SIGKILL mid-pass). **The simulation found 19 real contract mismatches between stages that each passed its own tests**: a
+proposal kind whose accept path could never succeed, a tracker row lost if the process died mid-commit, Ctrl-C swallowed by a
+cost wrapper, a status the snapshot misread, fits that were never matched to applications, prompts that interpolated
+posting-derived text. Then **live runs** on the real boards and harnesses (`docs/recorded-run/10-loop/`), which found two more:
+a third of postings could not be read though search had already returned their text, and a learned style rule that contradicted
+a verification.
+
+## What harness-interface made easy, and what it lacked (additions to Part 1)
+- Easy: role ladders by model string; per-turn `cancel` and streamed cost for brakes; `previous_response_id` for repair rounds;
+  one conversation per drafter so an escalated attempt starts fresh on another harness; widened sandbox egress for one research turn.
+- Lacked: a per-request cost for Codex (the ledger converts unpriced tokens to dollars at a configured rate); concurrent
+  conversations with different network policies (research runs are serialized because the sandbox policy is global); a
+  structured-output channel (every JSON answer is a file the loop validates and sends back).
+
+## Honest limits
+One fictional candidate and a few real passes; the outcome side of self-improvement (interview and offer rates) had no real
+outcomes to learn from. A learned rule can still be wrong in ways code cannot see; the rollback watches metrics, which need volume.
