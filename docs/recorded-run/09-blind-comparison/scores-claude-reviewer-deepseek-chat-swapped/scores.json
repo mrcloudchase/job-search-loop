@@ -1,0 +1,206 @@
+{
+ "X": {
+  "items": {
+   "1": {
+    "verdict": "pass",
+    "evidence": "The CV bullets match the profile's Tidewater, Marlow and Delft entries almost verbatim, and the skills lists, certifications, talk and publication all come from the profile."
+   },
+   "2": {
+    "verdict": "pass",
+    "evidence": "Titles, companies and cities (Senior Data Engineer/Tidewater Logistics/Copenhagen, Data Engineer/Marlow Retail Group/Utrecht, Junior Analyst/Delft Energy Cooperative/Delft) and the years are all correct; the CV drops the months from the profile's dates but does not get any of them wrong."
+   },
+   "3": {
+    "verdict": "pass",
+    "evidence": "alex.fernsby@example.com, +1 555 0100, Copenhagen and the GitHub link all match profile.md."
+   },
+   "4": {
+    "verdict": "fail",
+    "evidence": "The letter states that Parcels has \u201cdelivered 300,000 parcels of surplus food from FMCG manufacturers in the UK with CEVA Logistics since 2024\u201d, and nothing in the posting (which gives only the 443+ million meals and 246,000 partners figures) or the profile supports the parcel count, the UK focus or CEVA."
+   },
+   "5": {
+    "verdict": "pass",
+    "evidence": "The summary is written for this role: it leads with supply-chain pipelines, the shipment-events ownership, and the wish to own a pipeline inside a product team."
+   },
+   "6": {
+    "verdict": "pass",
+    "evidence": "Core Competencies are reframed to the posting's categories (logistics and order data, DataOps and CI/CD, data quality and governance, stakeholder management), and bullets such as the delivery-performance mart and Looker explore lead with logistics relevance."
+   },
+   "7": {
+    "verdict": "pass",
+    "evidence": "All key requirements are addressed; the letter acknowledges that the warehouse depth is BigQuery rather than Redshift and that dlt and Metaflow have not been used in production."
+   },
+   "8": {
+    "verdict": "fail",
+    "evidence": "The letter says it would rather state the gaps plainly (Redshift, dlt, Metaflow), which shows honesty but does not highlight where the candidate matches a nice-to-have; the CV covers them with nothing distinguishing done, for example the Google Cloud Professional Data Engineer certification next to the AWS stack."
+   },
+   "9": {
+    "verdict": "pass",
+    "evidence": "The CV runs to two pages in a banking-style layout (centred name header, Core Competencies, Professional Experience, Education, Projects, Certifications, Languages and so on) with a page number on each page."
+   },
+   "10": {
+    "verdict": "pass",
+    "evidence": "The letter has a name and contact header, date, salutation, opening, body, closing, sign-off and signature."
+   },
+   "11": {
+    "verdict": "pass",
+    "evidence": "Both documents use the same plain, active, result-first tone ('Cut the BigQuery bill ... by 35 percent')."
+   },
+   "12": {
+    "verdict": "pass",
+    "evidence": "The letter repeats the CV's figures (40 million events, 6 hours to 55 minutes, 30 tables, 70 percent, 60 tables) and adds no claim that contradicts the CV."
+   },
+   "13": {
+    "verdict": "fail",
+    "evidence": "Every experience entry in the CV contains a stray line with only '\u25cb' followed by two blank lines, and three blank lines sit below the BSc entry."
+   },
+   "14": {
+    "verdict": "pass",
+    "evidence": "No spelling or grammar errors were found in the CV or the letter."
+   },
+   "15": {
+    "verdict": "fail",
+    "evidence": "The letter opens 'Dear Too Good To Go hiring team,' but the posting names no hiring person, so it should read 'Dear Hiring Manager'."
+   },
+   "16": {
+    "verdict": "pass",
+    "evidence": "The extracted letter is 47 lines, which is one page of text."
+   },
+   "17": {
+    "verdict": "pass",
+    "evidence": "The English headings (Core Competencies, Professional Experience, Education, Languages, Publications) match the English CV."
+   },
+   "18": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports \u201ccv.pdf: 2 pages\u201d and the extraction has two page blocks."
+   },
+   "19": {
+    "verdict": "fail",
+    "evidence": "On page 1 the last element is the Marlow entry title together with the stray '\u25cb' line, with no Marlow bullets following on that page."
+   },
+   "20": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports \u201ccover.pdf: 1 pages\u201d, and the sign-off and signature are in the extracted single-page text."
+   },
+   "21": {
+    "verdict": "pass",
+    "evidence": "The CV text has no '(cid:' markers and no U+FFFD replacement characters in the extraction."
+   },
+   "22": {
+    "verdict": "pass",
+    "evidence": "The CV text layer contains 'alex.fernsby@example.com' and '+1 555 0100' as literal text."
+   },
+   "23": {
+    "verdict": "pass",
+    "evidence": "The extracted order follows the visual order (header, summary, competencies, experience, education, projects, certifications, languages, publications), though the stray '\u25cb' lines break up the entries."
+   },
+   "24": {
+    "verdict": "pass",
+    "evidence": "Airflow, Python, SQL, dbt, Terraform, GitHub Actions, Docker, GitOps-style, logistics and data-quality keywords are present, Redshift and Metaflow are honestly identified as gaps, and nothing appears stuffed."
+   }
+  },
+  "overall": 5,
+  "reasons": "The CV is clean and well targeted, but its layout has broken: stray '\u25cb' lines in every entry, an orphaned Marlow title at the bottom of page 1, and 'Dear Too Good To Go hiring team' where 'Dear Hiring Manager' is required. The letter also invents specifics about Parcels' UK/CEVA deliveries that the posting does not support, so it needs a rewrite, not a proofread."
+ },
+ "Y": {
+  "items": {
+   "1": {
+    "verdict": "pass",
+    "evidence": "Every claim in the CV traces to the profile (the shipment-events pipeline, the 45 cron jobs, 30 Great Expectations tables, the five-team contracts, the certifications and the talk), and the letter adds no unsupported achievement."
+   },
+   "2": {
+    "verdict": "pass",
+    "evidence": "Titles, companies, locations and full dates (March 2022 - present, June 2018 - February 2022, September 2016 - May 2018) match the profile exactly."
+   },
+   "3": {
+    "verdict": "pass",
+    "evidence": "+1 555 0100, alex.fernsby@example.com and Copenhagen match profile.md, and the GitHub handle 'afernsby-example' is consistent with the profile link."
+   },
+   "4": {
+    "verdict": "pass",
+    "evidence": "The letter makes no company-specific claims about Too Good To Go; it only mentions the Parcels domain and the role, which the posting supports."
+   },
+   "5": {
+    "verdict": "pass",
+    "evidence": "The Profile paragraph is tailored to the role (owner of a 40-million-events-a-day shipment pipeline in retail and logistics) but is close to the generic profile summary, so the tailoring sits mainly in the competencies below it."
+   },
+   "6": {
+    "verdict": "pass",
+    "evidence": "Competencies and letter bullets are grouped under the posting's themes (logistics data, orchestration, deployments, data quality, collaboration)."
+   },
+   "7": {
+    "verdict": "fail",
+    "evidence": "The letter names Redshift as the gap and says GitOps, CI/CD, DataOps and stakeholder management are also gaps, but the profile shows demonstrable experience in each of those (GitHub Actions/Terraform, data contracts, mentoring, analyst training), so a real gap is overstated and nothing is said about the AWS/Redshift depth the role needs."
+   },
+   "8": {
+    "verdict": "fail",
+    "evidence": "The letter claims GitOps and CI/CD are gaps even though the profile shows GitHub Actions, Terraform and Git-based deployments, and neither document mentions the GCP Professional Data Engineer certification or the 7 years of modern warehouse experience as a match; no nice-to-have is genuinely highlighted."
+   },
+   "9": {
+    "verdict": "fail",
+    "evidence": "The CV has two pages with standard sections, but the header is a single compact line ('M \u2022 E \u2022 gh' with abbreviations, not full labels), the spacing is irregular and there is no page footer, so it deviates from the banking layout."
+   },
+   "10": {
+    "verdict": "pass",
+    "evidence": "The letter has a header, date, salutation, opening, body, closing line, sign-off and signature."
+   },
+   "11": {
+    "verdict": "pass",
+    "evidence": "Both documents use a factual, modest tone, and the letter refers back to the CV entries."
+   },
+   "12": {
+    "verdict": "fail",
+    "evidence": "The letter says GitOps, CI/CD, DataOps and stakeholder management are gaps, but the CV claims 'GitHub Actions and Terraform for deployments' and a five-team data contract, and the CV's 'strong Docker skills' is the profile's 'Working' level, so the letter and the CV contradict each other."
+   },
+   "13": {
+    "verdict": "pass",
+    "evidence": "No stray LaTeX commands or broken characters appear in the extracted CV or letter text; the 'Post-greSQL' line break is a hyphenation split of PostgreSQL."
+   },
+   "14": {
+    "verdict": "fail",
+    "evidence": "The letter has a grammar error: 'which I support on a migration from on-premise PostgreSQL' should be 'supported'."
+   },
+   "15": {
+    "verdict": "pass",
+    "evidence": "The letter opens with 'Dear Hiring Manager,', as the rubric requires because the posting names no person."
+   },
+   "16": {
+    "verdict": "pass",
+    "evidence": "The extracted letter is 40 lines, which is one page of text."
+   },
+   "17": {
+    "verdict": "pass",
+    "evidence": "The headings (Profile, Core Competencies, Professional Experience, Education, Languages) are in English, matching the English CV."
+   },
+   "18": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports \u201ccv.pdf: 2 pages\u201d and the extraction has two page blocks."
+   },
+   "19": {
+    "verdict": "pass",
+    "evidence": "Both page blocks end at bullet boundaries (page 1 ends with the Marlow migration-guide bullet, page 2 starts with the Delft company title), so no entry title is stranded."
+   },
+   "20": {
+    "verdict": "pass",
+    "evidence": "pages.txt reports \u201ccover.pdf: 1 pages\u201d, and the 'Yours sincerely' sign-off with the signature is in the single-page text."
+   },
+   "21": {
+    "verdict": "pass",
+    "evidence": "The CV text has no '(cid:' markers and no U+FFFD replacement characters."
+   },
+   "22": {
+    "verdict": "pass",
+    "evidence": "The CV text layer contains '+1 555 0100' and 'alex.fernsby@example.com' as literal text."
+   },
+   "23": {
+    "verdict": "pass",
+    "evidence": "The extraction reads top to bottom in visual order (header, profile, competencies, experience, education, languages, projects, certifications, publications, awards)."
+   },
+   "24": {
+    "verdict": "fail",
+    "evidence": "Redshift, GitOps, CI/CD, DataOps and AWS (as well as dlt and Metaflow) are never mentioned anywhere in the CV, so genuine gaps are not visible to the reader, although nothing is stuffed."
+   }
+  },
+  "overall": 6,
+  "reasons": "The CV is the cleaner of the two: the dates are accurate, no title is orphaned at a page break, it avoids the stray artefacts, and its letter is addressed correctly and makes no invented company claims. It loses points because the letter wrongly calls CI/CD, GitOps, DataOps and stakeholder management gaps that the profile and CV demonstrate, contradicts the CV on that point, includes a grammar error, and never shows which of the required terms (Redshift, AWS) it lacks."
+ }
+}

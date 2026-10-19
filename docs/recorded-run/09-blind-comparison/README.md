@@ -17,12 +17,14 @@ order**, as text extracted from the PDFs plus page counts and nothing else, with
 key (`key.json`) is written only after the scorer has answered. The scorer must answer every item for both, with evidence;
 the loop checks the shape. Two scorers, each shuffled independently:
 
-| Scorer (harness) | Rebuild: pass / fail / na, overall | Original: pass / fail / na, overall |
-|---|---|---|
-| `claude-reviewer` (Claude Code on DeepSeek), `scores-claude-reviewer-deepseek-chat/` | 23 / 0 / 1, **8/10** | 19 / 5 / 0, **5/10** |
-| `codex` (OpenAI), `scores-codex/` | 20 / 4 / 0, **7/10** | 19 / 4 / 1, **6/10** |
+| Scorer run (folder `scores-…`) | Order | Rebuild: pass / fail / na, overall | Original: pass / fail / na, overall |
+|---|---|---|---|
+| `claude-reviewer-deepseek-chat` | rebuild shown first (X) | 23 / 0 / 1, **8/10** | 19 / 5 / 0, **5/10** |
+| `claude-reviewer-deepseek-chat-swapped` | original shown first (X) | 18 / 6 / 0, **6/10** | 19 / 5 / 0, **5/10** |
+| `codex` | rebuild shown first (X) | 20 / 4 / 0, **7/10** | 19 / 4 / 1, **6/10** |
+| `codex-swapped` | original shown first (X) | 20 / 3 / 1, **7/10** | 18 / 4 / 2, **6/10** |
 
-**Read this honestly.** One application per system, one scorer run each: it is a small, noisy comparison. Only two harness
+**Read this honestly.** The rebuild's overall score is at or above the original's in all four runs, but the margin is small and noisy: the same scorer gave the rebuild 8 and then 6 when the order flipped. One application per system: it is a small comparison. Only two harness
 families exist on this machine, so there was no truly third harness: the DeepSeek scorer is the same family as the maker of
 both documents, and the OpenAI scorer reviewed (but did not draft) the rebuild's letter during its own run. The scorers have no
 web access, so rubric item 4 (verified company claims) is judged on plausibility only. Where the scorers disagreed with each
