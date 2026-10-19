@@ -137,6 +137,8 @@ Location: Zwolle (hybrid, 2 days on site)
 """
 for _key in ("sim9", "sim10", "sim11"):
     POSTING_TEXT[_key] = POSTING_TEXT["sim8"].replace("Fjord Data", SPECS[_key][0])
+SPECS["sim12"] = ("Brightwell Analytics", "Senior Data Engineer", "https://www.jobindex.dk/jobannonce/sim12")
+POSTING_TEXT["sim12"] = (FIX / "fit" / "posting.md").read_text()            # the fit fixture itself: an HTML-comment injection and a citizenship veto
 POSTING_TEXT["sim6"] = """# Data Engineer, Sketch Works (fictional posting, for tests)
 
 Location: Haarlem (hybrid, 2 days on site)
@@ -255,11 +257,15 @@ class Injection:
     hits: int = 0
 
 
+SERVERS: list["LoopServer"] = []            # every server a test made: the autouse check in test_loop_sim.py looks at all their requests
+
+
 class LoopServer(FakeServer):
     """The harness-interface server every role of the loop talks to."""
 
     def __init__(self):
         super().__init__([])
+        SERVERS.append(self)
         self.roles: list[str] = []
         self.injections: list[Injection] = []
         self.sandbox: dict[str, list[str]] = {"research": []}

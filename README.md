@@ -41,6 +41,7 @@ jobloop queue show <key>            # an application ready for you: link, PDFs, 
 jobloop tracker set <key> applied   # after YOU submitted it: the loop takes over (follow-ups, interviews, offers)
 jobloop stage <key> technical ...   # log an interview stage; offers: put the terms in me/offers/<key>.md
 jobloop proposals list|accept|reject    # what only you can decide (profile additions, stale applications, new boards)
+jobloop search boards enable NAME   # switch a board on (the loop never does); `jobloop mock <key>` rehearses an interview
 jobloop playbook show|rollback          # what the loop has learned about your search
 ```
 

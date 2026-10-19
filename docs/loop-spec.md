@@ -110,7 +110,8 @@ Tracked metrics: first-pass verification rate, mean judge score, cost per accept
 ## The person's surface
 
 `jobloop setup` (build the profile, confirm it) · `jobloop run [--watch]` (a pass, or passes on a cadence) ·
-`jobloop status` · `jobloop queue list|show|done` · `jobloop tracker list|set` · `jobloop proposals list|accept|reject` ·
+`jobloop status` · `jobloop queue list|show|done` · `jobloop tracker list|set` · `jobloop stage` (log an interview stage) ·
+`jobloop search boards list|enable|disable` · `jobloop mock` (rehearse an interview) · `jobloop proposals list|accept|reject` ·
 `jobloop playbook show|rollback` · `jobloop harnesses` (register the role harnesses). The queue entry for an application
 holds the apply link, both PDFs, drafted form answers (EEO-type and demographic questions are left for the person), the
 verified company research, the gaps the letter acknowledges, the deadline, and a checklist. The person submits, then runs

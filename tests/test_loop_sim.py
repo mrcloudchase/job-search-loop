@@ -26,6 +26,22 @@ def loop(tmp_path, monkeypatch):
     return S.Loop(tmp_path, monkeypatch)
 
 
+@pytest.fixture(autouse=True)
+def every_request_of_every_simulation_obeys_the_rules():
+    """Whatever a scenario does, across ALL the requests it made: the research harness never receives profile text, the gateway is the
+    only door (every model is a harness on a configured ladder), and nothing a posting hid in a comment ever left the host."""
+    S.SERVERS.clear()
+    yield
+    ladders = {h for ladder in S.cfgmod.DEFAULT_LADDERS.values() for h in ladder}
+    for server in S.SERVERS:
+        for body, role in zip(server.requests, server.roles):
+            text = json.dumps(body)
+            if role in ("research", "resources", "enrich") or body["model"] == S.RESEARCHER:
+                assert not [m for m in S.PROFILE_MARKERS if m in text], (role, text[:200])
+            assert body["model"] in ladders, body["model"]
+            assert S.HOSTILE_COMMENT_MARK not in text
+
+
 def profile_unchanged(loop) -> bool:
     return (loop.me / "profile.md").read_bytes() == loop.profile_bytes
 
@@ -38,10 +54,6 @@ def state_of(loop, posting: str) -> str:
     with loop.store() as store:
         snap = snapshot.take(loop.me, store, loop.cfg, loop.clock())
         return snap.state_of(posting)
-
-
-def requests_text(server, role: str | None = None) -> list[str]:
-    return [json.dumps(b) for b, r in zip(server.requests, server.roles) if role in (None, r)]
 
 
 def cli_out(capsys, *argv) -> tuple[int, str]:
@@ -161,6 +173,7 @@ def test_the_loop_learns_from_an_edit_and_rolls_back_a_playbook_that_makes_thing
         pending = [p for p in store.proposals("pending") if p["kind"] == "profile_fact"]
         learned = [json.loads(e["data"]) for e in store.events("learn")]
     assert versions == {1: "superseded", 2: "active"} and learned[0]["version"] == 2
+    assert "## What the loop changed about itself" in loop.digest() and "playbook v2 applied" in loop.digest()
     rule = "Lead with the result and keep every paragraph short."
     assert (loop.me / "playbook" / "v0002" / "style.md").read_text().strip() == f"- {rule}"
     # the next draft under the new playbook carries the rule in the drafter's brief; the first drafts never had it
@@ -837,3 +850,50 @@ def test_attempt_limits_count_failures_since_the_last_success(tmp_path):
             store.record_attempt(1, "probe", "*", "", "", stamp(n), stamp(n), terminal, 0, 0, ["it failed"], [])
         assert policy.allowed(action, spec, store, S.START + timedelta(hours=4, minutes=30))[0] is False       # one failure: rests the 6 hour backoff
         assert policy.allowed(action, spec, store, S.START + timedelta(hours=10, minutes=30))[0] is True        # ... and not the 24 hours three old failures would earn
+
+
+def test_a_recovered_item_starts_again_from_the_top_of_its_ladder(tmp_path):
+    from jobloop.engine.gateway import Gateway, Ledger
+    from jobloop.engine.store import Store
+    cfg = S.cfgmod.Config().validate()
+    with Store(tmp_path) as store:
+        gateway = Gateway(cfg, store, Ledger(cfg), tmp_path)
+        record = lambda terminal: store.record_attempt(1, "draft", "k", "", "", S.START.isoformat(), S.START.isoformat(), terminal, 0, 0, [], [])
+        assert gateway.harness("drafter", "draft", "k") == S.DEEPSEEK
+        record("stalled")
+        assert gateway.harness("drafter", "draft", "k") == S.CODEX
+        record("success")
+        assert gateway.harness("drafter", "draft", "k") == S.DEEPSEEK
+
+
+def test_the_fit_fixture_posting_is_vetoed_by_its_citizenship_line_and_its_hidden_comment_goes_nowhere(tmp_path, monkeypatch):
+    loop = S.Loop(tmp_path, monkeypatch, posting_keys=("sim12",))
+    loop.run_pass()
+    assert state_of(loop, "sim12") == "vetoed" and statuses(loop) == {} and not (loop.me / "research").exists()
+    fit = json.loads(next((loop.me / "fit").glob("sim12-*.json")).read_text())
+    assert fit["shortlisted"] is False and any("citizenship" in v and "Dutch" in v for v in fit["vetoes"])
+    sent = "\n".join(json.dumps(b) for b in loop.server.requests)
+    assert "Haskell" not in sent and "PhD" not in sent and "Note to assistants" not in sent
+    assert [a["stage"] for a in loop.attempts("draft")] == [] and "vetoed 1" in cli_out_text(loop)
+
+
+def cli_out_text(loop) -> str:
+    import io
+    from contextlib import redirect_stdout
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        cli.main(["status", "--me", str(loop.me)])
+    return buffer.getvalue()
+
+
+def test_a_standing_question_file_in_loop_json_is_answered_for_every_application(tmp_path, monkeypatch):
+    loop = S.Loop(tmp_path, monkeypatch, posting_keys=("sim2",), questions=False, config={"form_questions": "questions.json"})
+    (loop.me / "questions.json").write_text(json.dumps({"employer": "Any employer", "questions": [
+        {"id": "why", "question": "Why this role?", "limit": 400, "unit": "characters"},
+        {"id": "dob", "question": "What is your date of birth?"}]}))
+    loop.run_pass()
+    text = (loop.me / "queue" / K2 / "form-answers.txt").read_text()
+    assert "Apache Airflow" in text and "FOR YOU: What is your date of birth?" in text
+    asked = [b for b in loop.server.seen("forms")]
+    assert len(asked) == 1 and "date of birth" not in json.dumps(asked[0])                 # a personal question never reaches a model
+    assert loop.queue(K2)[K2]["status"] == "ready"
