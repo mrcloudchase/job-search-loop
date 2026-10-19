@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -404,3 +405,15 @@ def test_both_entry_paths_use_same_recording_code():
     callers = {p.name for p in root.rglob("*.py") if "record_drafted(" in p.read_text() and p.name != "tracker.py"}
     assert callers == {"apply.py"}                                       # search and the board scrapers never record an application
     assert not any("tracker" in p.read_text() for p in (root / "boards").glob("*.py"))
+
+
+def test_synonym_findings_are_sent_to_the_drafter_in_the_revise_turn(tmp_path):
+    env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}])
+    plain = env.app.deps.verify
+
+    def with_finding(cv, cover, ctx, **kw):
+        return replace(plain(cv, cover, ctx, **kw), findings=('"Airflow" appears only as "workflow scheduler" on the CV: use the posting\'s own term where it is true',))
+    env.app.deps.verify = with_finding
+    assert env.app.execute() == 0
+    revise = env.server.requests[2]
+    assert revise["previous_response_id"] == "resp_1" and "use the posting's own term where it is true" in revise["input"][0]["text"]

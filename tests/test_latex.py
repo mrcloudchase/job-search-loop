@@ -168,7 +168,7 @@ def test_a_competency_list_outside_five_to_seven_is_refused():
     assert latex.cv_rules(_doc("\\begin{itemize}\n\\item plain\n\\item plain\n\\end{itemize}")) == []       # ordinary bullets are not counted
 
 
-def test_non_english_cv_headings_and_references_are_translated():
+def test_non_english_cv_headings_are_translated():
     english = _doc("\\section{Profile}\n\\section{Professional Experience}\n\\section{Education}")
     assert latex.cv_rules(english, "en") == []
     found = latex.cv_rules(english, "da")

@@ -306,3 +306,15 @@ def test_urls_inside_posting_body_never_fetched():
     assert isinstance(got, F.Fetched)
     assert {host for host, _, _ in site.seen} == {"jobs.fjordline.example"}          # only the person's own URL was requested
     assert not [1 for _, path, _ in site.seen if "apply" in path or "more" in path]
+
+
+def test_disabled_board_still_verifies_host():
+    from jobloop import boards
+    from jobloop.guards import hosts
+    off = [name for name in boards.BUILT_IN if not boards.load(name).DEFAULT_ENABLED]
+    assert off                                                              # the shipped boards include ones that are off by default
+    installed = F.installed_hosts()
+    for name in off:
+        for host in boards.load(name).HOSTS:
+            assert hosts.classify(f"https://{host.removeprefix('www.')}/job/1", installed).kind == "portal", name
+    assert hosts.classify("https://jobindex.dk.evil.example/job/1", installed).kind == "unverified"
