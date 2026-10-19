@@ -188,12 +188,16 @@ def _parts(line: str, pos: list[Found]) -> list[str]:
 def _role_lines(text: str, known: tuple[Role, ...]) -> list[str]:
     """Short lines that carry a period and look like a role heading: a range, a present, or a known employer."""
     employers = [flat(r.employer) for r in known]
-    out = []
-    for line in text.split("\n"):
+    out, lines = [], text.split("\n")
+    for i, line in enumerate(lines):
         pos = dates(line)
         if not pos or len(_blank(line, [(f.start, f.end) for f in pos]).split()) > 14:
             continue
         if len(pos) >= 2 or re.search(rf"\b(?:{PRESENT})\b", line, re.I) or any(e in flat(line) for e in employers):
+            nxt = next((l for l in lines[i + 1:] if l.strip()), "")
+            if not any(e in flat(line) for e in employers) and not dates(nxt) and len(nxt.split()) <= 8 \
+                    and any(e in flat(nxt) for e in employers):
+                line = f"{line.rstrip()} | {nxt.strip()}"     # a PDF's title and dates line, then the employer's line below it
             out.append(line)
     return out
 

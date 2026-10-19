@@ -16,17 +16,33 @@ companies. Strongest in Python, SQL and Apache Airflow.
   BigQuery warehouse, orchestrated with Apache Airflow.
 - Cut the nightly rebuild of the delivery-performance mart from 6 hours to 55 minutes with incremental dbt models.
 - Mentors two junior engineers; leads the weekly data-modelling review.
+- Introduced data-quality tests with Great Expectations on 30 core tables; failed loads dropped 70 percent in the first quarter.
+- Moved the team's deployments to GitHub Actions and Terraform, so a new environment takes 20 minutes instead of two days.
+- Defined the shipment-events data contract with five producing teams and wrote the on-call runbook for the pipeline.
 
 ### Data Engineer, Marlow Retail Group (Utrecht), June 2018 - February 2022
 - Built the first Airflow deployment at the company and migrated 45 cron jobs onto it.
 - Designed a customer-orders star schema in PostgreSQL used by 12 analysts.
+- Wrote Python ingestion services for partner price feeds (REST and SFTP), handling about 2 million rows a day.
+- Supported the move of the warehouse from on-premise PostgreSQL to BigQuery, validating 60 tables row by row.
+- Trained 12 analysts on dbt and reviewed their first 40 models.
 
 ### Junior Analyst, Delft Energy Cooperative (Delft), September 2016 - May 2018
 - Automated monthly consumption reports with Python and SQL, saving the team about 3 days each month.
+- Built a small Flask dashboard that 25 cooperative members used to read their own consumption.
+- Cleaned five years of meter readings with Pandas and documented the 14 data-quality rules that came out of it.
 
 ## Education
 - MSc Computer Science (data systems), Delft University of Technology, 2016
 - BSc Computer Science, Delft University of Technology, 2014
+
+## Projects
+- Open-source dbt package for freight-rate data tests, 120 GitHub stars, github.com/afernsby-example/freight-tests
+- Talk "Data contracts in practice", Rotterdam Data Meetup, 2024
+
+## Certifications
+- Google Cloud Professional Data Engineer, 2023
+- dbt Analytics Engineering Certification, 2022
 
 ## Skills
 - Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, BigQuery, Docker
