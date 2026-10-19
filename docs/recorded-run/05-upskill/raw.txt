@@ -126,3 +126,13 @@
 [33m  ⚙ WebFetch[0m 
 [33m  ⚙ WebFetch[0m 
 [33m  ⚙ WebFetch[0m 
+  [{"name": "DataOps Manifesto (official site)", "url": "https://dataopsmanifesto.org/en/", "reason": "Primary …
+[1m  completed[0m · 25.351s · $0.104
+[1m  verify:[0m [31m1 failing[0m
+[31m    ✗ The answer must be ONLY a JSON array. It was not valid JSON.[0m
+
+[1m[36m━━ FORMAT 1/2 · claude-research/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 02:33 · $0.66[0m
+[2m  resp_558838e8eee746b9 · claude-research/deepseek-chat · streaming[0m
+  [{"name": "DataOps Manifesto (official site)", "url": "https://dataopsmanifesto.org/en/", "reason": "Primary …
+[1m  completed[0m · 5.971s · $0.058
+[1m  verify:[0m [32mall checks pass[0m
