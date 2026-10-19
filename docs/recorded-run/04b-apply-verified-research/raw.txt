@@ -184,3 +184,10 @@ Recommendation: Consider carefully with the candidate before applying.
 [33m  ⚙ Bash[0m cd /tmp/falck && for slug in "annual-report-falck-raises-earnings-expectations-for-2026" "peter-bason-joins-f…
 [33m  ⚙ Bash[0m cd /tmp/falck && python3 x.py ambulance.html executive-management.html sustainability.html 2>&1 | head -c 9000
 [33m  ⚙ Bash[0m cd /tmp/falck && python3 x.py falck-purchases-option-for-first-ja1-pulse-aircraft-from-jump-aero-in-californi…
+  [{"claim": "Falck describes itself as a global market leader in emergency response and healthcare services.",…
+[1m  completed[0m · 76.846s · $0.415
+[1m  verify:[0m [31m1 failing[0m
+[31m    ✗ At most 30 claims; there were 37. Keep the most useful.[0m
+
+[1m[36m━━ FORMAT 1/2 · claude-research/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 02:27 · $0.49[0m
+[2m  resp_c0f34dcaa76b4751 · claude-research/deepseek-chat · streaming[0m
