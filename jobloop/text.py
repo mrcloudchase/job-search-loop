@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import sys
 import unicodedata
 
 
@@ -26,3 +27,12 @@ def numbers(text: str) -> set[str]:
 
 def slug(text: str, width: int) -> str:
     return re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower()).strip("-")[:width].strip("-")
+
+
+def utf8_io() -> None:
+    """Make every stream a tool prints on or reads from UTF-8, whatever the host's default encoding is, so a Cyrillic company,
+    a CJK file name or a Polish line never crashes a command. Unencodable output is replaced, never raised."""
+    for stream in (sys.stdout, sys.stderr, sys.stdin):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="strict" if stream is sys.stdin else "replace")

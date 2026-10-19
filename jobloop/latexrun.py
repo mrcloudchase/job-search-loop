@@ -17,6 +17,8 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import layout, pdfcheck
+
 DEFAULT_IMAGE = "job-search-check:2"
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 ENGINES = ("lualatex", "xelatex", "pdflatex")
@@ -166,10 +168,35 @@ class Documents:
     cover: Rendered
 
 
+# The tool runs, as source so they run inside the container and the tests can run them too. Nothing is extracted from a
+# path that is not a file; a tool that is missing or exits non-zero is "could not read the PDF" with its own words (stderr,
+# else stdout, else "command failed"), never a traceback; every output is decoded as UTF-8 with replacement.
+_TOOLS = r'''
+def run_tools(pdf, commands, out):
+    if not os.path.isfile(pdf):
+        out["tool_errors"].append("pdf: " + pdf + " is not a file, so nothing was extracted")
+        return
+    for key, argv in commands.items():
+        argv = [pdf if part == "{pdf}" else part for part in argv]
+        try:
+            done = subprocess.run(argv, stdin=subprocess.DEVNULL, capture_output=True, timeout=60)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            out["tools"][key] = ""
+            out["tool_errors"].append(key + ": could not read the PDF: " + argv[0] + " did not run (" + type(error).__name__ + ")")
+            continue
+        out["tools"][key] = done.stdout.decode("utf-8", "replace")
+        if done.returncode != 0:
+            detail = (done.stderr.decode("utf-8", "replace").strip() or done.stdout.decode("utf-8", "replace").strip()
+                      or "command failed")
+            out["tools"][key] = ""
+            out["tool_errors"].append(key + ": could not read the PDF: " + detail)
+'''
+
 # Runs inside the container: compile (two passes) or just inspect, then print one JSON object. The font indexes built
 # into the image are copied to a writable home first, because lualatex needs to write beside them.
 _INNER = r'''
 import base64, json, os, shutil, subprocess, sys
+''' + _TOOLS + r'''
 spec = json.loads(sys.argv[1])
 shutil.copytree("/in", "/work", dirs_exist_ok=True)
 for kept in (".texlive2022", ".cache"):
@@ -193,17 +220,19 @@ if spec["mode"] == "compile":
     if os.path.exists(logfile):
         out["log"] = open(logfile, encoding="utf-8", errors="replace").read()
     out["ok"] = ok and os.path.exists(pdf)
-if os.path.exists(pdf):
+if os.path.isfile(pdf):
     out["pdf"] = base64.b64encode(open(pdf, "rb").read()).decode()
-    for key, argv in (("pdfinfo", ["pdfinfo", pdf]), ("text", ["pdftotext", pdf, "-"]),
-                      ("text_raw", ["pdftotext", "-raw", pdf, "-"]), ("bbox", ["pdftotext", "-bbox-layout", pdf, "-"]),
-                      ("fonts", ["pdffonts", pdf])):
-        done = subprocess.run(argv, stdin=subprocess.DEVNULL, capture_output=True, timeout=60)
-        out["tools"][key] = done.stdout.decode("utf-8", "replace")
-        if done.returncode != 0:
-            out["tool_errors"].append(argv[0] + ": " + done.stderr.decode("utf-8", "replace").strip())
+if spec["mode"] == "inspect" or out["ok"]:
+    run_tools(pdf, spec["tools"], out)
 print(json.dumps(out))
 '''
+
+
+def tool_commands() -> dict[str, list[str]]:
+    """The extraction commands, in the order they run (the page count first), built from the argv the checks pin."""
+    return {"pdfinfo": [*pdfcheck.PDFINFO_ARGV, "{pdf}"], "text": [*pdfcheck.TEXT_ARGV, "{pdf}", "-"],
+            "text_raw": ["pdftotext", "-raw", "-enc", "UTF-8", "{pdf}", "-"], "bbox": [*layout.BBOX_ARGV, "{pdf}", "-"],
+            "fonts": ["pdffonts", "{pdf}"]}
 
 
 def docker_argv(image: str, indir: Path, name: str, spec: dict) -> list[str]:
@@ -258,7 +287,8 @@ def compile_one(source_text: str, template: Template, stem: str, image: str, tim
     if source in files:
         raise TemplateError(f"template {template.name} ships a file named {source}, which is the document's own name")
     files[source] = source_text.encode("utf-8")
-    spec = {"mode": "compile", "argv": compile_argv(template.compile, source), "pdf": stem + ".pdf", "timeout": timeout}
+    spec = {"mode": "compile", "argv": compile_argv(template.compile, source), "pdf": stem + ".pdf", "timeout": timeout,
+            "tools": tool_commands()}
     return _run(image, files, spec, stem, timeout)
 
 
@@ -287,5 +317,5 @@ def verify_template(template: Template, image: str = DEFAULT_IMAGE, *, timeout: 
 
 def inspect_pdf(pdf: bytes, image: str = DEFAULT_IMAGE, *, timeout: int = 60) -> Rendered:
     """Run just the tools (pdfinfo, pdftotext, bbox) on an existing PDF, in the same confinement."""
-    spec = {"mode": "inspect", "pdf": "doc.pdf", "timeout": timeout}
+    spec = {"mode": "inspect", "pdf": "doc.pdf", "timeout": timeout, "tools": tool_commands()}
     return _run(image, {"doc.pdf": pdf}, spec, "doc", timeout)

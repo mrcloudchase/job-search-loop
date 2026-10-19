@@ -81,10 +81,13 @@ class Client:
         return self._gate.allowed(url)
 
     def get(self, url: str, *, params: dict | None = None, headers: dict | None = None, html: bool = False) -> httpx.Response:
-        """A GET with backoff. `html=True` marks a page that is scraped rather than an API, so robots.txt is checked first.
+        """A GET with backoff. `html=True` marks a page that is scraped rather than an API, so robots.txt is checked first and the request asks for HTML
+        (`Accept: text/html,*/*;q=0.8`, unless the caller sets its own Accept).
         The response's `request.url` is where the redirects ended."""
         if html and not self.allowed(str(httpx.URL(url, params=params)) if params else url):
             raise BoardError("robots", f"robots.txt does not allow {self.board} to fetch {url[:100]}")
+        if html:
+            headers = {"Accept": "text/html,*/*;q=0.8", **(headers or {})}
         return self._send(url, params, headers, None)
 
     def post_json(self, url: str, body: dict, *, headers: dict | None = None) -> httpx.Response:

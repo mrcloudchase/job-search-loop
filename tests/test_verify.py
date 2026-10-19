@@ -158,3 +158,53 @@ def test_a_phrase_missing_from_one_extractor_is_found_in_the_other():
     assert "dbt" in failing(judge(docs(cv=CV.replace("dbt", "d b t"))))
     stuffed = latexrun.Documents(cv=replace(one.cv, text_raw=CV + "\nScala"), cover=one.cover)
     assert "Scala" in failing(judge(stuffed))
+
+
+def test_the_text_layer_is_dumped_raw_before_any_check_so_a_failed_run_leaves_it(tmp_path):
+    en_dash = CV.replace("June 2018 - February 2022", "June 2018 \u2013 February 2022")
+    result = judge(docs(cv=en_dash), ctx=replace(CTX, dump_dir=tmp_path / "deep" / "dumps"))
+    assert not result.passed and any("U+2013" in f for f in result.failures)                  # the checks failed ...
+    dump = (tmp_path / "deep" / "dumps" / "cv.txt").read_text()
+    assert "June 2018 \u2013 February 2022" in dump                                           # ... and the dump is the raw layer
+    assert dump.endswith("\n") and not dump.endswith("\n\n") and (tmp_path / "deep" / "dumps" / "cover.txt").read_text() == LETTER.rstrip("\n") + "\n"
+
+
+def test_a_dump_that_cannot_be_written_is_a_failure_naming_the_path_not_a_crash(tmp_path):
+    blocker = tmp_path / "file"
+    blocker.write_text("x")
+    result = judge(ctx=replace(CTX, dump_dir=blocker / "dumps"))
+    assert any(f"{blocker / 'dumps' / 'cv.txt'} could not be written" in f for f in result.failures)
+    assert verify.write_dump(tmp_path, "ok", "no newline") is None and (tmp_path / "ok.txt").read_text() == "no newline\n"
+
+
+def test_a_tool_that_could_not_read_the_pdf_stops_the_checks_with_its_message():
+    broken = rendered("cv", "", 2)
+    broken = replace(broken, pdfinfo="", tool_errors=("pdfinfo: could not read the PDF: Syntax Error: bad xref",))
+    result = judge(latexrun.Documents(cv=broken, cover=rendered("cover", LETTER, 1)))
+    assert result.failures == ("cv.pdf: pdfinfo: could not read the PDF: Syntax Error: bad xref",) and not result.passed
+    assert dict(result.checks) == {"compile": True, "PDF read": False}                       # nothing is guessed from empty text
+    fonts_only = replace(rendered("cv", CV, 2), tool_errors=("fonts: could not read the PDF: command failed",))
+    assert judge(latexrun.Documents(cv=fonts_only, cover=rendered("cover", LETTER, 1))).passed  # a lost font list is not a lost text layer
+
+
+def test_a_missing_pdf_is_a_verification_error_before_any_check():
+    gone = replace(rendered("cv", "", 2), pdf=None, tool_errors=("pdf: cv.pdf is not a file, so nothing was extracted",))
+    result = judge(latexrun.Documents(cv=gone, cover=rendered("cover", LETTER, 1)))
+    assert not result.passed and "cv.pdf: pdf: cv.pdf is not a file" in failing(result) and "PDF read" in dict(result.checks)
+
+
+def test_the_page_count_is_checked_before_the_layout_and_the_layout_runs_for_both_documents(monkeypatch):
+    seen = []
+    monkeypatch.setattr(verify.layout, "verify_layout", lambda bbox, profile: seen.append(bbox) or verify.pdfcheck.verdict_of([], "x"))
+    both = latexrun.Documents(cv=rendered("cv", CV, 2, bbox="<cv-bbox>"), cover=rendered("cover", LETTER, 1, bbox="<cover-bbox>"))
+    result = judge(both)
+    assert seen == ["<cv-bbox>", "<cover-bbox>"]
+    labels = [label for label, _ in result.checks]
+    assert labels.index("CV page count and ATS text layer") < labels.index("letter page count") < labels.index("page layout")
+
+
+def test_coverage_scored_on_extraction_not_source():
+    source_has_it = CV_TEX + "% dbt, Airflow\n"                                       # the LaTeX source names the terms
+    extracted = CV.replace("dbt", "d b t")                                             # the PDF text layer lost one of them
+    result = judge(docs(cv=extracted), cv_tex=source_has_it)
+    assert any("dbt" in f for f in result.failures)                                    # the missing term is judged on the extraction

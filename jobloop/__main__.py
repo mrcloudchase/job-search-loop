@@ -5,6 +5,8 @@ import argparse
 import importlib
 import sys
 
+from .text import utf8_io
+
 COMMANDS = {"profile": "build the profile", "queries": "plan search queries", "search": "search the boards",
             "rank": "fetch, score and rank postings", "fit": "score one posting against the profile",
             "apply": "draft and verify a CV and cover letter", "forms": "draft application-form answers",
@@ -16,6 +18,7 @@ COMMANDS = {"profile": "build the profile", "queries": "plan search queries", "s
 
 
 def main(argv: list[str] | None = None) -> int:
+    utf8_io()
     parser = argparse.ArgumentParser(prog="jobloop", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     modules = {}

@@ -464,6 +464,11 @@ def build(data: object, profile: str, posting: str, key: str) -> tuple[Fit | Non
     requirements = _requirements(_items(data, "requirements", failures), profile, posting, failures)
     strengths = _lines(data, "strengths", [r.term for r in requirements if r.backed], failures)
     gaps = _lines(data, "gaps", [r.term for r in requirements if not r.backed], failures)
+    if not failures and any(not r.backed for r in requirements) and not gaps:
+        failures.append("gaps is empty but a requirement is a gap: state every gap honestly, naming it.")
+    if not failures and not any(r.backed for r in requirements) and data["scores"]["technical"] > 39:
+        failures.append("no requirement is backed by the profile, so technical is a fundamental mismatch (0-39), "
+                        f"not {data['scores']['technical']}.")
 
     eligibility = _posting_fields(_items(data, "eligibility", failures), "eligibility",
                                   {"kind": str, "stance": str, "value": str, "text": str}, posting, failures)
@@ -535,6 +540,8 @@ gate verdict itself from your facts; do not report them.
   "location": {{"onsite_days": n or null, "relocation_required": true|false, "travel": "none"|"occasional"|"frequent",
       "text": "posting's words", "deal_breaker_hits": [{{"deal_breaker": "one of profile.md's deal-breakers, verbatim",
       "text": "posting's words"}}]}}
+- Be honest: state every gap (a requirement the profile does not back must have a gap entry), and if the profile backs
+  none of the posting's requirements, technical is 0-39 however prestigious the employer.
 - Every "text" is the posting's visible words, copied exactly.
 - The loop checks the file after every turn and sends back whatever fails. Write fit.json and nothing else."""
 

@@ -195,6 +195,25 @@ def cv_rules(tex: str, language: str = "en") -> list[str]:
     return found
 
 
+def letter_rules(tex: str) -> list[str]:
+    """The letter's list rules: bullets sit in `letterbullets` (the body font), between `\\lettercontent` paragraphs, never inside one."""
+    tex, found = _uncommented(tex), []
+    for m in re.finditer(r"\\lettercontent\s*\{", tex):
+        depth, i = 1, m.end()
+        while i < len(tex) and depth:
+            depth += {"{": 1, "}": -1}.get(tex[i], 0) if tex[i - 1] != "\\" else 0
+            i += 1
+        inside = re.search(r"\\begin\{(?:itemize|enumerate)\}", tex[m.end():i])
+        if inside:
+            at = m.end() + inside.start()
+            found.append(f"{locate(tex, at, at + 14)} puts a list inside \\lettercontent: close the paragraph and use "
+                         "\\begin{letterbullets} between two \\lettercontent paragraphs")
+    for m in re.finditer(r"\\begin\{(?:itemize|enumerate)\}", tex):
+        if not any(f.startswith(locate(tex, m.start(), m.start() + 14)) for f in found):
+            found.append(f"{locate(tex, m.start(), m.end())} is a bare list: use \\begin{{letterbullets}} so the bullets share the body font")
+    return found
+
+
 def check(tex: str) -> list[str]:
     """Every escaping, safety and layout-rule finding in a drafted .tex body."""
     return specials(tex) + unsafe(tex) + layout_rules(tex)

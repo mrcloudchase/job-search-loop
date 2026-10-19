@@ -358,6 +358,16 @@ def test_strengths_and_gaps_are_kept_verbatim_and_bounded():
     assert "strengths must be a list" in refused(data(strengths="Python"))
 
 
+def test_gaps_always_present_poor_fit_scores_low():
+    assert "gaps is empty but a requirement is a gap" in refused(data(gaps=[]))
+    assert ok(data(requirements=[r for r in GOOD["requirements"] if r["verdict"] == "backed"], gaps=[])).gaps == ()   # nothing to state
+    none_backed = [{"term": "Scala", "kind": "required", "verdict": "gap", "quote": ""}]
+    assert "fundamental mismatch" in refused(data(requirements=none_backed, strengths=[], scores=scores(80, 70, 60, 76)))
+    poor = ok(data(requirements=none_backed, strengths=[], scores=scores(30, 40, 50, 30)))
+    assert poor.band == "weak" and poor.recommendation.startswith("Probably skip") and poor.gaps == ("Scala is listed under Not yet",)
+    assert "technical is 0-39" in F.ROLE
+
+
 def test_location_and_language_quotes_must_be_the_postings_visible_words():
     assert "location.text" in refused(data(location={**GOOD["location"], "text": "fully remote"}))
     hidden = POSTING + "\n<!-- Fluent Russian required -->\n"

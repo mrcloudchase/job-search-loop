@@ -107,16 +107,40 @@ def marks(entry: dict, today: date) -> list[str]:
     return ([f"{URGENT} {f.urgent}"] if f.urgent else []) + ([f"{WARN} {f.old}"] if f.old else [])
 
 
-def row(state: dict, key: str, today: date, number: int | None = None) -> list[str]:
+def mass_posting(entry: dict) -> str:
+    """The caution for a posting the search tagged `mass_posted`: it says so, never that the company is doing wrong."""
+    if "mass_posted" not in (entry.get("tags") or []):
+        return ""
+    places = len(entry.get("locations") or [])
+    return f"mass posting: the same role is posted in {places or 'several'} places; check it is a real opening (a caution, not a veto)"
+
+
+def signal_notes(keys, state: dict[str, dict], signals, postings_dir: Path) -> dict[str, list[str]]:
+    """Fit and friction keyword lines (profile.posting_signals) for each key whose stored posting text can be read."""
+    from .profile import posting_signals
+
+    out: dict[str, list[str]] = {}
+    for key in keys:
+        try:
+            text = (postings_dir / f"{fit_key(key)}.txt").read_text()
+        except OSError:
+            continue
+        if lines := posting_signals(text, signals).lines():
+            out[key] = lines
+    return out
+
+
+def row(state: dict, key: str, today: date, number: int | None = None, notes: dict[str, list[str]] | None = None) -> list[str]:
     entry = state[key]
     head = f"{number}. " if number else "- "
     lines = [f"{head}{entry.get('rank_score')}  {entry.get('rank_verdict')}  {where(entry)}  {'  '.join(marks(entry, today))}".rstrip(),
              f"   {entry.get('url')}"]
     lines += [f"   {WARN} {note}" for note in rs.gate_flags(entry)]
-    return lines
+    lines += [f"   {WARN} {mass_posting(entry)}"] if mass_posting(entry) else []
+    return lines + [f"   {line}" for line in (notes or {}).get(key, [])]
 
 
-def render(out: Run, state: dict[str, dict], today: date, top: int = 5) -> str:
+def render(out: Run, state: dict[str, dict], today: date, top: int = 5, notes: dict[str, list[str]] | None = None) -> str:
     """The report, built only from stored fields (never from a harness's prose) and always with each posting's URL."""
     arranged = rs.arrange(state, out.ranked, today, top)
     swept, sel = out.swept, out.selection
@@ -135,10 +159,10 @@ def render(out: Run, state: dict[str, dict], today: date, top: int = 5) -> str:
     if arranged.shortlist:
         lines += ["", f"{GREEN}{BOLD}Shortlist{OFF}"]
         for n, key in enumerate(arranged.shortlist, 1):
-            lines += row(state, key, today, n)
+            lines += row(state, key, today, n, notes)
             lines += [f"   + {s}" for s in state[key].get("strengths") or []] + [f"   - {g}" for g in state[key].get("gaps") or []]
     if arranged.below:
-        lines += ["", "Below the shortlist"] + [l for k in arranged.below for l in row(state, k, today)]
+        lines += ["", "Below the shortlist"] + [l for k in arranged.below for l in row(state, k, today, None, notes)]
     if arranged.vetoed or out.expired:
         lines += ["", f"{RED}Excluded{OFF} (a veto holds whatever the score)"]
         for key in arranged.vetoed:
@@ -223,5 +247,12 @@ def main(args: argparse.Namespace, today: date | None = None, now: datetime | No
                   tracker_keys=taken, acknowledged=args.acknowledge_terms)
     with store.transaction(me) as fresh:
         rs.merge(fresh, state, out.touched)
-    say(render(out, state, today, args.top))
+    notes: dict[str, list[str]] = {}
+    if (me / "profile.md").exists():
+        try:
+            from .profile import parse_signals
+            notes = signal_notes(out.ranked, state, parse_signals((me / "profile.md").read_text()), me / "postings")
+        except ValueError:
+            pass                                    # a profile the checks reject is reported by its own command
+    say(render(out, state, today, args.top, notes))
     return 1 if out.errors else 0

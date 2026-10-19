@@ -38,6 +38,59 @@ def rendered(**kw):
     return L.Rendered(**base)
 
 
+# ---- the tool runner that runs inside the container ----
+def run_tools(tmp_path, monkeypatch, scripts, commands=None):
+    """Run the container's own `run_tools` source with fake tools on PATH: each script is (exit code, stdout bytes, stderr bytes)."""
+    import os
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir(exist_ok=True)
+    for name, (code, out, err) in scripts.items():
+        (bin_dir / name).write_text(f"#!/bin/sh\nprintf '%b' '{out}'\nprintf '%b' '{err}' >&2\nexit {code}\n")
+        (bin_dir / name).chmod(0o755)
+    monkeypatch.setenv("PATH", str(bin_dir))
+    pdf = tmp_path / "doc.pdf"
+    pdf.write_bytes(b"%PDF")
+    namespace = {"os": os, "subprocess": subprocess}
+    exec(L._TOOLS, namespace)
+    out = {"tools": {}, "tool_errors": []}
+    namespace["run_tools"](str(pdf), commands or {"pdfinfo": ["pdfinfo", "{pdf}"], "text": ["pdftotext", "{pdf}", "-"]}, out)
+    return out
+
+
+def test_a_tool_that_exits_non_zero_is_could_not_read_the_pdf_with_its_own_words(tmp_path, monkeypatch):
+    out = run_tools(tmp_path, monkeypatch, {"pdfinfo": (1, "", "Syntax Error: bad xref"), "pdftotext": (1, "partial words", "")})
+    assert out["tool_errors"] == ["pdfinfo: could not read the PDF: Syntax Error: bad xref",
+                                  "text: could not read the PDF: partial words"]            # stderr first, then stdout
+    assert out["tools"] == {"pdfinfo": "", "text": ""}                                       # nothing half-read is handed on
+    silent = run_tools(tmp_path, monkeypatch, {"pdfinfo": (2, "", ""), "pdftotext": (0, "ok", "")})
+    assert silent["tool_errors"] == ["pdfinfo: could not read the PDF: command failed"] and silent["tools"]["text"] == "ok"
+
+
+def test_tool_output_is_decoded_as_utf8_with_replacement_never_the_host_encoding(tmp_path, monkeypatch):
+    out = run_tools(tmp_path, monkeypatch, {"pdfinfo": (0, "Pages: 2", ""), "pdftotext": (0, "Zo\\0303\\0253 \\0377", "")})
+    assert out["tool_errors"] == [] and out["tools"]["text"] == "Zo\u00eb \ufffd"          # e-diaeresis kept, the stray byte replaced
+    assert out["tools"]["pdfinfo"] == "Pages: 2"
+
+
+def test_a_missing_tool_and_a_missing_pdf_are_reported_and_nothing_is_extracted_from_a_missing_file(tmp_path, monkeypatch):
+    out = run_tools(tmp_path, monkeypatch, {"pdfinfo": (0, "Pages: 1", "")})                 # pdftotext is not installed
+    assert out["tools"]["pdfinfo"] == "Pages: 1" and out["tool_errors"] == ["text: could not read the PDF: pdftotext did not run (FileNotFoundError)"]
+    import os
+    namespace = {"os": os, "subprocess": subprocess}
+    exec(L._TOOLS, namespace)
+    gone = {"tools": {}, "tool_errors": []}
+    namespace["run_tools"](str(tmp_path / "absent.pdf"), {"pdfinfo": ["pdfinfo", "{pdf}"]}, gone)
+    assert gone["tools"] == {} and "absent.pdf is not a file" in gone["tool_errors"][0]       # no extraction attempted
+
+
+def test_the_commands_run_pdfinfo_first_and_ask_for_utf8_and_layout_text_for_both_documents():
+    commands = L.tool_commands()
+    assert list(commands)[0] == "pdfinfo"                                                    # the page count comes before the layout
+    assert commands["text"][:4] == ["pdftotext", "-layout", "-enc", "UTF-8"]
+    assert all("UTF-8" in c for k, c in commands.items() if k in ("text", "text_raw", "bbox"))
+    assert "run_tools(pdf, spec[\"tools\"], out)" in L._INNER and "def run_tools" in L._INNER   # the container runs this very source
+
+
 # ---- the compile command ----
 
 def test_compile_command_is_built_only_from_an_allowed_engine():

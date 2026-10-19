@@ -353,6 +353,16 @@ def test_clean_break_reports_nothing():
     assert find_orphans(pages, PROFILE) == []
 
 
+def test_known_blind_spot_level_marker_line():
+    """Without font data a header at the page end followed by an unindented description (its marker alone on a line, the text
+    level with the header) reads as a wrapped line, so no orphan is reported. The stock templates indent bullets, so this
+    does not arise for them; the blind spot is recorded here so a change to it is deliberate."""
+    pages = pair([line(TAIL_TOP, (56.7, "Platform Engineer, Acme"))], [line(60, (56.7, "•")), line(75, (56.7, "Built pipelines"))])
+    assert find_orphans(pages, PROFILE) == []
+    indented = pair([line(TAIL_TOP, (56.7, "Platform Engineer, Acme"))], [line(60, (56.7, "•")), line(75, (72.1, "Built pipelines"))])
+    assert len(find_orphans(indented, PROFILE)) == 1                            # the same break with indented text is caught
+
+
 def test_stock_bullet_wrap_clean():
     pages = pair([line(TAIL_TOP, (58.9, "•"), (72.1, "Built the long pipeline"))], [line(60, (72.1, "for services"))])
     assert find_orphans(pages, PROFILE) == []

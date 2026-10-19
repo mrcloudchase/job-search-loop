@@ -11,8 +11,9 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, replace
 from datetime import date
+from pathlib import Path
 
-from . import grounding, keywords, latex, latexrun, layout, letter, pdfcheck, profile as profiles, style
+from . import consistency, grounding, keywords, latex, latexrun, layout, letter, pdfcheck, profile as profiles, reframe, style
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,7 @@ class Context:
     letter_pages: int = 1
     layout_profile: layout.LayoutProfile = layout.LayoutProfile()
     waive_unverified: bool = False                  # the person's explicit decision, recorded in the report
+    dump_dir: Path | None = None                    # where each PDF's raw text layer is written, for diagnosis
 
 
 @dataclass(frozen=True)
@@ -43,6 +45,7 @@ class Result:
     documents: latexrun.Documents | None = None
     coverage: keywords.Coverage | None = None
     findings: tuple[str, ...] = ()                  # things to act on that don't fail the checks (synonym-only terms)
+    stretch: tuple[str, ...] = ()                   # CV bullets that reframe too far: shown to the person to keep, soften or drop
     checks: tuple[tuple[str, bool], ...] = ()       # every check that ran, in order, and whether it passed
 
     @property
@@ -64,7 +67,22 @@ def source_findings(cv_tex: str, cover_tex: str, cv_language: str = "en") -> lis
     """What is wrong in the sources before anything is compiled: unsafe commands, unescaped specials, a way of fitting
     that is not cutting content, and the CV's structure rules."""
     found = [("cv.tex", f) for f in latex.check(cv_tex) + latex.cv_rules(cv_tex, cv_language)]
-    return [f"{name}: {finding}" for name, finding in found + [("cover.tex", f) for f in latex.check(cover_tex)]]
+    return [f"{name}: {finding}" for name, finding in found + [("cover.tex", f) for f in latex.check(cover_tex) + latex.letter_rules(cover_tex)]]
+
+
+def write_dump(folder: Path, name: str, text: str) -> str | None:
+    """Write a PDF's RAW text layer (never the folded text the checks compare) to `<folder>/<name>.txt`, with parent folders
+    made and exactly one trailing newline. Returns what to tell the drafter if it could not be written, else None."""
+    path = Path(folder) / f"{name}.txt"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text if text.endswith("\n") else text + "\n", encoding="utf-8")
+    except OSError as error:
+        return f"the text dump {path} could not be written ({error.strerror or type(error).__name__})"
+    return None
+
+
+READ_FAILURES = ("pdf", "pdfinfo", "text")          # without these nothing else can be judged; the others only lose a check
 
 
 def verdicts(name: str, verdict: pdfcheck.Verdict, failures: list[str], unverified: list[str]) -> None:
@@ -84,6 +102,12 @@ def judge(documents: latexrun.Documents, cv_tex: str, cover_tex: str, ctx: Conte
         return Result(tuple(failures), documents=documents, checks=(("compile", False),))
     unverified: list[str] = []
     checks: list[tuple[str, bool]] = [("compile", True)]
+    for rendered in (documents.cv, documents.cover):      # the text goes to disk BEFORE any check, so a failure leaves it
+        if ctx.dump_dir is not None and (why := write_dump(ctx.dump_dir, rendered.name, rendered.text)):
+            failures.append(why)
+    unread = [f"{r.name}.pdf: {e}" for r in (documents.cv, documents.cover) for e in r.tool_errors if e.split(":")[0] in READ_FAILURES]
+    if unread:
+        return Result(tuple(failures + unread), documents=documents, checks=(("compile", True), ("PDF read", False)))
 
     def mark(label: str, before: int) -> None:
         checks.append((label, len(failures) + len(unverified) == before))
@@ -105,11 +129,13 @@ def judge(documents: latexrun.Documents, cv_tex: str, cover_tex: str, ctx: Conte
         verdicts(label + " layout", layout.verify_layout(rendered.bbox, ctx.layout_profile), failures, unverified)
     mark("page layout", before)
     reference = f"Reference: {ctx.reference}" if ctx.reference else ""
-    cv_found = style.check(cv.text, (ctx.cv_language,)) + grounding.check(cv.text, [ctx.profile, reference], ctx.today)
+    stretch, never = reframe.split(cv_tex, ctx.profile)
+    cv_found = style.check(cv.text, (ctx.cv_language,)) + grounding.check(cv.text, [ctx.profile, reference], ctx.today) + never
     letter_found = (style.check(cover.text, (ctx.letter_language,)) + letter.check(
         cover.text, posting=ctx.posting, company=ctx.company, role=ctx.role, today=ctx.today, addressee=ctx.addressee,
         reference=ctx.reference, cv_text=cv.text, cv_language=ctx.cv_language)
-        + grounding.check(cover.text, [ctx.profile, reference, *ctx.company_claims], ctx.today))
+        + grounding.check(cover.text, [ctx.profile, reference, *ctx.company_claims], ctx.today)
+        + consistency.titles(cover.text, ctx.profile))
     before = len(failures) + len(unverified)
     failures += [f"cv.pdf: {m}" for m in cv_found]
     mark("CV style and grounding", before)
@@ -124,7 +150,7 @@ def judge(documents: latexrun.Documents, cv_tex: str, cover_tex: str, ctx: Conte
     mark("keyword coverage", before)
     if unverified and not ctx.waive_unverified:
         failures += [f"{m}\n(this check could not run, so it is not a pass)" for m in unverified]
-    return Result(tuple(failures), tuple(unverified), documents, coverage, tuple(coverage.findings), tuple(checks))
+    return Result(tuple(failures), tuple(unverified), documents, coverage, tuple(coverage.findings), stretch=tuple(stretch), checks=tuple(checks))
 
 
 def verify(cv_tex: str, cover_tex: str, ctx: Context, *, compile_documents=latexrun.compile_documents,

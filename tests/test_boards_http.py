@@ -142,6 +142,14 @@ def test_limits_and_recency_are_validated(kw):
         contract.Query("data", **kw)
 
 
+def test_html_fetch_sends_accept_html():
+    c = client(ok)
+    c.get(f"https://{HOST}/jobs", html=True)
+    c.get(f"https://{HOST}/api")
+    c.get(f"https://{HOST}/own", html=True, headers={"Accept": "text/plain"})
+    assert [r.headers["accept"] for r in c.seen] == ["text/html,*/*;q=0.8", "*/*", "text/plain"]
+
+
 def test_the_default_window_is_fourteen_days_and_none_means_all():
     assert contract.Query("data").recency_days == 14 and contract.Query("data", recency_days=None).recency_days is None
 
@@ -149,6 +157,15 @@ def test_the_default_window_is_fourteen_days_and_none_means_all():
 def test_every_result_has_every_field_and_a_missing_one_is_none_never_omitted():
     r = contract.result({"title": "Engineer", "url": "https://x.io/j/1"})
     assert tuple(r) == contract.FIELDS and r["company"] is None and r["id"] == "https://x.io/j/1" and r["deadline"] is None
+
+
+def test_detail_nullable_fields_are_present_as_null(capsys):
+    board = fake_board(detail=lambda ref, h: {"id": "7", "title": "T", "url": "https://x.io/7", "company": {"x": 1}, "date": ""})
+    assert contract.run_cli(board, ["detail", "7"]) == 0
+    (r,) = json.loads(capsys.readouterr().out)["results"]
+    assert tuple(r) == contract.FIELDS and (r["id"], r["title"], r["url"]) == ("7", "T", "https://x.io/7")
+    assert all(r[f] is None for f in ("company", "location", "date", "deadline", "description"))
+    assert contract.run_cli(fake_board(detail=lambda ref, h: {"id": "7", "title": "T"}), ["detail", "7"]) == 1   # no url: no posting
 
 
 @pytest.mark.parametrize("raw", [{}, {"title": "T"}, {"url": "https://x.io"}, {"title": "T", "url": "javascript:alert(1)"},

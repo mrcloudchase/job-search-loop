@@ -318,6 +318,29 @@ def test_language_flag_warning_and_note_shown(tmp_path):
     assert s["a"]["gates"][3]["verdict"] == "FLAG" and K.WARN + " language: " + note in text and "Interpreter" in text
 
 
+def test_highlight_includes_mass_posting_flag(tmp_path):
+    s = state_of(entry("a", title="Analyst"), entry("b", title="Planner"))
+    out = go(s, tmp_path)
+    s["a"]["tags"], s["a"]["locations"] = ["mass_posted"], ["Aarhus", "Odense", "Oslo"]
+    lines = K.render(out, s, TODAY).splitlines()
+    flagged = [i for i, l in enumerate(lines) if "mass posting: the same role is posted in 3 places" in l]
+    head = max(i for i in range(flagged[0]) if lines[i][:1].isdigit())          # the posting row the flag sits under
+    assert len(flagged) == 1 and "Analyst" in lines[head] and "not a veto" in lines[flagged[0]]   # only the tagged posting
+    assert s["a"]["status"] == "ranked" and not R.vetoes(s["a"])                                           # a caution, nothing more
+
+
+def test_keyword_signals_from_the_profile_show_beside_the_posting_and_friction_is_no_veto(tmp_path):
+    from jobloop.profile import Signals
+    s = state_of(entry("a", title="Analyst"), entry("b", title="Planner"))
+    out = go(s, tmp_path, fetcher=Fetcher(text="We value ownership. Expect on-call weekends."))
+    notes = K.signal_notes(out.ranked, s, Signals(("ownership",), ("on-call",), ()), tmp_path / "postings")
+    text = K.render(out, s, TODAY, notes=notes)
+    assert text.count("strong behavioural fit: the posting says 'ownership'") == 2
+    assert "potential friction (not a deal-breaker): the posting says 'on-call'" in text and not any(R.vetoes(e) for e in s.values())
+    assert K.signal_notes(out.ranked, s, Signals(("kubernetes",), (), ()), tmp_path / "postings") == {}   # absent keywords: nothing
+    assert K.signal_notes(out.ranked, s, Signals(("ownership",), (), ()), tmp_path / "nowhere") == {}      # unreadable text: nothing
+
+
 def test_excluded_section_reasons(tmp_path):
     s, out = ranked_state(tmp_path)
     text = K.render(out, s, TODAY)

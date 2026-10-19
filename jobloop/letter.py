@@ -208,6 +208,21 @@ def check_date(text: str, today: date, language: str) -> list[str]:
     return found
 
 
+def check_repeats_cv(text: str, cv_text: str | None, size: int = 8, limit: float = 0.2) -> list[str]:
+    """A letter looks forward (what you would do, how, with what result); it does not repeat the CV. More than `limit` of the
+    body's runs of `size` words appearing word for word in the CV fails."""
+    letter = split(text)
+    body = letter.body if letter else text
+    mine, theirs = flat(re.sub(r"(?m)^\s*[-*•]\s+", "", body)).split(), flat(cv_text or "").split()
+    runs = [tuple(mine[i:i + size]) for i in range(len(mine) - size + 1)]
+    if not runs or not theirs:
+        return []
+    cv_runs = {tuple(theirs[i:i + size]) for i in range(len(theirs) - size + 1)}
+    share = sum(r in cv_runs for r in runs) / len(runs)
+    return [f"{share:.0%} of the letter repeats the CV word for word: say what you would do for this employer, how, and with "
+            "what result, and give one or two short past examples in new words"] if share > limit else []
+
+
 def check(text: str, *, posting: str, company: str, role: str, today: date, addressee: str | None = None,
           reference: str | None = None, cv_text: str | None = None, cv_language: str | None = None) -> list[str]:
     """Every letter finding. The letter's language is the posting's; when it cannot be decided, that is the finding."""
@@ -215,4 +230,5 @@ def check(text: str, *, posting: str, company: str, role: str, today: date, addr
     language = detect(visible(posting))
     if language is not None:
         found += check_salutation(text, addressee, language) + check_closing(text, language) + check_date(text, today, language)
-    return found + check_bullets(text) + check_opening(text, company, role) + check_reference(text, reference) + check_headline(text)
+    return (found + check_bullets(text) + check_opening(text, company, role) + check_reference(text, reference) + check_headline(text)
+            + check_repeats_cv(text, cv_text))

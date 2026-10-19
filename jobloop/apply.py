@@ -33,6 +33,7 @@ from .text import visible
 from .turns import NOTICE, Api, Turns, answer
 
 HARNESS = True
+STRETCH_BELOW = 50                          # an experience match under this warns the person before anything is drafted
 LANGUAGES = {"english": "en", "danish": "da", "dansk": "da", "german": "de", "deutsch": "de", "dutch": "nl", "nederlands": "nl"}
 
 DRAFTER = """You are the drafter in a job-application loop. You write a tailored CV (cv.tex) and cover letter (cover.tex) in LaTeX for one
@@ -223,6 +224,9 @@ class Application:
                 return False
             say(f"{YELLOW}  --override-veto: the person chose to continue. This is recorded in the report.{OFF}")
             run.notes.append("a failed gate was overridden by the person (--override-veto)")
+        if run.fit.experience < STRETCH_BELOW:
+            say(f"{YELLOW}  Experience match is {run.fit.experience}, under {STRETCH_BELOW}: a strong letter would need heavy reframing, "
+                f"and the loop will not claim what the profile does not hold. Consider whether to apply.{OFF}")
         if a.yes:
             run.notes.append("drafting was pre-approved on the command line (--yes)")
             return True
@@ -373,6 +377,10 @@ class Application:
         say("\n" + result.coverage.table())
         for finding in result.findings:
             say(f"  {YELLOW}↳ {finding}{OFF}")
+        if result.stretch:
+            say(f"\n  {BOLD}Bullets that stretch the profile{OFF}: for each, keep it (you can explain it), soften it, or drop it")
+            for item in result.stretch:
+                say(f"    {YELLOW}? {item}{OFF}")
         if result.unverified:
             say(f"  {YELLOW}not verified (waived by the person): " + "; ".join(clip(u, 90) for u in result.unverified) + OFF)
         decisions = [f"{name}: {clip(' '.join(text.split()), 160)}" for name, text in run.narrative.items() if text.strip()]

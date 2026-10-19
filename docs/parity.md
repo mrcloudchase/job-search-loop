@@ -11,9 +11,9 @@ or `not ported, because ...`. `planned (stricter: ...)` is planned and will be s
 | Area | Rows | done | stricter here | not ported | planned |
 |---|---|---|---|---|---|
 | [A-profile-security](parity/A-profile-security.md) | 238 | 87 | 60 | 62 | 29 |
-| [B-search-rank](parity/B-search-rank.md) | 295 | 167 | 69 | 54 | 5 |
+| [B-search-rank](parity/B-search-rank.md) | 295 | 169 | 70 | 56 | 0 |
 | [C1-apply](parity/C1-apply.md) | 291 | 183 | 72 | 36 | 0 |
-| [C2-pdf-salary](parity/C2-pdf-salary.md) | 163 | 122 | 14 | 12 | 15 |
-| [D-lifecycle](parity/D-lifecycle.md) | 241 | 155 | 54 | 26 | 6 |
-| [E1-boards-addportal](parity/E1-boards-addportal.md) | 204 | 121 | 45 | 35 | 3 |
-| [E2-boards-dk](parity/E2-boards-dk.md) | 174 | 109 | 47 | 16 | 2 |
+| [C2-pdf-salary](parity/C2-pdf-salary.md) | 163 | 136 | 15 | 12 | 0 |
+| [D-lifecycle](parity/D-lifecycle.md) | 241 | 160 | 55 | 26 | 0 |
+| [E1-boards-addportal](parity/E1-boards-addportal.md) | 204 | 123 | 45 | 36 | 0 |
+| [E2-boards-dk](parity/E2-boards-dk.md) | 174 | 111 | 47 | 16 | 0 |
