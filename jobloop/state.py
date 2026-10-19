@@ -25,6 +25,7 @@ STATUSES = ("new", "ranked", "unreachable", "gave_up", "expired", "skipped", "ap
 SETTLED = frozenset(("gave_up", "expired", "skipped", "applied"))
 SOURCES = ("board", "fallback")
 LIST_FIELDS = ("locations", "tags", "alt_urls")
+DESCRIPTION_CAP = 12_000
 
 
 class StateCorrupt(ValueError):
@@ -112,6 +113,8 @@ def upsert(state: dict, found: dict, today: date | None = None) -> dict:
             entry[field] = found[field]
     if found.get("source") == "board":
         entry["source"] = "board"
+    if isinstance(found.get("description"), str) and len(found["description"]) > len(entry.get("description") or ""):
+        entry["description"] = found["description"][:DESCRIPTION_CAP]      # what the board's own search returned: a last resort when the page cannot be read
     for field in LIST_FIELDS:
         entry[field] = _union(entry.get(field) or [], list(found.get(field) or []))
     other = found.get("url")

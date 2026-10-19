@@ -135,9 +135,11 @@ def _status(error: BoardError, default: int = 0) -> int:
 
 def fetch_posting(url: str, *, board: str = "", title: str = "", careers: tuple[str, ...] = (),
                   installed: tuple[str, ...] | None = None, transport=None, robots: Callable[[str], bool] | None = None,
-                  sleep: Callable[[float], None] = time.sleep, acknowledged: bool = False) -> Outcome:
+                  sleep: Callable[[float], None] = time.sleep, acknowledged: bool = False, fallback: str = "") -> Outcome:
     """Climb the ladder for one posting and return Fetched, Closed or Unreachable (see the module docstring). `title`
-    gates the careers rung; `acknowledged` waives robots only for a board whose terms allow it, as the board CLI does."""
+    gates the careers rung; `acknowledged` waives robots only for a board whose terms allow it, as the board CLI does.
+    `fallback` is the description the board's own search returned: when no rung can read the page it is used as the text
+    (source "board", and the note says so), because search already carries the full description."""
     installed = installed_hosts() if installed is None else installed
     board = board or board_for(url)
     host, why_not = hosts.split_url(url)
@@ -164,6 +166,10 @@ def fetch_posting(url: str, *, board: str = "", title: str = "", careers: tuple[
         found = _careers(candidate, title, kit, robots, done, notes, installed)
         if found:
             return found
+    text = clean(fallback) if fallback else ""
+    if len(text) >= MIN_CHARS and not judge(text):
+        verdict = hosts.classify(url, installed)
+        return Fetched(text, url, "board", 200, verdict, describe(verdict) + "; the text is the board's own search result: the posting page could not be read")
     return Unreachable("; ".join(notes) or "no rung of the ladder could read the posting")
 
 

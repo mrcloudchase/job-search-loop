@@ -169,3 +169,13 @@ def test_another_address_is_kept_and_found_whatever_the_key():
 def test_an_unknown_source_or_status_is_refused(bad):
     with pytest.raises(ValueError):
         state.upsert({}, found(**bad), D1)
+
+
+def test_the_boards_description_is_kept_for_a_page_that_cannot_be_read_and_never_shrinks():
+    s = {}
+    state.upsert(s, found(description="short"), D1)
+    state.upsert(s, found(description="a much longer description of the role " * 3), D1)
+    state.upsert(s, found(description="short again"), D1)
+    assert s["acme_engineer"]["description"].startswith("a much longer description")
+    state.upsert(s, found(description="x" * 50_000), D1)
+    assert len(s["acme_engineer"]["description"]) == state.DESCRIPTION_CAP

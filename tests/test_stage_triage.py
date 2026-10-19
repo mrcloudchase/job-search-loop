@@ -302,3 +302,13 @@ def test_a_posting_that_changed_meanwhile_is_left_as_it_is(tmp_path, fetcher):
         s["a"]["status"] = "skipped"
     go(ctx, ["a"])
     assert stored(me)["status"] == "skipped"
+
+
+def test_the_boards_own_description_travels_to_the_fetch_as_its_last_resort(tmp_path, monkeypatch):
+    ps = [posting("a", description="The board's own text of the posting. " * 10), posting("b")]
+    f = Fetcher({p["url"]: FT.Unreachable("nothing readable") for p in ps})
+    monkeypatch.setattr(T.fetching, "fetch_posting", f)
+    ctx, server, me = setup(tmp_path, [], ps)
+    go(ctx, ["a", "b"])
+    by_url = {url: kw for url, kw in f.asked}
+    assert by_url[ps[0]["url"]]["fallback"].startswith("The board's own text") and by_url[ps[1]["url"]]["fallback"] == ""

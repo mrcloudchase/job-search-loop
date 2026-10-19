@@ -122,7 +122,8 @@ class _Job:
                 continue
             entry = ctx.snapshot.postings[key]
             got = fetching.fetch_posting(entry.get("url") or "", board=entry.get("board") or "", title=entry.get("title") or "",
-                                         careers=self.careers(entry), acknowledged=ctx.config.acknowledge_terms)
+                                         careers=self.careers(entry), acknowledged=ctx.config.acknowledge_terms,
+                                         fallback=entry.get("description") or "")
             self.tried[key] = ctx.now.isoformat()
             if isinstance(got, fetching.Closed):
                 self.results[key] = rs.Closed(key, got.reason)
