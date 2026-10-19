@@ -2,9 +2,8 @@
 from __future__ import annotations
 
 import json
-from datetime import date
 
-import pytest
+
 
 import sim
 from jobloop import cli, tracker

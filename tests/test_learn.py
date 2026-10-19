@@ -42,7 +42,7 @@ def draft(me, key, posting_key, fit=80, judge=7.0, band="good"):
     sim.write_fit(me, posting_key, total=fit)
 
 
-def populate(tmp_path, statuses=(("Acme", "Data Engineer", "applied"), ("Beta", "Analyst", "drafted"), ("Gamma", "Engineer", "drafted"))):
+def populate(tmp_path, statuses=(("Acme", "Data Engineer", "applied"), ("Beta", "Analyst", "drafted"), ("Gamma", "Engineer", "drafted")), dead=True):
     """Three delivered applications: Acme's CV edited, Beta's untouched, Gamma's letter edited. Judges failed items 5 and 9."""
     postings = [sim.posting("p-acme", "Acme", "Data Engineer", status="ranked", score=80, board="linkedin"),
                 sim.posting("p-beta", "Beta", "Analyst", status="ranked", score=75, board="linkedin"),
@@ -60,7 +60,8 @@ def populate(tmp_path, statuses=(("Acme", "Data Engineer", "applied"), ("Beta", 
         store.add_judgment(item, "draft", "codex", 7.5, {"failed": [[5, "the opening is generic"], [9, f"cliche {i}"]] if i < 2 else [[5, "still generic"]]}, 1, NOW)
     for _ in range(3):
         store.add_event("yield", "linkedin", {"query": "data engineer", "found": 10, "new": 4}, NOW)
-        store.add_event("yield", "jobindex", {"query": "dataingeniør", "found": 5, "new": 2}, NOW)
+        if dead:
+            store.add_event("yield", "jobindex", {"query": "dataingeniør", "found": 5, "new": 2}, NOW)
     store.add_event("yield", "linkedin", {"query": "etl", "found": 3, "new": 1}, NOW)
     return me, store
 

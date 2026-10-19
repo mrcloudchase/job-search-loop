@@ -84,8 +84,8 @@ class Learn:
             return []
         return [Action("learn", "*", f"learning is due (every {snap.config.learn_every_hours:g} hours)", priority=1.0)]
 
-    def _model_change(self, ctx: Context, ev: analysis.Evidence, current: playbook.Playbook, profile: str) -> tuple[dict | None, str, list[str]]:
-        """(the validated change, the harness, the last failures). The harness is asked once and sent failures back."""
+    def _model_change(self, ctx: Context, ev: analysis.Evidence, current: playbook.Playbook, profile: str) -> tuple[dict | None, str, list[str], str]:
+        """(the validated change, the harness, the last failures, why the turns stopped). The harness is asked once and sent failures back."""
         banned, got = analysis.names_in(ev, profile), {}
         model = ctx.gateway.harness("planner", "learn", "*")
         with ctx.gateway.turns("learn", "*") as turns:
@@ -108,8 +108,8 @@ class Learn:
             ok = record is not None and turns.settle(record, validate, ROUNDS, ROLE, "FIX CHANGE")
             stopped = turns.stopped()
         if ok:
-            return got, model, []
-        return None, model, failures or [f"the planner did not answer ({stopped or 'no turn completed'})"]
+            return got, model, [], ""
+        return None, model, failures or [f"the planner did not answer ({stopped or 'no turn completed'})"], stopped
 
     def run(self, action: Action, ctx: Context) -> Outcome:
         me, store, config = ctx.me, ctx.store, ctx.config
@@ -134,6 +134,7 @@ class Learn:
             notes.append(f"{facts} profile fact(s) from your edits are waiting for you as proposals")
 
         change: dict = {}
+        refused: tuple[str, list[str]] | None = None
         if rolled:
             notes.append("no new change on a version that was just rolled back")
         else:
@@ -146,13 +147,16 @@ class Learn:
                 change["queries_drop"] = dead
                 notes.append(f"dropping {len(dead)} query(ies) that never produced a shortlisted posting")
             if ev.edited or ev.rubric:
-                model, harness, failures = self._model_change(ctx, ev, current, profile)
+                model, harness, failures, stopped = self._model_change(ctx, ev, current, profile)
                 produced["harness"] = harness
                 if model is None:
+                    refused = (stopped, failures)
                     notes.append("the planner's change was refused and nothing from it was applied: " + failures[0][:200])
                 else:
                     change.update({k: v for k, v in model.items() if k in MODEL_KEYS and v not in ("", [], {}, None)})
         if not [k for k in change if k != "summary"]:
+            if refused:
+                return Outcome("exhausted" if refused[0] else "stalled", notes=notes, failures=refused[1], produced=produced)
             store.put("learn.fingerprint", [print_, current.version])
             return self._done(ctx, "no playbook change justified by the evidence", notes, produced, store, current.version)
         change.setdefault("summary", self._summary(change))

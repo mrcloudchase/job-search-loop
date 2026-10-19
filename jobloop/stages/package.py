@@ -206,6 +206,8 @@ def _deliver_tex(folder: Path, edit: Path, name: str, previous: dict, notes: lis
     edit.mkdir(parents=True, exist_ok=True)
     if not target.exists() or _sha(target.read_bytes()) != new:
         archive.write_atomically(target, data)
+    (edit.parent / "original").mkdir(exist_ok=True)
+    archive.write_atomically(edit.parent / "original" / name, data)      # what was delivered, so `learn` can diff the person's edits
     return new
 
 
