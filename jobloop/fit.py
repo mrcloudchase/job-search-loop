@@ -347,6 +347,8 @@ def location_gate(location: dict, deal_breakers: tuple[str, ...], open_to_reloca
         verdicts.append("FAIL")
         notes.append(f'{location["onsite_days"]} on-site days a week against a deal-breaker of more than {limit}:{quote}')
     for hit in location["deal_breaker_hits"]:
+        if onsite_limit((hit["deal_breaker"],)) is not None:
+            continue                    # an on-site day limit is a number: the code judged it above, the harness does not
         verdicts.append("FAIL")
         notes.append(f'deal-breaker "{hit["deal_breaker"]}": "{hit["text"]}"')
     if location["travel"] == "frequent":

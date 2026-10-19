@@ -103,6 +103,14 @@ def test_a_harness_reported_total_band_and_gate_verdict_are_ignored():
 
 
 # ── vetoes ──
+def test_an_on_site_day_limit_is_judged_by_the_code_not_by_a_model_claimed_hit():
+    breakers = F.read_deal_breakers(PROFILE)
+    hit = [{"deal_breaker": "more than 3 days a week on site", "text": "hybrid, 2 days on site"}]
+    base = {"onsite_days": 2, "relocation_required": False, "travel": "none", "text": "hybrid, 2 days on site"}
+    assert F.location_gate({**base, "deal_breaker_hits": hit}, breakers, False).verdict == "PASS"
+    assert F.location_gate({**base, "onsite_days": 4, "deal_breaker_hits": hit}, breakers, False).verdict == "FAIL"
+
+
 def test_location_verdict_rules():
     def location(**kw):
         return {"onsite_days": None, "relocation_required": False, "travel": "none", "text": "", "deal_breaker_hits": [], **kw}

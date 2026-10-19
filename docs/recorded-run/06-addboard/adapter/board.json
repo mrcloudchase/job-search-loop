@@ -1,0 +1,13 @@
+{
+ "name": "arbeitnow",
+ "hosts": [
+  "www.arbeitnow.com"
+ ],
+ "terms": "Personal, non-commercial, low-volume use only: arbeitnow's terms grant a licence for temporary personal, non-commercial viewing of the site's materials only (no copying, public display, commercial or bulk use), and the public jobs API is free but asks not to be abused. Respect the site's terms and keep request volume low.",
+ "samples": [
+  "search_data_engineer_live.json",
+  "search_data_engineer_page2.json",
+  "search_python.json"
+ ],
+ "verified_on": "2026-10-19"
+}
