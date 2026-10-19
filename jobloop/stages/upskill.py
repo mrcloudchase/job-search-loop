@@ -7,11 +7,13 @@ no file, never the profile, and every lead is fetched host-side; a resource is l
 The infer/plan turns use the planner-role harness, the web leads the researcher-role harness.
 
 Terminals: `no_op` when no tracked or ranked application gives a gap to learn from (nothing is written); `success` after the
-dated report `me/upskill/report-YYYY-MM-DD.md` is saved and a `ready` queue entry `upskill:<date>` (title "Skills-gap
+dated report `me/upskill/report-YYYY-MM-DD.md` is saved and a `ready` queue entry `upskill:<date>` (older reports' entries become `done`; title "Skills-gap
 report") points at it; `exhausted` when the budget or deadline stopped the model turns (the report as far as it got is saved,
 no queue entry, the next pass tries again); `blocked` with no profile. Never prompts, never writes the tracker or profile.
 """
 from __future__ import annotations
+
+import json
 
 from .. import upskill as lib, webresearch
 from ..engine.spec import Action, Brakes, Outcome, Spec, Trigger
@@ -48,6 +50,9 @@ class Upskill:
         produced = {"harness": planner, "researcher": researcher, "report": str(path)}
         if stopped:
             return Outcome("exhausted", notes=[f"report saved as far as it got ({stopped}): {path}"], produced=produced)
+        for old in ctx.store.queue("ready"):                       # an older report is superseded by this one, not left waiting for ever
+            if old["item"].startswith("upskill:") and old["item"] != f"upskill:{today.isoformat()}":
+                ctx.store.queue_put(old["item"], "done", old["path"], json.loads(old["data"] or "{}"), ctx.now)
         ctx.store.queue_put(f"upskill:{today.isoformat()}", "ready", str(path), {
             "title": "Skills-gap report", "why": f"{len(gaps)} gaps from {len(jobs.jobs)} tracked or ranked applications; read the plan in {path.name}",
             "deadline": ""}, ctx.now)

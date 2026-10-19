@@ -86,7 +86,11 @@ class Gateway:
         """The harness this role uses for this item now: the first on its ladder, then the next after each stalled attempt.
         `exclude` names a harness the answer must differ from (a maker-checker pair is never one harness)."""
         ladder = self.config.ladder(role)
-        stalls = sum(1 for a in self.store.attempts(stage, item) if a["terminal"] == "stalled")
+        stalls = 0                                      # stalled attempts since the last success: a recovered item starts again from the ladder's top
+        for a in reversed(self.store.attempts(stage, item)):
+            if a["terminal"] in ("success", "no_op"):
+                break
+            stalls += a["terminal"] == "stalled"
         order = ladder[min(stalls, len(ladder) - 1):] + ladder[:min(stalls, len(ladder) - 1)]
         for name in order:
             if not exclude or name.split("/")[0] != exclude.split("/")[0]:

@@ -28,7 +28,12 @@ def allowed(action: Action, spec: Spec, store: Store, now: datetime) -> tuple[bo
     if not tries:
         return True, ""
     last = tries[-1]
-    failures = [t for t in tries if t["terminal"] in ("stalled", "blocked", "exhausted")]
+    failures = []                                           # the failures since the last success: an old run of bad luck does not count against today's
+    for t in reversed(tries):
+        if t["terminal"] in ("success", "no_op"):
+            break
+        if t["terminal"] in ("stalled", "blocked", "exhausted"):
+            failures.append(t)
     if last["terminal"] in ("success", "no_op"):
         return True, ""
     if last["terminal"] == "exhausted":

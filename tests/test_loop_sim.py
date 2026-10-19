@@ -200,13 +200,16 @@ def test_a_harness_that_returns_500_once_costs_one_stage_item_one_rest_and_nothi
     triage = loop.attempts("triage")
     assert [a["terminal"] for a in triage] == ["blocked"] and "HTTP 500" in triage[0]["failures"]
     assert state_of(loop, "sim1") == state_of(loop, "sim2") == "new" and not list((loop.me / "fit").glob("*.json"))      # nothing half-written
-    assert [a["stage"] for a in loop.attempts() if a["terminal"] == "success"] == ["learn", "upskill", "discover", "boards", "maintain"] or True
-    assert "BLOCKED" not in loop.digest() and "`triage`" in loop.digest()
+    others = {a["stage"] for a in loop.attempts() if a["terminal"] in ("success", "no_op")}
+    assert others == {"learn", "upskill", "discover", "boards", "maintain"}                # every other stage still did its work
+    assert "`triage`" in loop.digest() and "HTTP 500" in loop.digest()                     # the digest says what failed
     loop.clock.advance(hours=1)
-    assert not [a for a in loop.run_pass() and loop.attempts("triage") if a["terminal"] == "success"]          # resting: not retried within the backoff
+    loop.run_pass()
+    assert len(loop.attempts("triage")) == 1                                              # resting: not retried inside the backoff
     loop.clock.advance(hours=7)
     loop.run_pass()
     assert statuses(loop) == {K2: "drafted", K1: "drafted"} and loop.queue()[K2]["status"] == "ready"
+    assert [a["terminal"] for a in loop.attempts("triage")] == ["blocked", "success"]
 
 
 def test_a_drafter_that_never_validates_stalls_and_the_next_attempt_runs_on_the_next_harness(tmp_path, monkeypatch):
@@ -565,6 +568,8 @@ def test_a_long_search_settles_every_posting_and_an_idle_loop_asks_the_harness_f
     with loop.store() as store:
         assert len([p for p in store.proposals() if p["kind"] == "stale_resolution"]) == 1            # K1 went stale, was put to the person once
         assert store.db.execute("SELECT COUNT(*) FROM queue WHERE item LIKE 'followup:%'").fetchone()[0] == 2
+        assert store.db.execute("SELECT COUNT(*) FROM queue WHERE item LIKE 'upskill:%'").fetchone()[0] >= 3          # one report a week ...
+        assert store.db.execute("SELECT COUNT(*) FROM queue WHERE item LIKE 'upskill:%' AND status='ready'").fetchone()[0] == 1   # ... and only the latest waits
     assert statuses(loop)[K1] == "applied" and profile_unchanged(loop)
     # a search with nothing left to do costs no harness turn at all, apart from the weekly skills report
     paid = {a["stage"] for a in loop.attempts()[-18:] if a["cost_usd"]}
@@ -705,3 +710,130 @@ def test_what_the_loop_stored_joins_up_across_the_libraries_that_read_it_by_key(
         ev = analysis.evidence(loop.me, store, loop.rows())
     assert {(o.key, o.status) for o in ev.outcomes} >= {(K1, "rejected"), (K2, "hired")} and all(o.score is not None and o.band for o in ev.outcomes)
     assert ev.settled and ev.enough()
+
+
+# ───────────────────────────── 7. chaos: a seeded random walk over everything above ─────────────────────────────
+def audit(loop, expected: dict, *, settled: bool) -> None:
+    """The invariants that must hold after every step; `settled` (after clean passes) also demands every application be whole and queued."""
+    assert profile_unchanged(loop)
+    rows = loop.rows()
+    assert len({r.key for r in rows}) == len(rows)                                           # never two rows for one application
+    for row in rows:
+        assert row.status == expected.get(row.key, "drafted"), (row.key, row.status)         # the loop wrote `drafted` and nothing else
+        assert (loop.me / "applications" / row.key / "outcome.md").exists() or not (loop.me / "applications" / row.key / "draft.json").exists()
+    drafted = [a["item"] for a in loop.attempts("draft") if a["terminal"] == "success"]
+    assert len(drafted) == len(set(drafted)), drafted                                        # never drafted twice
+    for key in loop.queue():
+        if archive.is_key(key):
+            assert key in {r.key for r in rows}                                             # a queue entry for an application that does not exist
+    for item in loop.attempts():
+        assert item["terminal"] in ("success", "no_op", "blocked", "stalled", "exhausted")
+    if settled:
+        for row in rows:
+            folder = loop.me / "applications" / row.key
+            assert (folder / "draft.json").exists() and (folder / "cv.pdf").exists(), row.key
+            assert row.key in loop.queue() and (loop.me / "queue" / row.key / "queue.json").exists()
+        assert sorted(drafted) == sorted(r.key for r in rows)
+
+
+def walk(root, monkeypatch, seed: int, steps: int, tally) -> None:
+    import random
+    rnd = random.Random(seed)
+    loop = S.Loop(root, monkeypatch, posting_keys=("sim1", "sim2", "sim3", "sim4"), config={"max_new_drafts": 1})
+    fresh = ["sim7", "sim8", "sim5"]
+    expected: dict[str, str] = {}
+    for step in range(steps):
+        move = rnd.choice(["pass", "pass", "pass", "pass_500", "pass_kill", "tick", "tick", "apply", "apply", "interview", "offer", "reject", "addpost"])
+        rows = {r.key: r.status for r in loop.rows()}
+        if move == "tick":
+            loop.clock.advance(hours=rnd.choice([1, 7, 25, 60]))
+        elif move == "apply" and "drafted" in rows.values():
+            key = rnd.choice([k for k, v in rows.items() if v == "drafted"])
+            loop.person(key, "applied", days_ago=rnd.choice([0, 5, 12]))
+            expected[key] = "applied"
+        elif move == "interview" and "applied" in rows.values():
+            key = rnd.choice([k for k, v in rows.items() if v == "applied"])
+            archive.record_stage(loop.me, key, on=loop.clock().date() + timedelta(days=rnd.choice([-3, 2])), stage="technical", format="video",
+                                 outcome=rnd.choice(["pending", "passed"]))
+            loop.person(key, "interview")
+            expected[key] = "interview"
+        elif move == "offer" and "interview" in rows.values():
+            key = rnd.choice([k for k, v in rows.items() if v == "interview"])
+            loop.person(key, "offer")
+            (loop.me / "offers").mkdir(exist_ok=True)
+            (loop.me / "offers" / f"{key}.md").write_text("Base pay is 70000 EUR per year.\nHybrid with 2 days on site.\n")
+            expected[key] = "offer"
+        elif move == "reject" and any(v in ("applied", "interview") for v in rows.values()):
+            key = rnd.choice([k for k, v in rows.items() if v in ("applied", "interview")])
+            loop.person(key, "rejected")
+            expected[key] = "rejected"
+        elif move == "addpost" and fresh:
+            loop.add_postings(fresh.pop(0))
+        elif move.startswith("pass"):
+            if move == "pass_500":
+                loop.server.inject(lambda body, role: True, "500", times=1)
+            elif move == "pass_kill":
+                at = len(loop.server.requests) + rnd.randint(1, 8)
+                loop.server.inject(lambda body, role, at=at: len(loop.server.requests) >= at, "raise", times=1)
+            result = loop.run_pass()
+            assert result.digest_path.exists() and result.violations == [], (seed, step, move, result)
+            tally["500"] += sum(i.hits for i in loop.server.injections if i.what == "500")
+            tally["kill"] += sum(i.hits for i in loop.server.injections if i.what == "raise")
+            loop.server.injections.clear()
+        tally[move] += 1
+        audit(loop, expected, settled=False)
+    # whatever happened, clean passes finish the work: everything shortlisted is drafted, whole and queued
+    for _ in range(5):
+        loop.clock.advance(days=1)
+        result = loop.run_pass()
+        assert result.violations == [] and result.digest_path.exists()
+    audit(loop, expected, settled=True)
+    for row in loop.rows():
+        tally["reached " + row.status] += 1
+    assert cli.main(["status", "--me", str(loop.me)]) == 0
+
+
+def test_a_random_walk_of_passes_failures_kills_and_the_persons_acts_keeps_every_invariant(tmp_path, monkeypatch):
+    from collections import Counter
+    tally: Counter = Counter()
+    for seed in range(8):
+        walk(tmp_path / f"seed{seed}", monkeypatch, seed, 20, tally)
+    assert tally["kill"] >= 2 and tally["500"] >= 2 and tally["reached applied"] and tally["reached rejected"] and tally["reached offer"] + tally["reached interview"], tally
+
+
+def test_an_offer_without_terms_asks_once_and_waits_for_the_file(loop):
+    loop.run_pass()
+    loop.clock.advance(days=1)
+    loop.person(K2, "applied", days_ago=3)
+    loop.person(K2, "interview", days_ago=2)
+    loop.person(K2, "offer")
+    loop.run_pass()
+    entry = loop.queue(f"offer:{K2}")[f"offer:{K2}"]
+    assert entry["status"] == "needs_decision" and f"me/offers/{K2}.md" in entry["why"]
+    for _ in range(2):                                           # asked once, not again every pass
+        loop.clock.advance(days=1)
+        loop.run_pass()
+    assert [a["terminal"] for a in loop.attempts("offer")] == ["blocked"]
+    (loop.me / "offers").mkdir()
+    (loop.me / "offers" / f"{K2}.md").write_text("Base pay is 70000 EUR per year.\nHybrid with 2 days on site.\n")
+    loop.clock.advance(days=1)
+    loop.run_pass()
+    assert loop.queue(f"offer:{K2}")[f"offer:{K2}"]["status"] == "ready" and (loop.me / "applications" / K2 / "offer_analysis.md").exists()
+    # the person edits the terms (a counter-offer): the analysis is redone, the old one kept beside it
+    (loop.me / "offers" / f"{K2}.md").write_text("Base pay is 75000 EUR per year.\nHybrid with 2 days on site.\n")
+    loop.clock.advance(days=1)
+    loop.run_pass()
+    assert (loop.me / "applications" / K2 / "offer_analysis.previous.md").exists() and "75000" in (loop.me / "applications" / K2 / "offer_analysis.md").read_text()
+
+
+def test_attempt_limits_count_failures_since_the_last_success(tmp_path):
+    from jobloop.engine import policy
+    from jobloop.engine.spec import Action, Spec
+    from jobloop.engine.store import Store
+    spec, action = Spec("probe", "g"), Action("probe", "*", "r")
+    with Store(tmp_path) as store:
+        stamp = lambda hours: (S.START + timedelta(hours=hours)).isoformat()
+        for n, terminal in enumerate(["blocked", "blocked", "blocked", "success", "blocked"]):
+            store.record_attempt(1, "probe", "*", "", "", stamp(n), stamp(n), terminal, 0, 0, ["it failed"], [])
+        assert policy.allowed(action, spec, store, S.START + timedelta(hours=4, minutes=30))[0] is False       # one failure: rests the 6 hour backoff
+        assert policy.allowed(action, spec, store, S.START + timedelta(hours=10, minutes=30))[0] is True        # ... and not the 24 hours three old failures would earn
