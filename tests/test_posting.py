@@ -65,3 +65,11 @@ def test_extract_sends_failures_back_and_the_posting_travels_without_its_comment
     assert server.requests[1]["previous_response_id"] == "resp_1" and "Evil Corp" in server.requests[1]["input"][0]["text"]
     sent = server.requests[0]["input"][1]["file_data"]
     assert "Evil Corp" not in sent and "untrusted" in server.requests[0]["instructions"]
+
+
+def test_a_role_qualifier_set_off_by_a_dash_is_not_part_of_the_role_the_letter_names():
+    from jobloop.posting import short_role
+    assert short_role("Data Engineer \u2013 Junior/mid-level") == "Data Engineer"
+    assert short_role("Data Engineer - Junior") == "Data Engineer"
+    assert short_role("Full-stack Engineer") == "Full-stack Engineer"
+    assert short_role("Senior Data Engineer") == "Senior Data Engineer"

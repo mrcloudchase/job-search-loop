@@ -48,6 +48,12 @@ def reference_of(posting: str) -> str | None:
     return found.group(1).strip() if found else None
 
 
+def short_role(role: str) -> str:
+    """The role without a qualifier set off by a dash ("Data Engineer - Junior/mid-level" -> "Data Engineer"): the letter
+    names the role, and a dash is not allowed as punctuation in a letter."""
+    return re.split(r"\s+[-\u2013\u2014]+\s+", role, maxsplit=1)[0].strip() or role
+
+
 def check(data: object, posting: str) -> tuple[Facts | None, list[str]]:
     """The reported facts, or the failures to send back: every value must be in the posting's visible words."""
     if not isinstance(data, dict):
@@ -68,6 +74,7 @@ def check(data: object, posting: str) -> tuple[Facts | None, list[str]]:
             failures.append(f"{field} is required: the posting states it, so copy it exactly.")
     if failures:
         return None, failures
+    values["role"] = short_role(values["role"])
     return Facts(**values, language=letter.detect(visible(posting))), []
 
 
