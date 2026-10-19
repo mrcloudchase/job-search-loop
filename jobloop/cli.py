@@ -15,7 +15,7 @@ from pathlib import Path
 from . import archive, profile as profiles, tracker
 from .engine import config as configuration, digest, playbook, policy, proposals, queue, runner, snapshot
 from .engine.store import Store
-from .term import BOLD, DIM, OFF, RED, say
+from .term import BOLD, DIM, GREEN, OFF, RED, say
 from .text import utf8_io
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -101,21 +101,45 @@ def cmd_queue(args) -> int:
     return 0
 
 
+def _describe(p: dict, full: bool = False) -> str:
+    line = f"#{p['id']} [{p['kind']}] {p['summary']}"
+    if p.get("note"):
+        line += f"\n    last refusal: {p['note']}"
+    if full:
+        for k, v in sorted(p["payload"].items()):
+            if k != "summary":
+                line += f"\n    {k}: {v}"
+    return line
+
+
 def cmd_proposals(args) -> int:
     me = _me(args)
+    now = datetime.now(timezone.utc)
     with Store(me) as store:
+        pending = proposals.list_pending(store)
         if args.action == "list":
-            pending = proposals.list_pending(store)
-            say("\n".join(proposals.describe(p) for p in pending) if pending else "No proposals waiting.")
+            say("\n".join(_describe(p) for p in pending) if pending else "No proposals waiting.")
             return 0
+        mine = next((p for p in pending if p["id"] == args.id), None)
         if args.action == "show":
-            say(proposals.describe(proposals.get(store, args.id), full=True))
-            return 0
-        if args.action == "accept":
-            say(proposals.accept(me, store, args.id, datetime.now(timezone.utc)))
+            say(_describe(mine, full=True) if mine else f"no pending proposal #{args.id}")
+            return 0 if mine else 2
+        if args.action == "reject":
+            result = proposals.reject(store, args.id, now, args.note)
+        elif mine and mine["kind"] == "stale_resolution":
+            from .stages import maintain
+            choice = args.choice or "keep"
+            try:
+                maintain.accept_stale(me, store, mine["payload"]["key"], choice, now.date(), proposal_id=args.id, now=now)
+                result = proposals.Result(True, f"{mine['payload']['key']}: {choice}")
+            except (ValueError, LookupError) as error:
+                result = proposals.Result(False, str(error))
         else:
-            say(proposals.reject(store, args.id, args.note, datetime.now(timezone.utc)))
-    return 0
+            result = proposals.accept(me, store, args.id, now)
+        say((GREEN if result.ok else RED) + (result.reason or ("done" if result.ok else "refused")) + OFF)
+        if result.applied:
+            say(f"added to your profile: {result.applied}")
+        return 0 if result.ok else 2
 
 
 def cmd_playbook(args) -> int:
@@ -220,7 +244,9 @@ def build_parser() -> argparse.ArgumentParser:
     ps = p.add_subparsers(dest="action", required=True)
     ps.add_parser("list")
     ps.add_parser("show").add_argument("id", type=int)
-    ps.add_parser("accept").add_argument("id", type=int)
+    ac = ps.add_parser("accept")
+    ac.add_argument("id", type=int)
+    ac.add_argument("--choice", help="for a stale application: no_response, withdrawn or keep")
     r = ps.add_parser("reject")
     r.add_argument("id", type=int)
     r.add_argument("--note", default="")

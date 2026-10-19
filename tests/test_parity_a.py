@@ -47,9 +47,14 @@ def test_cyrillic_cjk_polish_in_each_cli_output(tmp_path):
     listed = legacy("tracker", "--me", str(me), "list")
     assert listed.returncode == 0 and "Яндекс" in listed.stdout.decode("utf-8") and "エンジニア" in listed.stdout.decode("utf-8")
     data = ROOT / "tests" / "fixtures" / "salary" / "benchmark.json"
-    looked_up = legacy("salary", "--data", str(data), "--company", "Nestl")                   # Nestlé: a Latin-1 name
+
+    def salary_cli(*argv):
+        return legacy(code="import argparse, sys\nfrom jobloop import salary, text\ntext.utf8_io()\np = argparse.ArgumentParser()\n"
+                           f"salary.add_arguments(p)\nsys.exit(salary.main(p.parse_args({list(argv)!r})))")
+
+    looked_up = salary_cli("--data", str(data), "--company", "Nestl")                           # Nestlé: a Latin-1 name
     assert looked_up.returncode == 0 and "Nestlé Suisse SA" in looked_up.stdout.decode("utf-8")
-    cjk = legacy("salary", "--data", str(data), "--company", "Nestl", "--json")
+    cjk = salary_cli("--data", str(data), "--company", "Nestl", "--json")
     assert cjk.returncode == 0 and b"Nestl" in cjk.stdout
     verdict = legacy(code="from jobloop import pdfcheck, text, layout; text.utf8_io()\n"
                           "print('履歴書.pdf: ' + pdfcheck.unverified('pdftotext', 'missing for 履歴書.pdf').feedback())\n"
@@ -199,10 +204,11 @@ def test_list_wrapper_pattern():
     assert any("lettercontent" in f for f in verify.source_findings("\\section{Profile}", wrapped))
 
 
-# ── the command table lists the modules that exist, each with a purpose ──────────────────────────────
+# ── the person's command surface is a short table, each command with a purpose ─────────────────────
 def test_reference_table_lists_existing_files():
-    from jobloop.__main__ import COMMANDS
-    modules = {p.stem for p in (ROOT / "jobloop").glob("*.py") if "def add_arguments" in p.read_text()}
-    assert modules == set(COMMANDS)                                      # none missing from the table, none listed that is not there
-    assert all(purpose.strip() and len(purpose.split()) >= 2 for purpose in COMMANDS.values())
-    assert all((ROOT / "jobloop" / f"{name}.py").is_file() for name in COMMANDS)
+    import argparse
+    from jobloop import cli
+    sub = next(a for a in cli.build_parser()._actions if isinstance(a, argparse._SubParsersAction))
+    helps = {c.dest: c.help for c in sub._choices_actions}
+    assert set(helps) == {"setup", "run", "status", "queue", "tracker", "stage", "proposals", "playbook", "config", "harnesses"}
+    assert all(h and len(h.split()) >= 3 for h in helps.values())                  # every command says what it is for

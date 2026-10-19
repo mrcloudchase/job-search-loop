@@ -5,10 +5,10 @@ are the ones that hold even if a stage is wrong.
 """
 from __future__ import annotations
 
-from .. import rankstate
+from .. import rankstate, tracker
 from .snapshot import Snapshot
 
-HUMAN_ONLY = frozenset({"applied", "interview", "offer", "hired", "rejected", "no_response", "offer_declined", "withdrawn"})
+HUMAN_ONLY = frozenset(tracker.STATUSES) - {"drafted"}        # the tracker owns the vocabulary; only `drafted` is the loop's to write
 
 
 class InvariantViolation(RuntimeError):

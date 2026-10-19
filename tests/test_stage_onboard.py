@@ -9,9 +9,9 @@ import httpx
 import pytest
 
 import sim
-from test_enrich import PORTFOLIO, SITE_HOST, TALK, TOOL, site
+from test_enrich import TALK, TOOL, site
 from test_research import Rig, answer
-from jobloop.engine import config as cfgmod, policy, proposals, runner, snapshot
+from jobloop.engine import config as cfgmod, proposals, runner, snapshot
 from jobloop.engine.spec import Action
 from jobloop.engine.store import Store
 from jobloop.stages import onboard
