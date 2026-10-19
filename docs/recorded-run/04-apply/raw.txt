@@ -1,28 +1,5 @@
 
 [1m[36m━━ FACTS · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 00:00 · $0.00[0m
-[2m  resp_8cd1a334c6f24b41 · claude-deepseek/deepseek-chat · streaming[0m
-[33m  ⚙ Read[0m /srv/hi-data/workspaces/resp_8cd1a334c6f24b41/posting.md
-[33m  ⚙ Write[0m /srv/hi-data/workspaces/resp_8cd1a334c6f24b41/facts.json
-  Wrote `facts.json`: ```json { "company": "Too Good To Go", "role": "Senior Data Engineer", "department": null…
-[1m  completed[0m · 8.818s · $0.072 · changed facts.json
-[1m  diff --git a/facts.json b/facts.json[0m
-[2m  new file mode 100644[0m
-[2m  index 0000000..32b585f[0m
-[1m  --- /dev/null[0m
-[1m  +++ b/facts.json[0m
-[36m  @@ -0,0 +1,8 @@[0m
-[32m  +{[0m
-[32m  +  "company": "Too Good To Go",[0m
-[32m  +  "role": "Senior Data Engineer",[0m
-[32m  +  "department": null,[0m
-[32m  +  "location": "Copenhagen, Capital Region of Denmark, Denmark",[0m
-[32m  +  "deadline": null,[0m
-[32m  +  "reference": null[0m
-[32m  +}[0m
-[1m  verify:[0m [32mall checks pass[0m
-
-[1mSenior Data Engineer[0m at [1mToo Good To Go[0m  [2m→ me/applications/too_good_to_go__senior_data_engineer[0m
-  source host: portal (linkedin.com) [2mwww.linkedin.com is under linkedin.com[0m
-
-[1m[36m━━ FIT · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 00:09 · $0.07[0m
-[2m  resp_2c6933cd77e845e7 · claude-deepseek/deepseek-chat · streaming[0m
+[2m  resp_e20305df85d74f1e · claude-deepseek/deepseek-chat · streaming[0m
+[33m  ⚙ Read[0m /srv/hi-data/workspaces/resp_e20305df85d74f1e/posting.md
+[33m  ⚙ Write[0m /srv/hi-data/workspaces/resp_e20305df85d74f1e/facts.json

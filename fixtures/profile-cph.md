@@ -19,6 +19,9 @@ companies. Strongest in Python, SQL and Apache Airflow.
 - Introduced data-quality tests with Great Expectations on 30 core tables; failed loads dropped 70 percent in the first quarter.
 - Moved the team's deployments to GitHub Actions and Terraform, so a new environment takes 20 minutes instead of two days.
 - Defined the shipment-events data contract with five producing teams and wrote the on-call runbook for the pipeline.
+- Cut the BigQuery bill for the events warehouse by 35 percent by partitioning and clustering the five largest tables.
+- Built a Looker explore for the operations team so planners answer delivery-delay questions themselves instead of filing tickets.
+- Ran the interviews for three data-engineering hires and wrote the team's take-home exercise.
 
 ### Data Engineer, Marlow Retail Group (Utrecht), June 2018 - February 2022
 - Built the first Airflow deployment at the company and migrated 45 cron jobs onto it.
@@ -26,11 +29,14 @@ companies. Strongest in Python, SQL and Apache Airflow.
 - Wrote Python ingestion services for partner price feeds (REST and SFTP), handling about 2 million rows a day.
 - Supported the move of the warehouse from on-premise PostgreSQL to BigQuery, validating 60 tables row by row.
 - Trained 12 analysts on dbt and reviewed their first 40 models.
+- Added alerting on the 45 Airflow jobs so late partner feeds are noticed within 15 minutes instead of the next morning.
+- Wrote the migration guide for moving reports off the old warehouse, used by four teams.
 
 ### Junior Analyst, Delft Energy Cooperative (Delft), September 2016 - May 2018
 - Automated monthly consumption reports with Python and SQL, saving the team about 3 days each month.
 - Built a small Flask dashboard that 25 cooperative members used to read their own consumption.
 - Cleaned five years of meter readings with Pandas and documented the 14 data-quality rules that came out of it.
+- Presented the consumption findings to the cooperative's board twice a year.
 
 ## Education
 - MSc Computer Science (data systems), Delft University of Technology, 2016
@@ -43,6 +49,12 @@ companies. Strongest in Python, SQL and Apache Airflow.
 ## Certifications
 - Google Cloud Professional Data Engineer, 2023
 - dbt Analytics Engineering Certification, 2022
+
+## Publications
+- "Testing freight data with dbt", Data Engineering Weekly guest post, 2024
+
+## Awards
+- Tidewater Logistics Engineering Excellence Award, 2023
 
 ## Skills
 - Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, BigQuery, Docker
