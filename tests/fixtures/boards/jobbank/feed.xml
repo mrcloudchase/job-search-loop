@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Jobbank (synthetic)</title>
+    <link>https://jobbank.dk/job/</link>
+    <atom:link href="https://jobbank.dk/job/rss?key=data" rel="self" type="application/rss+xml"/>
+    <item>
+      <title><![CDATA[Dataanalytiker til Nordlys]]></title>
+      <description><![CDATA[Fuldtidsjob, Graduate/trainee hos Nordlys Analyse ApS, København K (Ansøgningsfrist: 15.11.2026)]]></description>
+      <link>https://jobbank.dk/job/900101/nordlys-analyse-aps/dataanalytiker-til-nordlys/</link>
+      <pubDate>Wed, 14 Oct 2026 00:30:00 +0200</pubDate>
+    </item>
+    <item>
+      <title>Energiingeniør</title>
+      <description>Deltidsjob hos Fjordvind Energi A/S, Aarhus C (Ansøgningsfrist: løbende)</description>
+      <atom:link href="https://jobbank.dk/job/900102/atom-should-be-ignored/" rel="alternate"/>
+      <link>https://jobbank.dk/job/900102/fjordvind-energi-as/energiingenioer/</link>
+      <pubDate>Tue, 13 Oct 2026 09:30:00 +0200</pubDate>
+    </item>
+    <item>
+      <title>Vikar i sagsbehandling</title>
+      <description>Vikariat hos Havnebyen Kommune (Ansøgningsfrist: snarest muligt)</description>
+      <link>https://jobbank.dk/job/900103/havnebyen-kommune/vikar-i-sagsbehandling/</link>
+      <pubDate>Mon, 12 Oct 2026 08:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Forskningsassistent</title>
+      <description>Fuldtidsjob hos Kornmark Forskning, Odense C (Ansøgningsfrist: 01.10.2026)</description>
+      <link>https://jobbank.dk/job/900104/kornmark-forskning/forskningsassistent/</link>
+      <pubDate>I går</pubDate>
+    </item>
+    <item>
+      <title>Ikke et opslag</title>
+      <description>Fuldtidsjob hos Ingen ApS, Intet (Ansøgningsfrist: 01.12.2026)</description>
+      <link>https://jobbank.dk/job/oversigt/ingen-aps/</link>
+      <pubDate>Mon, 12 Oct 2026 08:00:00 +0200</pubDate>
+    </item>
+    <item>
+      <title>Opslag uden struktur</title>
+      <description>Ukendt format</description>
+      <link>https://jobbank.dk/job/900106/ukendt/opslag-uden-struktur/</link>
+      <pubDate>Mon, 12 Oct 2026 08:00:00 +0200</pubDate>
+    </item>
+    <item>
+      <title>Strategi & udvikling</title>
+      <description>Fuldtidsjob hos Bølgeslag & Partnere ApS, Aalborg (Ansøgningsfrist: 20.11.2026)</description>
+      <link>https://jobbank.dk/job/900107/boelgeslag-partnere/strategi-udvikling/</link>
+      <pubDate>Mon, 12 Oct 2026 08:00:00 +0200</pubDate>
+    </item>
+  </channel>
+</rss>

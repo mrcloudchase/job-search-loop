@@ -1,0 +1,15 @@
+{
+  "scores": {"technical": 80, "experience": 70, "behavioural": 60, "career": 76},
+  "requirements": [
+    {"term": "Python", "kind": "required", "verdict": "backed", "quote": "Wrote Python and SQL ingestion services"},
+    {"term": "SQL", "kind": "required", "verdict": "backed", "quote": "Wrote Python and SQL ingestion services"},
+    {"term": "Airflow", "kind": "required", "verdict": "backed", "quote": "orchestrated with Apache Airflow"},
+    {"term": "Scala", "kind": "required", "verdict": "gap", "quote": ""},
+    {"term": "Kafka", "kind": "preferred", "verdict": "backed", "quote": "40 million events per day from Kafka into BigQuery"}
+  ],
+  "strengths": ["Python and SQL pipelines at scale", "Airflow orchestration in production"],
+  "gaps": ["Scala is listed under Not yet"],
+  "eligibility": [],
+  "languages": [{"language": "English", "level": "fluent", "required": true, "text": "Fluent English with our international team"}],
+  "location": {"onsite_days": 2, "relocation_required": false, "travel": "none", "text": "hybrid, 2 days on site", "deal_breaker_hits": []}
+}

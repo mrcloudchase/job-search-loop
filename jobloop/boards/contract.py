@@ -1,7 +1,8 @@
 """The one contract every job-board adapter keeps, so the loop treats LinkedIn and Jobnet the same way.
 
 An adapter module defines `NAME`, `HOSTS` (every host it may contact), `DEFAULT_ENABLED`, `TERMS` (a personal-use or
-terms note, or ""), and two functions: `search(query, http) -> list[dict]` and `detail(ref, http) -> dict`, where
+terms note, or ""), `ACK_WAIVES_ROBOTS` (True only for a board whose robots.txt disallows pages that its terms permit for
+personal use), and two functions: `search(query, http) -> list[dict]` and `detail(ref, http) -> dict`, where
 `http` is a `boards.http.Client`. Both return results in the shape below. Run as a program (`python -m
 jobloop.boards.NAME search --query ...`) it prints `{"meta": {...}, "results": [...]}` as JSON; any failure goes to
 stderr as one line and the exit code is 1. Adapters run as plain code in the loop, never inside a harness.
@@ -104,9 +105,16 @@ def run_cli(module, argv: list[str] | None = None) -> int:
     s.add_argument("--limit", type=int, default=20)
     d = sub.add_parser("detail")
     d.add_argument("ref", help="a posting's id or url, as search printed it")
+    for sp in (s, d):
+        sp.add_argument("--acknowledge-terms", action="store_true", help="a board with terms: confirm personal, low-volume use")
     args = p.parse_args(argv)
     try:
-        with Client(module.NAME, module.HOSTS) as http:
+        if module.TERMS and not args.acknowledge_terms:
+            raise BoardError("invalid", f"{module.TERMS} Pass --acknowledge-terms to confirm.")
+        if module.TERMS:
+            print(f"{module.NAME}: {module.TERMS}", file=sys.stderr)
+        waive = module.TERMS and getattr(module, "ACK_WAIVES_ROBOTS", False)
+        with Client(module.NAME, module.HOSTS, robots=(lambda url: True) if waive else None) as http:
             if args.command == "search":
                 query = Query(args.query, args.location, args.recency_days, args.limit)
                 found = [r for r in (result(x) for x in module.search(query, http)) if r]

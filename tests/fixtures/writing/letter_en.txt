@@ -1,0 +1,25 @@
+Alex Fernsby
+alex.fernsby@example.com | +1 555 0100
+Rotterdam, Netherlands
+
+Data pipelines that forecasters can trust: dbt, Airflow and data-quality testing
+
+19 October 2026
+
+Dear Hiring Manager,
+
+I am applying for the Senior Data Engineer role at Brightwell Analytics (reference BW-DE-0417). Your forecasts depend on the nightly pipelines beneath them, and owning exactly that kind of platform has been my work for seven years, most recently at Tidewater Logistics in Rotterdam.
+
+Your posting asks for production pipelines in Python and SQL, orchestrated with Airflow, with tested and monitored tables. This is what I have done, and what I would bring to your platform team:
+
+- Pipelines at scale: I own the shipment-events pipeline at Tidewater, which moves 40 million events per day from Kafka into a PostgreSQL and BigQuery warehouse, orchestrated with Apache Airflow.
+- Faster models with dbt: I cut the nightly rebuild of our delivery-performance mart from 6 hours to 55 minutes by moving it to incremental dbt models.
+- Quality you can measure: I introduced Great Expectations tests on 30 core tables, and failed loads dropped 70 percent over two quarters.
+- Growing engineers: I mentor two junior engineers and lead the weekly data-modelling review, which matches the design reviews you want your senior engineer to lead.
+
+I should be open about one gap. I have not yet worked with Scala or Spark, which your heavy transformations use. My closest experience is the large Python and SQL transformations behind our warehouse, and I learn new tools quickly when a team needs them; I would plan my first weeks around closing that gap with your data scientists.
+
+Your hybrid arrangement of two days on site in Amsterdam suits me well, since I live in Rotterdam and already commute within the Netherlands. I would be glad to walk you through the shipment-events design and hear how your forecasts consume your tables. Thank you for your time and consideration.
+
+Sincerely,
+Alex Fernsby

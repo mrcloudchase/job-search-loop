@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 TESTS = re.compile(r"\btest_\w+")
 HEADER = "| Original guarantee (file:line) | Where it lives here | How it's checked (test name) | Status |"
-STATUS = re.compile(r"^(done|planned(?: \(.+\))?|stricter here|not ported, because .+)$")
+STATUS = re.compile(r"^(done|stricter here|planned|not ported, because )(?:\b|(?<= )).*$")
 
 INTRO = """# Parity matrix
 
@@ -49,7 +49,7 @@ def build() -> tuple[str, list[str], int]:
             if len(cells) != 4 or not all(cells):
                 problems.append(f"{path.name}:{n}: a row needs four non-empty cells, found {len(cells)}")
                 continue
-            kind = "planned" if cells[3].startswith("planned") else "not ported" if cells[3].startswith("not ported") else cells[3]
+            kind = next((k for k in ("done", "stricter here", "planned", "not ported") if cells[3].startswith(k)), cells[3])
             if not STATUS.match(cells[3]):
                 problems.append(f"{path.name}:{n}: bad status {cells[3]!r}")
             elif kind in ("done", "stricter here"):

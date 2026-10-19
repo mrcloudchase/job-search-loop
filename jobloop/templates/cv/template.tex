@@ -1,0 +1,99 @@
+% CV TEMPLATE: moderncv, banking style, blue, 11pt, A4. Compiled with lualatex. Exactly 2 pages.
+% DRAFTER: replace every [[LIKE THIS]] with real content from the profile, keep everything else. Delete these comment
+% lines and any section the profile has no truthful content for (but keep the section ORDER below). Rules:
+%  - Escape \& \% \$ \# \_ in all text. An unescaped % silently deletes the rest of the line.
+%  - A bullet that starts with [ is written \item {[text]}.
+%  - Dates in \cventry are "2021 - 2023" with one hyphen, never "--". An ongoing role ends in "present".
+%  - No \vspace between \item lines. Never shrink the geometry or spacing to fit: cut content instead.
+%  - An address line with no address is deleted, never left empty.
+%  - Section headings are translated when the CV language is not English; use the labels in [[ ]] below.
+\documentclass[11pt,a4paper,sans]{moderncv}
+\moderncvstyle{banking}
+\moderncvcolor{blue}
+
+\usepackage[scale=0.80]{geometry}
+\usepackage{needspace}
+
+% Name and section headings are forced to the moderncv blue; without these they render black.
+\definecolor{cvblue}{rgb}{0.22,0.45,0.70}
+\renewcommand*{\namefont}{\fontsize{26}{28}\mdseries\upshape\color{cvblue}}
+\colorlet{firstnamecolor}{cvblue}
+\colorlet{familynamecolor}{cvblue}
+\colorlet{namecolor}{cvblue}
+\renewcommand*{\sectionstyle}[1]{{\color{cvblue}\sectionfont #1}}
+
+\AtEndPreamble{%
+  \hypersetup{pdfpagemode=UseNone,pdfauthor={[[FULL NAME]]},pdftitle={[[FULL NAME]], CV},colorlinks=false,pdfborder={0 0 0}}}
+
+\firstname{[[FIRST NAME]]}
+\familyname{[[FAMILY NAME]]}
+% Keep only the lines the profile supplies. Never leave an empty \address{}{}{}.
+\address{[[STREET]]}{[[POSTCODE CITY]]}{[[COUNTRY]]}
+\mobile{[[PHONE]]}
+\email{[[EMAIL]]}
+\social[linkedin]{[[LINKEDIN HANDLE]]}
+\social[github]{[[GITHUB HANDLE]]}
+
+\begin{document}
+\makecvtitle
+
+% ORDER for technical roles: profile, competencies, experience, education, languages, publications, honours, references.
+% For specialist roles put Education before Experience. Page budget is about two pages.
+
+\section{[[Profile]]}
+% 3-4 lines, reframed for THIS role. Facts only from the profile.
+[[PROFILE STATEMENT]]
+
+\section{[[Core Competencies]]}
+% 5-7 bold-labelled bullets; use the posting's own term in the matching label when it is true.
+\begin{itemize}
+  \item \textbf{[[LABEL]]}: [[ONE LINE]]
+  \item \textbf{[[LABEL]]}: [[ONE LINE]]
+  \item \textbf{[[LABEL]]}: [[ONE LINE]]
+  \item \textbf{[[LABEL]]}: [[ONE LINE]]
+  \item \textbf{[[LABEL]]}: [[ONE LINE]]
+\end{itemize}
+
+\section{[[Professional Experience]]}
+% Newest role 4-6 bullets, previous 3-4, older 2-3 (or one-liners). Never shorten or pad dates.
+\cventry{[[START - END]]}{[[ROLE TITLE]]}{[[EMPLOYER]]}{[[CITY]]}{}{%
+  \begin{itemize}
+    \item [[ACHIEVEMENT WITH A NUMBER OR OUTCOME]]
+    \item [[ACHIEVEMENT]]
+    \item [[ACHIEVEMENT]]
+    \item [[ACHIEVEMENT]]
+  \end{itemize}}
+% If a compile shows an entry's header stranded at a page bottom, put \needspace{5\baselineskip} before that entry
+% (never before a \section).
+\cventry{[[START - END]]}{[[ROLE TITLE]]}{[[EMPLOYER]]}{[[CITY]]}{}{%
+  \begin{itemize}
+    \item [[ACHIEVEMENT]]
+    \item [[ACHIEVEMENT]]
+    \item [[ACHIEVEMENT]]
+  \end{itemize}}
+\cventry{[[START - END]]}{[[ROLE TITLE]]}{[[EMPLOYER]]}{[[CITY]]}{}{%
+  \begin{itemize}
+    \item [[ONE LINE]]
+    \item [[ONE LINE]]
+  \end{itemize}}
+
+\section{[[Education]]}
+% In-progress degrees say "in progress, expected [[Month Year]]". Never claim a credential not yet held.
+\cventry{[[START - END]]}{[[DEGREE]]}{[[INSTITUTION]]}{[[CITY]]}{}{[[ONE OR TWO LINES, OPTIONAL]]}
+
+\section{[[Languages]]}
+\cvitem{[[LANGUAGE]]}{[[LEVEL]]}
+\cvitem{[[LANGUAGE]]}{[[LEVEL]]}
+
+\section{[[Publications]]}
+% 2-4 most relevant; a named artifact carries an \href link. Delete the section if there are none.
+\cvitem{[[YEAR]]}{[[TITLE]], \href{[[URL]]}{[[LINK TEXT]]}}
+
+\section{[[Honors and Awards]]}
+% One line each.
+\cvitem{[[YEAR]]}{[[AWARD, ISSUER]]}
+
+\section{[[References]]}
+\cvitem{}{[[Available upon request.]]}
+
+\end{document}

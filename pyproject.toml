@@ -11,6 +11,6 @@ dev = ["pytest>=8"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = [".", "tests"]
+pythonpath = [".", "tests", "tools"]
 addopts = "-m 'not docker and not live'"
 markers = ["docker: needs Docker and the job-search-check image", "live: talks to a real job board"]

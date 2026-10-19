@@ -172,8 +172,9 @@ def test_the_recency_filter_keeps_recent_and_undated_and_drops_old():
     assert contract.recent(rows, None, today) == rows
 
 
-def fake_board(search=None, detail=None, hosts=(HOST,)):
-    return types.SimpleNamespace(NAME="fake", HOSTS=hosts, __doc__="fake", search=search or (lambda q, h: []), detail=detail or (lambda r, h: {}))
+def fake_board(search=None, detail=None, hosts=(HOST,), terms=""):
+    return types.SimpleNamespace(NAME="fake", HOSTS=hosts, TERMS=terms, ACK_WAIVES_ROBOTS=False, __doc__="fake",
+                                 search=search or (lambda q, h: []), detail=detail or (lambda r, h: {}))
 
 
 def test_the_cli_prints_the_envelope_and_applies_recency_and_limit_client_side(capsys, monkeypatch):
@@ -197,3 +198,13 @@ def test_a_bad_query_is_a_stderr_error_with_exit_1_too(capsys):
     assert contract.run_cli(fake_board(), ["search", "--query=--help"]) == 1
     captured = capsys.readouterr()
     assert captured.out == "" and "invalid" in captured.err
+
+
+def test_a_board_with_terms_refuses_to_run_until_the_person_acknowledges_them(capsys):
+    board = fake_board(search=lambda q, h: [{"title": "T", "url": "https://x.io/1"}], terms="Personal use only.")
+    assert contract.run_cli(board, ["search", "--query", "data"]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == "" and "Personal use only." in captured.err and "--acknowledge-terms" in captured.err
+    assert contract.run_cli(board, ["search", "--query", "data", "--acknowledge-terms"]) == 0
+    captured = capsys.readouterr()
+    assert "Personal use only." in captured.err and json.loads(captured.out)["meta"]["count"] == 1

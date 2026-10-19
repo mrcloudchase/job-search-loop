@@ -1,0 +1,93 @@
+% Filled sample of the CV template with fictional content. It proves the template compiles to its page limit.
+\documentclass[11pt,a4paper,sans]{moderncv}
+\moderncvstyle{banking}
+\moderncvcolor{blue}
+
+\usepackage[scale=0.80]{geometry}
+\usepackage{needspace}
+
+\definecolor{cvblue}{rgb}{0.22,0.45,0.70}
+\renewcommand*{\namefont}{\fontsize{26}{28}\mdseries\upshape\color{cvblue}}
+\colorlet{firstnamecolor}{cvblue}
+\colorlet{familynamecolor}{cvblue}
+\colorlet{namecolor}{cvblue}
+\renewcommand*{\sectionstyle}[1]{{\color{cvblue}\sectionfont #1}}
+
+\AtEndPreamble{%
+  \hypersetup{pdfpagemode=UseNone,pdfauthor={Alex Example},pdftitle={Alex Example, CV},colorlinks=false,pdfborder={0 0 0}}}
+
+\firstname{Alex}
+\familyname{Example}
+\address{Eksempelvej 1}{2100 Copenhagen}{Denmark}
+\mobile{+45 00 00 00 00}
+\email{alex@example.invalid}
+\social[linkedin]{alex-example}
+\social[github]{alex-example}
+
+\begin{document}
+\makecvtitle
+
+\section{Profile}
+Backend engineer with eight years of experience building reliable data services. Ships small, well-tested systems and
+documents them so the next person can change them. Looking for a role where operations and engineering sit close
+together and reliability is everyone's job.
+
+\section{Core Competencies}
+\begin{itemize}
+  \item \textbf{Data pipelines}: designed batch and streaming pipelines handling 40\% more volume at lower cost
+  \item \textbf{Reliability}: on-call rotation lead, cut alert noise by half with clearer service objectives
+  \item \textbf{Python and Go}: production services, command line tools and libraries used by 30 engineers
+  \item \textbf{Databases}: schema design, migrations without downtime and query tuning on PostgreSQL
+  \item \textbf{Mentoring}: onboarded eleven engineers with a written first-month plan
+\end{itemize}
+
+\section{Professional Experience}
+\cventry{2021 - present}{Senior Backend Engineer}{Fjord Analytics ApS}{Copenhagen}{}{%
+  \begin{itemize}
+    \item Led the rewrite of the ingestion service, raising throughput from 2k to 9k events per second
+    \item Introduced service level objectives for twelve services and a weekly review of the error budget
+    \item Reduced cloud spend by 18\% by right-sizing databases and removing unused queues
+    \item Wrote the incident process now used by all four engineering teams
+    \item Mentored three junior engineers, two of whom were promoted within two years
+  \end{itemize}}
+\cventry{2018 - 2021}{Backend Engineer}{Nordlys Software}{Aarhus}{}{%
+  \begin{itemize}
+    \item Built the billing export used by finance for month-end close, replacing a manual spreadsheet process
+    \item Migrated a monolith's job runner to a queue-based design with retries and dead-letter handling
+    \item Added integration tests that caught a class of timezone defects before release
+    \item Presented the migration to the whole company and ran two follow-up workshops
+  \end{itemize}}
+\cventry{2016 - 2018}{Junior Developer}{Havn Digital}{Aarhus}{}{%
+  \begin{itemize}
+    \item Maintained customer-facing web services and fixed the longest-open defects in the backlog
+    \item Wrote the team's first deployment checklist, later turned into an automated pipeline
+  \end{itemize}}
+\cventry{2014 - 2016}{Student Assistant}{Aarhus University, Department of Computer Science}{Aarhus}{}{%
+  \begin{itemize}
+    \item Supervised weekly exercise classes in databases for sixty students
+    \item Maintained the automated grading scripts
+  \end{itemize}}
+
+\section{Education}
+\cventry{2012 - 2016}{BSc Computer Science}{Aarhus University}{Aarhus}{}{Thesis on index structures for time series.}
+\cventry{2016 - 2018}{MSc Software Engineering (part time)}{Aarhus University}{Aarhus}{}{Distributed systems and
+  databases; graded 11.2 out of 12 on average.}
+
+\section{Languages}
+\cvitem{Danish}{Native}
+\cvitem{English}{Fluent, professional use daily}
+\cvitem{German}{Conversational}
+
+\section{Publications}
+\cvitem{2022}{Lower-cost event ingestion in practice, \href{https://example.invalid/talk}{conference talk}}
+\cvitem{2019}{Zero-downtime schema migrations, \href{https://example.invalid/post}{engineering blog post}}
+
+\section{Honors and Awards}
+\cvitem{2023}{Engineering Excellence Award, Fjord Analytics}
+\cvitem{2016}{Dean's List, Aarhus University}
+\cvitem{2015}{Winner, regional student hackathon}
+
+\section{References}
+\cvitem{}{Available upon request.}
+
+\end{document}

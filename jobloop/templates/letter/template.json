@@ -1,0 +1,9 @@
+{
+  "name": "jobletter",
+  "kind": "letter",
+  "source": "template.tex",
+  "sample": "sample.tex",
+  "extension": ".tex",
+  "compile": "xelatex",
+  "page_limit": 1
+}
