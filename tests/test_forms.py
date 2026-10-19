@@ -134,3 +134,14 @@ def test_nothing_is_saved_when_no_answer_ever_passes(tmp_path, monkeypatch):
 def test_a_turn_that_wrote_no_answers_file_is_told_so(tmp_path, monkeypatch):
     code, server, saved = run_main(tmp_path, monkeypatch, [{}, {"files": {"answers.json": json.dumps(GOOD)}}])
     assert code == 0 and "answers.json must exist" in server.requests[1]["input"][0]["text"] and saved.exists()
+
+
+def test_the_file_marks_its_notes_to_self_as_not_for_pasting_and_labels_every_answer():
+    employer, questions = load_questions(QUESTIONS)
+    text = forms.render(employer, questions, GOOD, PROFILE)
+    assert text.startswith(f"APPLICATION FORM ANSWERS: {employer}") and "Nothing has been submitted" in text
+    for q in questions:
+        assert f"## {q.text}" in text and f"[{count(GOOD[q.id])}]" in text            # each field labelled with its counts
+    assert "## Dates quick reference" in text
+    note = text.index("## NOTE TO SELF (not for pasting)")
+    assert note > text.index("## Dates quick reference") and all(g not in text[note:] for g in GOOD.values())   # no answer text after the note

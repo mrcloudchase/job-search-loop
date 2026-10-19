@@ -38,7 +38,7 @@ class Env:
             role="Data Engineer", company_domain=None, addressee=None, drafter="claude-code", reviewer="codex",
             researcher="claude-research", fit_model=None, facts_model=None, rounds=2, yes=True, override_veto=False,
             waive_unverified=False, cv_template=None, letter_template=None, image="img", form_questions=None,
-            minutes=5, budget=5.0, server="http://x")
+            minutes=5, budget=5.0, server="http://x", acknowledge_terms=False)
         for k, v in overrides.items():
             setattr(self.args, k, v)
         self.me = me
@@ -140,7 +140,7 @@ def test_url_input_fetched_text_input_used_verbatim(tmp_path):
     env = Env(tmp_path, [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}], posting=None, url="https://careers.northwind.example/jobs/1",
               confirm=True)
     asked = []
-    env.app.deps.fetch = lambda url, board="": asked.append((url, board)) or fetched(POSTING, url)
+    env.app.deps.fetch = lambda url, board="", **kw: asked.append((url, board)) or fetched(POSTING, url)
     assert env.app.execute() == 0 and asked == [("https://careers.northwind.example/jobs/1", "")] and env.app.run.posting == POSTING
     (tmp_path / "b").mkdir()
     env = Env(tmp_path / "b", [DRAFT, {"answer": REVIEW}, {"files": DRAFT["files"]}])        # pasted text: no fetch at all

@@ -290,3 +290,13 @@ def test_no_response_is_only_ever_recorded_when_a_caller_says_so(me):
 def test_applications_dir_is_gitignored():
     ignore = (Path(__file__).resolve().parent.parent / ".gitignore").read_text().splitlines()
     assert "me/" in ignore
+
+
+def test_two_roles_at_one_company_get_distinct_folders_and_documents(tmp_path):
+    a, b = archive.key("Northwind", "Data Engineer"), archive.key("Northwind", "Data Analyst")
+    assert a != b and a.split("__")[0] == b.split("__")[0]
+    for name in (a, b):
+        archive.store_posting(tmp_path, name, name.encode())
+    assert archive.folder_for(tmp_path, a) != archive.folder_for(tmp_path, b)
+    assert (archive.folder_for(tmp_path, a) / archive.POSTING).read_bytes() == a.encode()
+    assert sorted(p.name for p in (tmp_path / "applications").iterdir()) == sorted([a, b])

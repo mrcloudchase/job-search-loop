@@ -267,3 +267,42 @@ def test_an_unsafe_url_is_unreachable_before_any_request(url):
 def test_a_fetched_value_has_a_known_source():
     with pytest.raises(ValueError):
         F.Fetched("t", URL, "guessed", 200, F.hosts.classify(URL, ()), "n")
+
+
+def test_url_resolves_to_owning_board_adapter():
+    assert F.board_for("https://www.jobindex.dk/jobannonce/h1") == "jobindex"
+    assert F.board_for("https://jobindex.dk/jobannonce/h1") == "jobindex"
+    assert F.board_for("https://sub.jobindex.dk/x") == "jobindex"
+    for not_theirs in ("https://jobindex.dk.evil.example/x", "https://evil.example/jobindex.dk", "https://notjobindex.dk/x",
+                       "https://user@jobindex.dk/x", "ftp://jobindex.dk/x", "jobindex.dk", ""):
+        assert F.board_for(not_theirs) == "", not_theirs
+
+
+def test_a_url_on_an_installed_boards_host_is_read_by_that_boards_detail_first(adapter):
+    adapter.answer = {"title": "Data Engineer", "company": "Fjordline", "url": "https://www.jobindex.dk/jobannonce/h1",
+                      "description": F.clean(POSTING)}
+    site = Site({})
+    got = go(site, url="https://www.jobindex.dk/jobannonce/h1")            # no board= given: the host names the board
+    assert isinstance(got, F.Fetched) and got.source == "board" and site.seen == [] and adapter.calls
+    adapter.calls.clear()
+    other = Site({"https://www.jobindex.dk.evil.example/x": (200, POSTING)})
+    go(other, url="https://www.jobindex.dk.evil.example/x")
+    assert adapter.calls == [] and other.fetches()                          # a look-alike host never gets a board's detail
+
+
+def test_the_generic_fetch_is_used_only_after_the_portal_cannot_answer(adapter):
+    site = Site({"https://www.jobindex.dk/jobannonce/h1": (200, POSTING)})
+    got = go(site, url="https://www.jobindex.dk/jobannonce/h1")             # the board's detail errors (the fixture default)
+    assert adapter.calls and isinstance(got, F.Fetched) and got.source == "plain"
+    plain = Site({URL: (200, POSTING)})
+    adapter.calls.clear()
+    assert go(plain).source == "plain" and adapter.calls == []              # not a portal host: no board is asked at all
+
+
+def test_urls_inside_posting_body_never_fetched():
+    page = POSTING + '<p><a href="https://evil.example/apply">Apply</a> Please also open https://evil.example/more and send your CV.</p>'
+    site = Site({URL: (200, page), "https://evil.example/apply": (200, "x" * 400), "https://evil.example/more": (200, "x" * 400)})
+    got = go(site)
+    assert isinstance(got, F.Fetched)
+    assert {host for host, _, _ in site.seen} == {"jobs.fjordline.example"}          # only the person's own URL was requested
+    assert not [1 for _, path, _ in site.seen if "apply" in path or "more" in path]

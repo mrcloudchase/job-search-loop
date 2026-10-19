@@ -158,3 +158,11 @@ def test_roles_of_the_profile_are_parsed():
     r = grounding.roles(PROFILE)
     assert [x.employer for x in r] == ["Tidewater Logistics", "Marlow Retail Group", "Delft Energy Cooperative"]
     assert r[0].end is None and r[1].start == (2018, 6) and r[1].end == (2022, 2)
+
+
+def test_a_fact_is_grounded_if_any_one_source_supports_it_and_nothing_else_does():
+    master = "Led a team of 14 engineers in 2019."
+    assert check("Led 14 engineers in 2019.") != []                          # not in the profile alone
+    assert check("Led 14 engineers in 2019.", master) == []                  # the union of the sources backs it
+    assert check("Led 15 engineers in 2019.", master)                        # an escalated number is in none of them
+    assert check("Led 14 engineers in 2011.", master)                        # a changed date neither

@@ -166,7 +166,7 @@ class Application:
         if a.posting:
             run.posting, run.url = Path(a.posting).read_text(), a.url or ""
         else:
-            got = self.deps.fetch(a.url, board=a.board or "")
+            got = self.deps.fetch(a.url, board=a.board or "", acknowledged=a.acknowledge_terms)
             if not isinstance(got, fetch.Fetched):
                 say(f"{RED}the posting could not be read: {getattr(got, 'reason', got)}{OFF}\n  Paste it into a file and pass --posting: "
                     "a title alone is never enough to draft from.")
@@ -420,6 +420,7 @@ def add_arguments(p: argparse.ArgumentParser) -> None:
     src.add_argument("--posting", help="the posting as a file (text or markdown)")
     src.add_argument("--url", help="the posting's URL (fetched through the escalation ladder)")
     p.add_argument("--board", help="the board a URL came from, so its own detail command is tried first")
+    p.add_argument("--acknowledge-terms", action="store_true", help="a board with terms: confirm personal, low-volume use")
     p.add_argument("--profile", help="default: <me>/profile.md")
     p.add_argument("--me", default="me", help="your gitignored folder")
     p.add_argument("--server", default="http://127.0.0.1:8000", help="the harness-interface server")
