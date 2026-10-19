@@ -11,7 +11,6 @@ import httpx
 import pytest
 
 import sim
-from fake_server import FakeServer
 from jobloop import archive, interview as I
 from jobloop.engine import config as cfgmod, invariants, snapshot
 from jobloop.stages import interview as stage
