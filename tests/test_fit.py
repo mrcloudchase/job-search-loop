@@ -120,6 +120,15 @@ def test_a_permit_requirement_must_quote_words_about_a_permit_not_the_location_l
         {"kind": "work_authorisation", "stance": "requires", "value": "EU", "text": loc.strip() + " right to work in the EU", "scope": "role"}]))[1])
 
 
+def test_a_deal_breaker_hit_whose_quote_is_negated_is_shown_but_does_not_veto():
+    breakers = F.read_deal_breakers(PROFILE)
+    base = {"onsite_days": None, "relocation_required": False, "travel": "none", "text": ""}
+    said = lambda text: {**base, "deal_breaker_hits": [{"deal_breaker": "on-call without compensation", "text": text}]}
+    negated = F.location_gate(said("no mandatory overtime or standard on-call duty"), breakers, False)
+    assert negated.verdict == "FLAG" and "negated" in negated.notes[0]
+    assert F.location_gate(said("on-call rota one week in four, unpaid"), breakers, False).verdict == "FAIL"
+
+
 def test_location_verdict_rules():
     def location(**kw):
         return {"onsite_days": None, "relocation_required": False, "travel": "none", "text": "", "deal_breaker_hits": [], **kw}

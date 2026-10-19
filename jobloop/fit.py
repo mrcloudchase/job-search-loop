@@ -339,6 +339,9 @@ def _iso(text: str) -> date | None:
         return None
 
 
+NEGATION = re.compile(r"\b(?:no|not|never|without|none|neither|nor|free of|zero)\b|n't\b", re.I)
+
+
 def location_gate(location: dict, deal_breakers: tuple[str, ...], open_to_relocation: bool) -> Gate:
     """Relocation, on-site days over the profile's limit and any deal-breaker hit are FAIL; frequent travel is FLAG."""
     verdicts, notes = [], []
@@ -353,8 +356,9 @@ def location_gate(location: dict, deal_breakers: tuple[str, ...], open_to_reloca
     for hit in location["deal_breaker_hits"]:
         if onsite_limit((hit["deal_breaker"],)) is not None:
             continue                    # an on-site day limit is a number: the code judged it above, the harness does not
-        verdicts.append("FAIL")
-        notes.append(f'deal-breaker "{hit["deal_breaker"]}": "{hit["text"]}"')
+        negated = NEGATION.search(hit["text"])              # "no on-call duty" is not an on-call duty: a person reads it, no veto
+        verdicts.append("FLAG" if negated else "FAIL")
+        notes.append(f'deal-breaker "{hit["deal_breaker"]}": "{hit["text"]}"' + ("; the quote reads as negated, so it is shown, not vetoed" if negated else ""))
     if location["travel"] == "frequent":
         verdicts.append("FLAG")
         notes.append(f"frequent travel:{quote}")

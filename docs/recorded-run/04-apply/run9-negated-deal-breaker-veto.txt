@@ -1,0 +1,169 @@
+
+━━ FACTS · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 00:00 · $0.00
+  resp_bbac78a23c054027 · claude-deepseek/deepseek-chat · streaming
+  ⚙ Read /srv/hi-data/workspaces/resp_bbac78a23c054027/posting.md
+  ⚙ Write /srv/hi-data/workspaces/resp_bbac78a23c054027/facts.json
+  I've written `facts.json`: ```json { "company": "Too Good To Go", "role": "Senior Data Engineer", "department…
+  completed · 8.142s · $0.072 · changed facts.json
+  diff --git a/facts.json b/facts.json
+  new file mode 100644
+  index 0000000..32b585f
+  --- /dev/null
+  +++ b/facts.json
+  @@ -0,0 +1,8 @@
+  +{
+  +  "company": "Too Good To Go",
+  +  "role": "Senior Data Engineer",
+  +  "department": null,
+  +  "location": "Copenhagen, Capital Region of Denmark, Denmark",
+  +  "deadline": null,
+  +  "reference": null
+  +}
+  verify: all checks pass
+
+Senior Data Engineer at Too Good To Go  → me/applications/too_good_to_go__senior_data_engineer
+  source host: portal (linkedin.com) www.linkedin.com is under linkedin.com
+
+━━ FIT · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 00:08 · $0.07
+  resp_510a30e48cc94031 · claude-deepseek/deepseek-chat · streaming
+  ⚙ Read /srv/hi-data/workspaces/resp_510a30e48cc94031/profile.md
+  ⚙ Read /srv/hi-data/workspaces/resp_510a30e48cc94031/posting.md
+  ⚙ Write /srv/hi-data/workspaces/resp_510a30e48cc94031/fit.json
+  I've written the evaluation to `fit.json`. Here's what it found: - **Technical (72):** The candidate covers m…
+  completed · 12.471s · $0.101 · changed fit.json
+  diff --git a/fit.json b/fit.json
+  new file mode 100644
+  index 0000000..c41dc3f
+  --- /dev/null
+  +++ b/fit.json
+  @@ -0,0 +1,55 @@
+  +{
+  +  "scores": {"technical": 72, "experience": 84, "behavioural": 74, "career": 81},
+  +  "requirements": [
+  +    {"term": "Python", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, Bi
+  +    {"term": "SQL", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, BigQu
+  +    {"term": "Airflow", "kind": "required", "verdict": "backed", "quote": "orchestrated with Apache Airflow."},
+  +    {"term": "dbt", "kind": "required", "verdict": "backed", "quote": "Cut the nightly rebuild of the delivery-performance mart from 6 ho
+  +    {"term": "Terraform", "kind": "required", "verdict": "backed", "quote": "Moved the team's deployments to GitHub Actions and Terraform
+  +    {"term": "GitHub Actions", "kind": "required", "verdict": "backed", "quote": "Moved the team's deployments to GitHub Actions and Terr
+  +    {"term": "Docker", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, Bi
+  +    {"term": "logistics", "kind": "required", "verdict": "backed", "quote": "Owns the shipment-events pipeline: 40 million events per day
+  +    {"term": "real-time", "kind": "required", "verdict": "backed", "quote": "Built the first Airflow deployment at the company and migrat
+  +    {"term": "Redshift", "kind": "preferred", "verdict": "gap"},
+  +    {"term": "AWS", "kind": "required", "verdict": "gap"},
+  +    {"term": "dlt", "kind": "required", "verdict": "gap"},
+  +    {"term": "Metaflow", "kind": "required", "verdict": "gap"},
+  +    {"term": "Kinesis", "kind": "required", "verdict": "gap"},
+  +    {"term": "Lambda", "kind": "required", "verdict": "gap"},
+  +    {"term": "Glue", "kind": "required", "verdict": "gap"},
+  +    {"term": "S3", "kind": "required", "verdict": "gap"},
+  +    {"term": "DataOps", "kind": "required", "verdict": "gap"},
+  +    {"term": "GitOps", "kind": "required", "verdict": "gap"}
+  +  ],
+  +  "strengths": [
+  +    "Python and SQL are core strengths backed in the profile's Skills line",
+  +    "Deep Airflow ownership backed by orchestrating a 40 million events per day pipeline and migrating 45 cron jobs",
+  +    "dbt backed by cutting the nightly rebuild from 6 hours to 55 minutes with incremental dbt models",
+  +    "Terraform and GitHub Actions backed by moving deployments to GitHub Actions and Terraform",
+  +    "Docker is listed among the profile's strong skills",
+  +    "logistics domain backed by shipment-events pipeline work at Tidewater Logistics and partner price feeds at Marlow Retail Group",
+  +    "real-time pipeline experience backed by Kafka shipment events and Python REST/SFTP ingestion services"
+  +  ],
+  +  "gaps": [
+  +    "No AWS, Redshift, Kinesis, Lambda, S3 or Glue experience in the profile; the warehouse background is PostgreSQL and BigQuery",
+  +    "No dlt or Metaflow experience in the profile",
+  +    "No DataOps or GitOps experience in the profile; deployment tooling is described without GitOps principles",
+  +    "Data quality work is via Great Expectations, not explicitly DataOps"
+  +  ],
+  +  "eligibility": [
+  +    {"kind": "hours", "stance": "requires", "scope": "company", "value": "hybrid only: the posting specifies 4 days in office per week", 
+  +  ],
+  +  "languages": [
+  +    {"language": "English", "level": "empty", "required": true, "text": "Please submit your CV and Cover letter in English."}
+  +  ],
+  +  "location": {
+  +    "onsite_days": 4,
+  +    "relocation_required": false,
+  +    "travel": "none",
+  +    "text": "Hybrid work setup in our Copenhagen HQ (4 days in office).",
+  +    "deal_breaker_hits": [
+  +      {"deal_breaker": "more than 4 days a week on site", "text": "Hybrid work setup in our Copenhagen HQ (4 days in office)."},
+  +      {"deal_breaker": "on-call without compensation", "text": "Work-life balance focus (no mandatory overtime or standard on-call duty).
+  +    ]
+  +  }
+  verify: 3 failing
+    ✗ requirements[7] ('logistics'): quote must be profile.md's own words, containing 'logistics', from a line that…
+    ✗ requirements[8] ('real-time'): profile.md does not back 'real-time' on a line that counts (a 'Not yet' line b…
+    ✗ strengths entry 'logistics domain backed by shipment-events pipeline work at Tidewater Logistics and partner …
+
+━━ FIX FIT 1/3 · claude-deepseek/deepseek-chat ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 00:21 · $0.17
+  resp_948f0af0273f49da · claude-deepseek/deepseek-chat · streaming
+  ⚙ Read /srv/hi-data/workspaces/resp_510a30e48cc94031/profile.md
+  ⚙ Write /srv/hi-data/workspaces/resp_510a30e48cc94031/fit.json
+  I've written the corrected evaluation to `fit.json`, but you should know that three of the problems I was ask…
+  completed · 12.651s · $0.108 · changed fit.json
+  diff --git a/fit.json b/fit.json
+  index c41dc3f..70b545c 100644
+  --- a/fit.json
+  +++ b/fit.json
+  @@ -8,8 +8,8 @@
+       {"term": "Terraform", "kind": "required", "verdict": "backed", "quote": "Moved the team's deployments to GitHub Actions and Terraform
+       {"term": "GitHub Actions", "kind": "required", "verdict": "backed", "quote": "Moved the team's deployments to GitHub Actions and Terr
+       {"term": "Docker", "kind": "required", "verdict": "backed", "quote": "Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, Bi
+  -    {"term": "logistics", "kind": "required", "verdict": "backed", "quote": "Owns the shipment-events pipeline: 40 million events per day
+  -    {"term": "real-time", "kind": "required", "verdict": "backed", "quote": "Built the first Airflow deployment at the company and migrat
+  +    {"term": "logistics", "kind": "required", "verdict": "backed", "quote": "Data engineer with 7 years of experience building batch and 
+  +    {"term": "real-time", "kind": "required", "verdict": "gap"},
+       {"term": "Redshift", "kind": "preferred", "verdict": "gap"},
+       {"term": "AWS", "kind": "required", "verdict": "gap"},
+       {"term": "dlt", "kind": "required", "verdict": "gap"},
+  @@ -22,19 +22,18 @@
+       {"term": "GitOps", "kind": "required", "verdict": "gap"}
+     ],
+     "strengths": [
+  -    "Python and SQL are core strengths backed in the profile's Skills line",
+  -    "Deep Airflow ownership backed by orchestrating a 40 million events per day pipeline and migrating 45 cron jobs",
+  -    "dbt backed by cutting the nightly rebuild from 6 hours to 55 minutes with incremental dbt models",
+  +    "Python and SQL are the profile's strongest skills, backed by 'Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, BigQuery,
+  +    "Airflow ownership backed by orchestrating a 40 million events per day pipeline and migrating 45 cron jobs onto Airflow",
+  +    "dbt backed by cutting the nightly rebuild from 6 hours to 55 minutes with incremental dbt models and training 12 analysts on dbt",
+       "Terraform and GitHub Actions backed by moving deployments to GitHub Actions and Terraform",
+  -    "Docker is listed among the profile's strong skills",
+  -    "logistics domain backed by shipment-events pipeline work at Tidewater Logistics and partner price feeds at Marlow Retail Group",
+  -    "real-time pipeline experience backed by Kafka shipment events and Python REST/SFTP ingestion services"
+  +    "Docker is backed by its inclusion in the profile's Strong skills line",
+  +    "logistics domain experience backed by 'building batch and streaming pipelines for retail and logistics' companies"
+     ],
+     "gaps": [
+       "No AWS, Redshift, Kinesis, Lambda, S3 or Glue experience in the profile; the warehouse background is PostgreSQL and BigQuery",
+       "No dlt or Metaflow experience in the profile",
+       "No DataOps or GitOps experience in the profile; deployment tooling is described without GitOps principles",
+  -    "Data quality work is via Great Expectations, not explicitly DataOps"
+  +    "No real-time work named in the profile; pipelines are described as batch and streaming, with Kafka feeds into the warehouse"
+     ],
+     "eligibility": [
+       {"kind": "hours", "stance": "requires", "scope": "company", "value": "hybrid only: the posting specifies 4 days in office per week", 
+  verify: all checks pass
+
+Fit senior-data-engineer: 78/100, strong (VETOED)
+  technical     72  (weight 30)
+  experience    84  (weight 25)
+  behavioural   74  (weight 15)
+  career        81  (weight 30)
+  VETO location: deal-breaker "on-call without compensation": "Work-life balance focus (no mandatory overtime or standard on-call duty)."
+  FLAG eligibility: posting is silent on work authorisation: unverified; check the employer's careers page
+  FLAG language: posting asks English empty: "Please submit your CV and Cover letter in English."; profile.md declares C1
+Strengths:
+  - Python and SQL are the profile's strongest skills, backed by 'Strong: Python, SQL, PostgreSQL, Apache Airflow, dbt, Kafka, BigQuery, Docker'
+  - Airflow ownership backed by orchestrating a 40 million events per day pipeline and migrating 45 cron jobs onto Airflow
+  - dbt backed by cutting the nightly rebuild from 6 hours to 55 minutes with incremental dbt models and training 12 analysts on dbt
+  - Terraform and GitHub Actions backed by moving deployments to GitHub Actions and Terraform
+  - Docker is backed by its inclusion in the profile's Strong skills line
+  - logistics domain experience backed by 'building batch and streaming pipelines for retail and logistics' companies
+Gaps:
+  - No AWS, Redshift, Kinesis, Lambda, S3 or Glue experience in the profile; the warehouse background is PostgreSQL and BigQuery
+  - No dlt or Metaflow experience in the profile
+  - No DataOps or GitOps experience in the profile; deployment tooling is described without GitOps principles
+  - No real-time work named in the profile; pipelines are described as batch and streaming, with Kafka feeds into the warehouse
+Recommendation: Apply, and tailor everything.
+  A gate failed; nothing is drafted for a vetoed job.
