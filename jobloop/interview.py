@@ -13,8 +13,8 @@ What it promises, enforced here and not left to a prompt:
 - Every gap (a requirement the profile does not back) gets a bridge: acknowledge, adjacent experience quoted from the
   profile, a learning path. No sentence of a bridge claims the skill.
 - Questions to ask that a verified public claim already answers are cut. Company and interviewer research comes from an
-  injected `Researcher`; a claim that is not verified, has no source link, or (for a person) is not professional is never
-  used, and "why this company" must cite a verified claim.
+  injected `Researcher` (live: jobloop.webresearch, a research harness that gets names only, and a loop that fetches); a
+  claim that is not verified, has no source link, or (for a person) is not professional is never used, and "why this company" must cite a verified claim.
 - The mock interview asks one question at a time on one conversation, in a planned order and within a question budget;
   feedback comes only after an answer, never states a fact about the person that the profile and documents do not, and
   the person can stop at any time. Answers are written only under me/ and never to the turn log.
@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Protocol, Sequence
@@ -34,6 +35,7 @@ from typing import Callable, Protocol, Sequence
 from . import archive, grounding, tracker
 from .latex import to_text
 from .profile import fields, pdf_text, section
+from .research import RESEARCHER, employer_hosts
 from .term import BOLD, GREEN, OFF, RED, YELLOW, say
 from .text import claimed, flat, slug, visible
 from .turns import Api, Turns
@@ -644,6 +646,8 @@ def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--fit", help="the application's fit JSON (default: <me>/fit/<key>.json when present)")
     p.add_argument("--mock", action="store_true", help="offer a mock interview after the pack")
     p.add_argument("--questions", type=int, default=6, help="the mock interview's question budget")
+    p.add_argument("--researcher", default=RESEARCHER, help="the web-search harness (it gets a company or interviewer name, never the profile); '' for no web research")
+    p.add_argument("--company-domain", default="", help="the company's own domain, e.g. example.com: company research then runs on its hosts")
     p.add_argument("--model", default="claude-code")
     p.add_argument("--server", default="http://127.0.0.1:8000")
     p.add_argument("--rounds", type=int, default=3)
@@ -664,7 +668,13 @@ def _console_confirm(question: str) -> bool:
 
 def main(args: argparse.Namespace, *, research: Researcher | None = None, ask: Callable[[str], str | None] = _console_ask,
          confirm: Callable[[str], bool] = _console_confirm, api: Api | None = None) -> int:
-    me = Path(args.me)
+    me, domain = Path(args.me), getattr(args, "company_domain", "")
+    if domain:
+        try:
+            employer_hosts(domain)
+        except ValueError as error:
+            say(f"{RED}{error}{OFF}")
+            return 2
     rows = tracker.read_rows(me / "tracker.csv") if (me / "tracker.csv").is_file() else ()
     chosen, message = select_application(rows, args.company, args.role)
     if len(chosen) != 1 and not (args.posting and args.company and args.role):
@@ -680,7 +690,11 @@ def main(args: argparse.Namespace, *, research: Researcher | None = None, ask: C
     fit = json.loads(fit_path.read_text()) if fit_path.is_file() else None
     details = collect_stage_details(ctx.stages, args.stage, lambda q: ask(q) or "",
                                     {"date": args.date, "format": args.format, "people": args.people})
-    with Turns(api or Api(args.server), me / "state" / "interview-log.jsonl", args.minutes, args.budget) as turns:
+    with Turns(api or Api(args.server), me / "state" / "interview-log.jsonl", args.minutes, args.budget) as turns, ExitStack() as stack:
+        if research is None and getattr(args, "researcher", ""):
+            from . import webresearch                    # here, not at the top: webresearch builds on this module's VerifiedClaim
+            research = stack.enter_context(webresearch.WebResearch(turns, args.researcher, cache_dir=me / "company_research",
+                                                                   company_domain=domain))
         pack = build_pack(turns, args.model, ctx, profile, fit, args.stage, details, research, args.rounds)
         if pack is None:
             say(f"{RED}no pack passed the checks{OFF}")

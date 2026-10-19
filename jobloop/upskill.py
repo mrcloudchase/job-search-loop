@@ -14,7 +14,8 @@ What it promises, enforced here and not left to a prompt:
   contributes nothing and is counted, never back-filled.
 - A skill the profile already states (in any form: "Python" covers "Python scripting") is not a gap.
 - Gap text is data. Only a gap's name is sent to research, and no link inside it is ever fetched. A study resource is
-  listed only if the injected `fetch` returned its page now; a link that cannot be fetched is dropped. The harness only
+  listed only if the injected `fetch` returned its page now (live, jobloop.webresearch: a research harness finds leads, the
+  loop fetches them host-side; `--researcher ''` turns that off); a link that cannot be fetched is dropped. The harness only
   proposes the plan: code checks it covers every top gap, contains no link that was not fetched, and respects the
   dependencies and priorities in the order.
 - The diff against the last report (new, resolved, changed gaps) is computed from the two heatmaps.
@@ -27,6 +28,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -34,6 +36,7 @@ from typing import Protocol, Sequence
 
 from . import archive, fit, tracker
 from .profile import parse_skills
+from .research import RESEARCHER
 from .term import GREEN, OFF, RED, say
 from .text import claimed, flat, slug, visible
 from .turns import Api, Turns
@@ -508,6 +511,7 @@ def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--me", default="me", help="the personal-data folder (profile.md, tracker.csv, fit/, upskill/)")
     p.add_argument("--model", default="claude-code")
     p.add_argument("--server", default="http://127.0.0.1:8000")
+    p.add_argument("--researcher", default=RESEARCHER, help="the web-search harness (it gets a gap's name only, never the profile); '' for no web research")
     p.add_argument("--rounds", type=int, default=3)
     p.add_argument("--minutes", type=float, default=20)
     p.add_argument("--budget", type=float, default=3.0)
@@ -538,7 +542,11 @@ def main(args: argparse.Namespace, *, today: date | None = None, research: Resea
     if not (me / "profile.md").is_file():
         say(f"{RED}no profile at {me / 'profile.md'}: build it first{OFF}")
         return 2
-    with Turns(api or Api(args.server), me / "state" / "upskill-log.jsonl", args.minutes, args.budget) as turns:
+    with Turns(api or Api(args.server), me / "state" / "upskill-log.jsonl", args.minutes, args.budget) as turns, ExitStack() as stack:
+        if research is None and fetch is None and getattr(args, "researcher", ""):
+            from . import webresearch                    # here, not at the top: webresearch builds on this module's Candidate
+            web = stack.enter_context(webresearch.WebResearch(turns, args.researcher, today=today))
+            research, fetch = web.resources, web.page
         report, gaps = run(me, args.model, turns, today, research, fetch, args.rounds)
     say(f"saved {save(me, today, report)} ({len(gaps)} gaps)", GREEN)
     return 0

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from jobloop.keywords import Requirement, cover
+from jobloop.keywords import Requirement, cover, mentions
 
 PROFILE = (Path(__file__).parent.parent / "fixtures" / "profile.md").read_text()
 CV = (Path(__file__).parent.parent / "fixtures" / "cv.txt").read_text()
@@ -119,3 +119,9 @@ def test_a_bad_priority_is_refused():
     import pytest
     with pytest.raises(ValueError):
         Requirement("Python", "nice")
+
+
+def test_a_term_wrapped_at_its_hyphen_in_a_pdf_still_matches():
+    assert mentions("team-level standards", "On team- level standards for code, I have not yet contributed.")
+    assert mentions("team-level standards", "On team-\nlevel standards for code")
+    assert not mentions("team-level standards", "On team standards for code")

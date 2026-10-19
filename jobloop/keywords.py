@@ -60,7 +60,7 @@ def _plain(text: str) -> str:
 
 
 def _norm(text: str) -> str:
-    return flat(_plain(text)).replace("\u2019", "'").replace("-", " ")
+    return " ".join(flat(_plain(text)).replace("\u2019", "'").replace("-", " ").split())    # a PDF's "team- level" is "team level"
 
 
 def mentions(term: str, text: str) -> bool:
