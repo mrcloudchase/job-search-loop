@@ -28,7 +28,8 @@ def _queue_lines(store: Store, today: str) -> list[str]:
     out = []
     for deadline, status, item, data, path in rows:
         due = f" · deadline {data['deadline']}" if data.get("deadline") else ""
-        out.append(f"- **{status}** `{item}` · {data.get('title', '')} · fit {data.get('fit', '?')}{due}\n  {data.get('why', '')} → `{path}`")
+        fit = f" · fit {data['fit']}" if data.get("fit") not in (None, "") else ""          # a follow-up draft or a report has no fit
+        out.append(f"- **{status}** `{item}` · {data.get('title', '')}{fit}{due}\n  {data.get('why', '')} → `{path}`")
     return out
 
 

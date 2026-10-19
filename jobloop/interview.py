@@ -35,6 +35,7 @@ from typing import Callable, Protocol, Sequence
 from . import archive, grounding, tracker
 from .latex import to_text
 from .profile import fields, pdf_text, section
+from .rank import drafted_fit_key
 from .research import RESEARCHER, employer_hosts
 from .term import BOLD, GREEN, OFF, RED, YELLOW, say
 from .text import claimed, flat, slug, visible
@@ -62,7 +63,7 @@ TIPS = {"phone": ("Have a glass of water within reach.", "Smile: it carries in y
         "video": ("Check camera, sound and light ten minutes early.", "Have a glass of water within reach.",
                   "Clarify a vague question before answering; a five-second pause is fine.",
                   "Close by asking whether they want anything else from you.")}
-CLOSING = ("After the interview, log the stage and its feedback with `python -m jobloop tracker` (outcome.md): it sharpens "
+CLOSING = ("After the interview, log the stage and its feedback with `jobloop stage KEY STAGE` (outcome.md): it sharpens "
            "the next round's pack. A fact you recalled while preparing belongs in the profile first (the person confirms it).")
 _NEGATION = re.compile(r"\b(?:not|no|never|without|yet|haven't|have not|don't|do not|lack|limited|new to|learn\w*|"
                        r"stud\w+|plan\w*|will|would|ramp\w*|course|until|gap)\b", re.I)
@@ -686,7 +687,8 @@ def main(args: argparse.Namespace, *, research: Researcher | None = None, ask: C
     if not ctx.posting:
         say(f"{RED}no posting is archived for {key}; pass --posting FILE{OFF}")
         return 2
-    fit_path = Path(args.fit) if args.fit else me / "fit" / f"{key}.json"
+    fit_path = Path(args.fit) if args.fit else next((p for p in (me / "fit" / f"{key}.json", me / "fit" / f"{drafted_fit_key(me, key)}.json") if p.is_file()),
+                                                    me / "fit" / f"{key}.json")                    # (a loop-drafted application's fit is named by its posting)
     fit = json.loads(fit_path.read_text()) if fit_path.is_file() else None
     details = collect_stage_details(ctx.stages, args.stage, lambda q: ask(q) or "",
                                     {"date": args.date, "format": args.format, "people": args.people})

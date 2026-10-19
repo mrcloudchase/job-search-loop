@@ -1,6 +1,7 @@
 """The person's side of the queue: what to read, what to open, and how to say "I have dealt with this one".
 
 `me/queue/<key>/` is built by the package stage. These helpers only read it, and `done` only marks the engine's queue row.
+Entries that are not applications (`followup:`, `interview:`, `offer:`, `upskill:`, `boards:` ... keys) point at one file and `show` prints it.
 `done` never touches the tracker: the person submits the application, then runs `jobloop tracker set <key> applied` themselves,
 because only a person decides that an application was sent. Everything here returns plain text for the terminal; nothing prompts.
 """

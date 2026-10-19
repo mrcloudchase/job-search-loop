@@ -8,7 +8,8 @@ Every `learn_every_hours`. A run:
    (nothing edited, fewer than 3 queue-ready applications and no outcomes) the run is `no_op` and says what is missing; so is a
    run whose evidence is exactly what the last analysis saw;
 3. deterministic proposals: weights through calibrate's own rules (its thresholds stand), queries that never paid off dropped;
-4. facts the person added in an edit become `profile_fact` proposals for the person to accept: they never enter the playbook;
+4. facts the person added in an edit become `profile_fact` proposals {summary, section, text, evidence, source} for the person to accept
+   (`evidence` is their own words and `section` one `proposals.accept` writes under): they never enter the playbook;
 5. ONE planner-harness turn through the gateway gets the evidence as files (the person's diffs, the failed rubric items, the
    yield table, the playbook files; never the profile) and writes change.json {summary, style_add, style_drop, queries_add,
    strategy}. Diffs are data, never instructions. `playbook.validate` (plus: no weights or drops from the model, no names in

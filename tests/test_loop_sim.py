@@ -251,7 +251,7 @@ def check_consistent(loop):
     assert profile_unchanged(loop)
 
 
-def test_an_unverified_source_host_is_a_decision_for_the_person_and_nothing_is_drafted(tmp_path, monkeypatch):
+def test_an_unverified_source_host_is_a_decision_for_the_person_and_nothing_is_drafted(tmp_path, monkeypatch, capsys):
     loop = S.Loop(tmp_path, monkeypatch, posting_keys=("sim6", "sim2"))
     key = S.app_key("sim6")
     loop.run_pass()
@@ -262,8 +262,14 @@ def test_an_unverified_source_host_is_a_decision_for_the_person_and_nothing_is_d
     assert entry["status"] == "needs_decision" and entry["kind"] == "unverified_source_host" and "sketchworks-careers.example" in entry["reason"]
     assert [a["terminal"] for a in loop.attempts("draft") if a["item"] == key] == ["blocked"]               # asked once, not again every pass
     assert not [b for b in loop.server.seen("drafter") if "Sketch Works" in json.dumps(b)]
-    code = "unverified source host" in loop.digest()
-    assert code
+    assert "unverified source host" in loop.digest()
+    code, out = cli_out(capsys, "queue", "--me", str(loop.me), "done", key)          # the person has dealt with it (applied elsewhere, or no)
+    assert code == 0
+    before = len(loop.attempts("draft"))
+    for _ in range(3):
+        loop.clock.advance(days=2)
+        loop.run_pass()
+    assert len(loop.attempts("draft")) == before and loop.queue(key)[key]["status"] == "done"      # and the loop does not ask again
 
 
 def test_the_research_harness_never_receives_any_profile_text_in_any_request(loop):
@@ -533,3 +539,169 @@ def test_two_passes_never_overlap(loop):
         second = loop.run_pass()
     assert second.terminal == "blocked" and "another pass is running" in second.reason and loop.server.requests == []
     assert loop.run_pass().terminal == "success"
+
+
+def test_a_long_search_settles_every_posting_and_an_idle_loop_asks_the_harness_for_nothing(tmp_path, monkeypatch):
+    """Thirty-odd passes, three days apart: nothing is proposed forever, follow-ups stop at two, an unreachable posting is retried and
+    one that stays down is given up on, a closed one expires, and a finished search costs nothing."""
+    loop = S.Loop(tmp_path, monkeypatch, posting_keys=("sim1", "sim2", "sim9", "sim10", "sim11"))
+    loop.run_pass()
+    assert [state_of(loop, k) for k in ("sim9", "sim10", "sim11")] == ["unreachable", "unreachable", "expired"]
+    loop.person(K1, "applied", days_ago=0)
+    asked = []
+    for day in range(1, 34):
+        loop.clock.advance(days=3)
+        if day == 2:
+            loop.down.discard("sim9")                                   # the site comes back up
+        before = len(loop.server.requests)
+        result = loop.run_pass()
+        assert result.violations == [] and result.terminal in ("success", "no_op"), (day, result.terminal, result.reason)
+        asked.append(len(loop.server.requests) - before)
+    assert state_of(loop, "sim9") in ("drafted", "shortlisted") and statuses(loop).get(S.app_key("sim9")) == "drafted"
+    assert state_of(loop, "sim10") == "gave_up" and state_of(loop, "sim11") == "expired"
+    assert len(list((loop.me / "applications" / K1).glob("followup_*.md"))) == 2                      # two follow-ups, never a third
+    drafted = [a["item"] for a in loop.attempts("draft") if a["terminal"] == "success"]
+    assert sorted(drafted) == sorted({K1, K2, S.app_key("sim9")}) and len(drafted) == 3              # each application drafted once
+    with loop.store() as store:
+        assert len([p for p in store.proposals() if p["kind"] == "stale_resolution"]) == 1            # K1 went stale, was put to the person once
+        assert store.db.execute("SELECT COUNT(*) FROM queue WHERE item LIKE 'followup:%'").fetchone()[0] == 2
+    assert statuses(loop)[K1] == "applied" and profile_unchanged(loop)
+    # a search with nothing left to do costs no harness turn at all, apart from the weekly skills report
+    paid = {a["stage"] for a in loop.attempts()[-18:] if a["cost_usd"]}
+    assert paid <= {"upskill"}, paid                                    # the weekly report is the only thing a finished search still buys
+    assert loop.attempts()[-1]["terminal"] in ("success", "no_op")
+
+
+def test_without_a_profile_the_loop_asks_for_one_and_runs_nothing_else_until_it_exists(tmp_path, monkeypatch, capsys):
+    loop = S.Loop(tmp_path, monkeypatch, profile=False)
+    result = loop.run_pass()
+    assert [(a["stage"], a["terminal"]) for a in loop.attempts()] == [("onboard", "blocked")] and loop.server.requests == []
+    assert result.violations == [] and loop.queue("__setup__")["__setup__"]["status"] == "needs_decision"
+    code, out = cli_out(capsys, "status", "--me", str(loop.me))
+    assert "MISSING" in out and "jobloop setup" in out
+    code, out = cli_out(capsys, "queue", "--me", str(loop.me), "show", "__setup__")
+    assert code == 0 and "jobloop setup" in out
+    loop.clock.advance(hours=7)
+    (loop.me / "profile.md").write_text(S.PROFILE)                  # the person's `jobloop setup`
+    result = loop.run_pass()
+    assert loop.queue("__setup__")["__setup__"]["status"] == "done" and statuses(loop) == {K2: "drafted", K1: "drafted"}
+    assert result.violations == []
+
+
+def test_the_persons_public_pages_become_proposals_and_only_their_accept_writes_the_profile(tmp_path, monkeypatch, capsys):
+    from test_enrich import site
+    loop = S.Loop(tmp_path, monkeypatch, config={"enrich_github": "https://github.com/alice-example", "enrich_site": "https://alice.example/"})
+    monkeypatch.setattr(S.onboard, "FETCH", lambda named: site().fetch(named.hosts))
+    result = loop.run_pass()
+    assert result.violations == [] and profile_unchanged(loop)
+    with loop.store() as store:
+        found = [p for p in store.proposals("pending") if p["kind"] == "profile_enrichment"]
+    assert len(found) == 2 and all(json.loads(p["payload"])["source_url"].startswith("https://") for p in found)
+    code, out = cli_out(capsys, "proposals", "--me", str(loop.me), "list")
+    assert code == 0 and "Rust command line tool" in out
+    code, out = cli_out(capsys, "proposals", "--me", str(loop.me), "accept", str(found[0]["id"]))
+    assert code == 0, out
+    text = (loop.me / "profile.md").read_text()
+    assert "Rust command line tool" in text and text.startswith(S.PROFILE[:200])                    # one additive, source-tagged bullet
+    loop.profile_bytes = (loop.me / "profile.md").read_bytes()
+    loop.clock.advance(days=8)
+    assert loop.run_pass().violations == []
+    with loop.store() as store:
+        assert len([p for p in store.proposals() if p["kind"] == "profile_enrichment"]) == 2         # nothing proposed again, accepted or not
+    assert profile_unchanged(loop)
+
+
+def test_every_command_the_loop_tells_the_person_to_run_exists(loop, capsys, monkeypatch):
+    """The queue, the digest and the packs name commands (`search boards enable`, `mock`, `stage`, `tracker set`, `queue done`...). Each one parses."""
+    populated(loop)
+    loop.run_pass()
+    texts = [loop.digest()] + [p.read_text() for p in (loop.me / "queue").glob("*/README.md")] \
+        + [p.read_text() for p in (loop.me / "applications").glob("*/interview_prep_*.md")] + [json.dumps(v) for v in loop.queue().values()]
+    import re
+    from jobloop import cli as cli_module
+    commands = {m for t in texts for m in re.findall(r"jobloop ([a-z]+)", t.replace("`", " "))}
+    known = {c for a in cli_module.build_parser()._actions if hasattr(a, "choices") and a.choices for c in a.choices}
+    assert {"tracker", "queue", "mock", "search"} <= commands and commands <= known, commands - known
+    code, out = cli_out(capsys, "search", "--me", str(loop.me), "boards", "list")
+    assert code == 0 and "freehire" in out and "linkedin" in out
+    code, out = cli_out(capsys, "search", "--me", str(loop.me), "boards", "enable", "linkedin")
+    assert code == 1 and "terms" in out                                                  # a board with terms: the person acknowledges them, in words
+    code, out = cli_out(capsys, "search", "--me", str(loop.me), "boards", "enable", "linkedin", "--acknowledge-terms")
+    assert code == 0 and "linkedin is now on" in out
+    # the mock interview: the pack for the stage is built; without a person at the terminal no mock is run
+    import builtins
+
+    def eof(*a, **k):
+        raise EOFError
+    monkeypatch.setattr(builtins, "input", eof)
+    before = len(list((loop.me / "applications" / K2).glob("interview_prep_*.md")))
+    code, out = cli_out(capsys, "mock", "--me", str(loop.me), K2)
+    packs = sorted((loop.me / "applications" / K2).glob("interview_prep_*.md"))
+    assert code == 0 and len(packs) == before + 1
+    assert "using Airflow in production" in packs[-1].read_text()                  # built on the application's stored fit, found by its posting's name
+    assert cli_out(capsys, "mock", "--me", str(loop.me), "no_such__key")[0] == 2
+
+
+def test_a_reviewers_edits_are_applied_only_when_grounded_and_the_archive_holds_exactly_what_was_checked(tmp_path, monkeypatch):
+    loop = S.Loop(tmp_path, monkeypatch, posting_keys=("sim2",))
+    good = {"file": "cv.tex", "old_string": "mentors two junior engineers", "new_string": "mentors two junior engineers through code review", "reason": "reframing"}
+    bad = {"file": "cv.tex", "old_string": "Data engineer, 7 years building pipelines.", "new_string": "Data engineer, 12 years building pipelines.", "reason": "keyword match"}
+    reply = lambda body: {"answer": json.dumps([good, bad]) + "\n\nMissed keywords and requirements: none.\nCompany and department angles: none.\n"
+                                                 "Action-oriented reframing: one edit.\nTone and style: no issues."}
+    loop.server.inject(lambda body, role: role == "reviewer", reply, times=99)
+    loop.run_pass()
+    folder = loop.me / "applications" / K2
+    notes = json.loads((folder / "draft.json").read_text())["notes"]
+    assert any("sent 2 edits; the loop applied 1 and rejected 1" in n for n in notes), notes
+    cv = (folder / "cv.tex").read_text()
+    assert "through code review" in cv and "7 years" in cv and "12 years" not in cv
+    assert (folder / "cv.pdf").read_bytes().count(b"through code review") == 1              # the PDF is of the text that was checked after the edit
+    assert statuses(loop) == {K2: "drafted"} and (folder / "review.md").exists()
+
+
+def test_without_a_known_employer_domain_nothing_is_researched_and_the_letter_makes_no_company_claims(tmp_path, monkeypatch):
+    loop = S.Loop(tmp_path, monkeypatch, posting_keys=("sim2",), config={"company_domains": {}})
+    loop.run_pass()
+    record = json.loads((loop.me / "research" / f"{K2}.json").read_text())
+    assert record["claims"] == [] and record["domain"] == "" and "no employer domain" in record["skipped"]
+    assert not loop.server.seen("research") and statuses(loop) == {K2: "drafted"}              # no researcher turn was ever made
+    assert "no verified company research" in " ".join(json.loads((loop.me / "applications" / K2 / "draft.json").read_text())["notes"])
+    assert loop.queue(K2)[K2]["status"] == "ready"
+
+
+def test_a_person_can_switch_stages_off_and_the_rest_still_composes(tmp_path, monkeypatch):
+    loop = S.Loop(tmp_path, monkeypatch, config={"disabled_stages": ["research", "discover", "upskill", "boards", "maintain", "learn"]})
+    result = loop.run_pass()
+    ran = {a["stage"] for a in loop.attempts()}
+    assert ran == {"triage", "draft", "package"} and result.violations == []
+    assert statuses(loop) == {K2: "drafted", K1: "drafted"} and not (loop.me / "research").exists()
+    assert not loop.server.seen("research") and not loop.server.seen("resources")
+
+
+def test_a_pass_past_its_deadline_starts_no_model_turn_and_still_writes_its_digest(tmp_path, monkeypatch):
+    loop = S.Loop(tmp_path, monkeypatch, config={"pass_minutes": 1e-7})
+    result = loop.run_pass()
+    assert result.terminal == "exhausted" and result.reason.startswith("pass time") and result.digest_path.exists()
+    assert loop.server.requests == [] and "ran out of time or money" in loop.digest()
+    assert state_of(loop, "sim1") == "new" and statuses(loop) == {}
+
+
+def test_what_the_loop_stored_joins_up_across_the_libraries_that_read_it_by_key(loop):
+    """Postings, fits and applications are named three ways (store key, fit_key(posting), company__role). Each reader must find the others."""
+    from jobloop import calibrate, upskill
+    from jobloop.engine import learn as analysis
+    loop.run_pass()
+    loop.clock.advance(days=1)
+    loop.person(K1, "applied", days_ago=5)
+    loop.person(K1, "rejected", days_ago=1)
+    loop.person(K2, "applied", days_ago=5)
+    loop.person(K2, "interview", days_ago=3)
+    loop.person(K2, "hired", days_ago=1)
+    found, notes = calibrate.samples(loop.me, loop.rows())
+    assert {s.key for s in found} == {K1, K2} and not [n for n in notes if "no saved fit" in n]          # calibration sees both outcomes
+    jobs = upskill.load_jobs(loop.me)
+    assert not jobs.needs_inference and jobs.tracked == 2 and {j.key for j in jobs.jobs if j.source == "tracked"} == {K1, K2}   # no inference, no double count
+    with loop.store() as store:
+        ev = analysis.evidence(loop.me, store, loop.rows())
+    assert {(o.key, o.status) for o in ev.outcomes} >= {(K1, "rejected"), (K2, "hired")} and all(o.score is not None and o.band for o in ev.outcomes)
+    assert ev.settled and ev.enough()

@@ -1,4 +1,4 @@
-"""The person's surface: setup, run, status, queue, tracker, stage, proposals, playbook, config, harnesses.
+"""The person's surface: setup, run, status, queue, tracker, stage, search, mock, proposals, playbook, config, harnesses.
 
 Everything else the product does is the loop's work (`jobloop run`). These commands are the few things a person does: build the
 profile, start or schedule the loop, read what it left, mark what they did, decide what it proposes.
@@ -12,9 +12,10 @@ import time
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from . import archive, profile as profiles, tracker
+from . import archive, interview, profile as profiles, search, tracker
 from .engine import config as configuration, digest, playbook, policy, proposals, queue, runner, snapshot
 from .engine.store import Store
+from .turns import Api
 from .term import BOLD, DIM, GREEN, OFF, RED, say
 from .text import utf8_io
 
@@ -187,6 +188,23 @@ def cmd_stage(args) -> int:
     return 0
 
 
+def cmd_mock(args) -> int:
+    """Rehearse an interview for an application the person is in: the loop's interview pack for the stage, then an interactive
+    mock (the one step of the interview work that is a person's own command, never part of a pass)."""
+    from .stages import interview as stage
+    me, config = _me(args), configuration.load(_me(args))
+    row = next((r for r in tracker.read_rows(me / "tracker.csv") if r.key == args.key), None) if (me / "tracker.csv").is_file() else None
+    if row is None:
+        say(f"{RED}no application {args.key!r} in the tracker; `jobloop tracker list` shows them{OFF}")
+        return 2
+    chosen = args.stage or stage.stage_name(stage.current_stage(me, row.key))
+    ns = argparse.Namespace(me=str(me), company=row.company, role=row.role, posting=None, stage=chosen, date="", format="", people="",
+                            fit=None, mock=True, questions=args.questions, researcher=config.ladder("researcher")[0],
+                            company_domain=stage.domain_for(row.company, config.company_domains), model=config.ladder("planner")[0],
+                            server=config.server, rounds=3, minutes=config.action_minutes, budget=config.action_budget_usd)
+    return interview.main(ns, api=Api(config.server, TRANSPORT) if TRANSPORT else None)
+
+
 def cmd_setup(args) -> int:
     return profiles.main(args)
 
@@ -246,6 +264,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--feedback", default="")
     p.add_argument("--outcome", default="pending", choices=archive.STAGE_OUTCOMES)
     p.set_defaults(fn=cmd_stage)
+
+    p = sub.add_parser("search", help="search the boards by hand, switch boards on or off (`search boards enable NAME`), check their health")
+    search.add_arguments(p)
+    p.set_defaults(fn=search.main)
+
+    p = sub.add_parser("mock", help="rehearse an interview for an application you are in (interactive; never part of a pass)")
+    me(p)
+    p.add_argument("key", help="the application key")
+    p.add_argument("--stage", default="", help="the stage to rehearse (default: the next one logged, else the next interview)")
+    p.add_argument("--questions", type=int, default=6, help="the mock's question budget")
+    p.set_defaults(fn=cmd_mock)
 
     p = sub.add_parser("proposals", help="what the loop proposes and only you can decide")
     me(p)

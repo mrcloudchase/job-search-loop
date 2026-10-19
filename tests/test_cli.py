@@ -75,4 +75,4 @@ def test_proposals_list_show_reject(tmp_path, capsys):
 def test_the_surface_is_small_and_every_command_has_a_purpose():
     import argparse
     sub = next(a for a in cli.build_parser()._actions if isinstance(a, argparse._SubParsersAction))
-    assert len(sub.choices) == 10 and all(c.help for c in sub._choices_actions)
+    assert len(sub.choices) == 12 and all(c.help for c in sub._choices_actions)

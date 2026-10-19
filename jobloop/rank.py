@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -46,6 +47,16 @@ class Run:
 def fit_key(key: str) -> str:
     """A file-safe, unique name for a store key (keys may hold characters a fit key may not)."""
     return f"{slug(key, 60) or 'posting'}-{hashlib.sha1(key.encode()).hexdigest()[:8]}"
+
+
+def drafted_fit_key(me: Path | str, application: str) -> str:
+    """The name of the fit stored for an application the loop drafted. Fits are named by their posting (`fit_key`) and an application
+    by company and role: draft.json in the application's archive folder says which posting it came from. "" when it did not."""
+    try:
+        posting = json.loads((Path(me) / "applications" / application / "draft.json").read_text(encoding="utf-8")).get("posting_key")
+    except (OSError, ValueError, AttributeError):
+        return ""
+    return fit_key(posting) if isinstance(posting, str) and posting else ""
 
 
 def scored(key: str, fit, deadline: str | None) -> rs.Scored:

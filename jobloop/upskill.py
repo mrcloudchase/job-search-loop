@@ -36,7 +36,7 @@ from typing import Protocol, Sequence
 
 from . import archive, fit, tracker
 from .profile import parse_skills
-from .rank import fit_key as rank_fit_key
+from .rank import drafted_fit_key as rank_drafted_fit_key
 from .research import RESEARCHER
 from .term import GREEN, OFF, RED, say
 from .text import claimed, flat, slug, visible
@@ -145,15 +145,6 @@ def _read_fits(folder: Path) -> tuple[list[dict], int]:
     return found, bad
 
 
-def _drafted_fit_key(me: Path, row: tracker.Row) -> str:
-    """The name of the fit the loop stored for a row it drafted: draft.json says which posting, and fits are named by that posting."""
-    try:
-        posting = json.loads((me / "applications" / row.key / "draft.json").read_text()).get("posting_key")
-    except (OSError, ValueError, AttributeError):
-        return ""
-    return rank_fit_key(posting) if isinstance(posting, str) and posting else ""
-
-
 def _matches(row: tracker.Row, data: dict, drafted: str = "") -> bool:
     return data["key"] in (row.key, slug(f"{row.role} {row.company}", 80), slug(f"{row.role}, {row.company}", 80), drafted)
 
@@ -177,7 +168,7 @@ def load_jobs(me: Path) -> Jobs:
     fits, unreadable = _read_fits(me / "fit")
     jobs, used, no_gaps, no_weight, infer = [], set(), 0, 0, []
     for row in rows:
-        drafted = _drafted_fit_key(me, row) if row.key else ""
+        drafted = rank_drafted_fit_key(me, row.key) if row.key else ""
         data = next((f for f in fits if _matches(row, f, drafted)), None)
         rating = _rating(row)
         if rating is None and data is not None and _ranked_ok(data):

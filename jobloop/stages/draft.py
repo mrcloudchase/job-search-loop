@@ -34,6 +34,13 @@ down the ladder); `blocked` (vetoed, below the floor, no stored fit, no research
 `no_op` (already tracked); `exhausted` on a stop (a draft that had passed every check is still finished and recorded, with a
 note that it was not reviewed; nothing is written when none had passed).
 
+The commit is crash-safe: its key goes into the engine kv `draft.committing` before `finish` and out after the tracker row; every
+archive file is written atomically and draft.json lands before the row. A process killed in between is picked up again by
+`propose` (the archive folder exists, but the key is still committing) and `_recover` either records the row from the whole archive
+(`apply.recover_commit`, no model turn) or clears the partial files and drafts again. `propose` also puts a posting whose deadline is
+within days (`policy.urgency`) ahead of a better fit when there are fewer slots than candidates, and skips a posting whose queue entry
+the person has closed (`needs_decision` or `done`).
+
 Never: writes any status but `drafted`, overrides a veto, sets `waive_unverified`, calls `input()`, claims what the verifiers
 refuse, sends the profile to a researcher, or drafts the same application twice.
 """
@@ -171,7 +178,7 @@ class Draft:
             if stored is None or stored.get("vetoes") or total < floor:
                 continue
             parked = snap.store.queue_item(app)
-            if parked is not None and parked["status"] == "needs_decision":
+            if parked is not None and parked["status"] in ("needs_decision", "done"):          # asked, or the person has said they dealt with it
                 continue
             deadline = str(entry.get("deadline") or "")
             action = Action("draft", app, f"shortlisted, fit {total}, researched, not yet drafted", priority=float(total),

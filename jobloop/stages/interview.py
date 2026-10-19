@@ -127,7 +127,7 @@ class Interview:
         lines = ["", "## 9. Notes"]
         if logged is None:
             lines.append("- No interview stage is logged for this application, so this is a generic pack for the next interview. "
-                         "Log the stage (date, format, interviewers) with `jobloop tracker stage` and the loop prepares a specific one.")
+                         "Log the stage (date, format, interviewers) with `jobloop stage KEY STAGE --date YYYY-MM-DD --format video` and the loop prepares a specific one.")
         lines.append(f"- Mock interview: run `jobloop mock {key}` yourself. It is interactive and not part of the unattended loop.")
         return "\n".join(lines + [f"- {n}" for n in extra]) + "\n"
 

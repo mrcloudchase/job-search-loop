@@ -30,6 +30,7 @@ from pathlib import Path
 
 from jobloop import archive, stale, tracker
 from jobloop.fit import GATES, WEIGHTS
+from jobloop.rank import drafted_fit_key
 from jobloop.term import say
 
 MIN_OUTCOMES = 8
@@ -138,7 +139,7 @@ def samples(me: Path, rows) -> tuple[tuple[Sample, ...], tuple[str, ...]]:
         status = tracker.normalize_status(row.status)
         if status not in tracker.FINAL or status == "withdrawn" or not row.key:
             continue
-        fit = fits.get(_squash(row.key))
+        fit = fits.get(_squash(row.key)) or fits.get(_squash(drafted_fit_key(me, row.key)))
         if fit is None:
             notes.append(f"{row.key}: {status}, but no saved fit to compare it with")
             continue

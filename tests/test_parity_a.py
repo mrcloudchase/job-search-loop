@@ -210,5 +210,5 @@ def test_reference_table_lists_existing_files():
     from jobloop import cli
     sub = next(a for a in cli.build_parser()._actions if isinstance(a, argparse._SubParsersAction))
     helps = {c.dest: c.help for c in sub._choices_actions}
-    assert set(helps) == {"setup", "run", "status", "queue", "tracker", "stage", "proposals", "playbook", "config", "harnesses"}
+    assert set(helps) == {"setup", "run", "status", "queue", "tracker", "stage", "search", "mock", "proposals", "playbook", "config", "harnesses"}
     assert all(h and len(h.split()) >= 3 for h in helps.values())                  # every command says what it is for
