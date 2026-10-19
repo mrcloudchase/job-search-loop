@@ -1,0 +1,249 @@
+$ python /w/tools/verify_pdf.py /w/cv/main_too_good_to_go_senior_data_engineer.pdf --pages 2; echo "cv exit=$?"; python /w/tools/verify_pdf.py /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf --pages 1; echo "cover exit=$?"
+Verified /w/cv/main_too_good_to_go_senior_data_engineer.pdf (extractor: pypdf, pages: 2)
+cv exit=0
+Error: /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf: expected 1 page(s), found 2 (extractor: pypdf)
+cover exit=1
+
+$ python /w/tools/verify_layout.py /w/cv/main_too_good_to_go_senior_data_engineer.pdf; echo "cv layout exit=$?"; python /w/tools/verify_layout.py /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf; echo "cover layout exit=$?"
+/w/cv/main_too_good_to_go_senior_data_engineer.pdf: 2 page(s) (page count is verify_pdf.py's job, not checked here)
+  p1: text y 52..703 of 842pt | bottom 139pt (17%) | largest gap 48pt at y113
+  p2: text y 64..504 of 842pt | bottom 335pt (40%) | largest gap 26pt at y420
+
+LAYOUT PROBLEMS:
+  - p2 is the last page and 40% empty, which reads as an unfinished document; restore the highest-relevance content previously cut
+cv layout exit=1
+/w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf: 2 page(s) (page count is verify_pdf.py's job, not checked here)
+  p1: text y 63..691 of 792pt | bottom 101pt (13%) | largest gap 37pt at y92
+  p2: text y 91..104 of 792pt | bottom 688pt (87%) | largest gap 0pt at y0
+
+LAYOUT PROBLEMS:
+  - p2 is the last page and 87% empty, which reads as an unfinished document; restore the highest-relevance content previously cut
+cover layout exit=1
+
+$ python /w/tools/verify_pdf.py /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf --dump-text /tmp/cover_check.txt >/dev/null 2>&1; cat /tmp/cover_check.txt
+Alex Fernsby
+alex.fernsby@example.com | +1 555 0100
+October 19, 2026
+Dear T oo Good T o Go hiring team,
+I am applying for the Senior Data Engineer role in the Parcels domain. Since 2022 I have owned
+Tidewater Logistics' shipment-events pipeline: 40 million events a day from Kafka into
+PostgreSQL and BigQuery, orchestrated with Airflow. I want to bring that end-to-end
+ownership to a product team where parcel latency and inventory data shape the product.
+Parcels has delivered 300,000 parcels of surplus food from FMCG manufacturers in the UK
+with CEVA Logistics since 2024. That is a logistics data problem as much as a sustainability
+one, and it needs pipelines that operations, logistics partners and brands can trust. The
+food-waste mission is why I want to work here. The Parcels domain is where that experience
+can make delivery and partner data trustworthy.
+My work matches the role in five areas:
+• Logistics and operations: I cut the nightly rebuild of our delivery-performance mart from
+six hours to 55 minutes with incremental dbt models, and built a Looker explore so
+planners answer delivery-delay questions themselves.
+• Data quality and SLAs: Great Expectations tests on 30 core tables cut failed loads by 70
+percent.
+• Cross-functional collaboration: I defined the shipment-events data contract with five
+producing teams and lead the weekly data-modelling review.
+• Operational maturity: I moved deployments to a Git-based workflow with GitHub Actions
+and Terraform, so a new environment takes 20 minutes instead of two days, and wrote
+the on-call runbook.
+• Streaming and batch: Kafka into BigQuery at 40 million events a day, Airflow orchestration,
+and Python ingestion handling about two million partner price-feed rows a day.
+My warehouse depth is in BigQuery, not Redshift, and I have not used dlt or Metaflow in
+production. I supported a warehouse migration from on-premise PostgreSQL to BigQuery,
+validating 60 tables row by row, so I know what a platform migration demands. I would
+become productive on your AWS stack quickly. I would rather say that plainly than blur it.
+I trained 12 analysts on dbt at Marlow and reviewed their first 40 models. I push back on
+requirements that will not survive the data model, and I gave a talk on data contracts in
+practice at the Rotterdam Data Meetup.
+I am based in Copenhagen and can work four days a week in the HQ. I am available from 1
+February 2027 after my notice period. I look forward to hearing from you.
+Kind regards,
+Alex Fernsby
+Page 2
+
+$ python /w/tools/verify_pdf.py /w/cv/main_too_good_to_go_senior_data_engineer.pdf --dump-text /tmp/cv_check.txt >/dev/null 2>&1; cat /tmp/cv_check.txt
+Alex Fernsby
+Copenhagen, Denmark
+MOBILE-ALT +1 555 0100 • Envelope alex.fernsby@example.com • GitHub
+Data engineer with seven years in retail and logistics, building batch and streaming pipelines for operational supply-
+chain data and the warehouses they feed. I own a 40-million-events-per-day shipment pipeline end to end, from
+Kafka through Airflow into PostgreSQL and BigQuery. I have cut rebuild times, warehouse costs and failed loads
+with dbt, partitioning and data-quality tests. I want to own a pipeline inside a product team, where logistics data
+shapes the product and the pipeline owner sits with the people who use it.
+Core Competencies
+○ Data engineering : Python, SQL, Apache Airflow, dbt, Kafka, PostgreSQL, BigQuery, Docker
+○ Logistics and order data : shipment events, delivery-performance mart, customer-orders star schema, partner
+price feeds
+○ Warehouse architecture and modelling : star schemas, incremental dbt models, partitioning and clustering,
+warehouse cost control
+○ DataOps and CI/CD : Terraform (Infrastructure-as-Code), GitHub Actions, Docker, Git-based deployments
+(GitOps-style)
+○ Data quality and governance : Great Expectations, data contracts, on-call runbook, 15-minute feed alerting
+○ Stakeholder management and communication : mentoring, data-modelling reviews, analyst training, cross-
+functional data contracts
+Professional Experience
+○
+Tidewater Logistics Copenhagen
+Senior Data Engineer 2022-Present
+- Owns the shipment-events pipeline: 40 million events per day from Kafka into a PostgreSQL and BigQuery
+warehouse, orchestrated with Apache Airflow.
+- Cut the nightly rebuild of the delivery-performance mart from 6 hours to 55 minutes with incremental dbt models,
+and built a Looker explore so planners answer delivery-delay questions themselves instead of filing tickets.
+- Defined the shipment-events data contract with five producing teams and wrote the on-call runbook for the
+pipeline.
+- Introduced data-quality tests with Great Expectations on 30 core tables; failed loads dropped 70 percent in the
+first quarter.
+- Moved the team’s deployments to GitHub Actions and Terraform, so a new environment takes 20 minutes instead
+of two days.
+- Cut the BigQuery bill for the events warehouse by 35 percent by partitioning and clustering the five largest tables.
+- Mentors two junior engineers, leads the weekly data-modelling review, and ran the interviews for three data-
+engineering hires.
+○
+Marlow Retail Group Utrecht
+Data Engineer 2018-2022
+- Built the company’s first Airflow deployment, migrated 45 cron jobs onto it, and added alerting so late partner
+feeds are noticed within 15 minutes instead of the next morning.
+- Wrote Python ingestion services for partner price feeds over REST and SFTP, handling about 2 million rows a day.
+- Designed a customer-orders star schema in PostgreSQL used by 12 analysts; trained 12 analysts on dbt and
+reviewed their first 40 models.
+- Supported the move of the warehouse from on-premise PostgreSQL to BigQuery, validating 60 tables row by row,
+and wrote the migration guide used by four teams.
+○
+Delft Energy Cooperative Delft
+Junior Analyst 2016-2018
+- Automated monthly consumption reports with Python and SQL, saving the team about 3 days each month.
+- Cleaned five years of meter readings with Pandas and documented the 14 data-quality rules that came out of it.
+Education
+○
+Delft University of Technology
+MSc Computer Science (data systems) 2016
+○
+Delft University of Technology
+BSc Computer Science 2014
+Projects
+○ Open-source dbt package for freight-rate data tests, 120 GitHub stars, github.com/afernsby-example/freight-tests
+○ Talk “Data contracts in practice”, Rotterdam Data Meetup, 2024
+Certifications
+○ Google Cloud Professional Data Engineer, 2023
+○ dbt Analytics Engineering Certification, 2022
+Languages
+○ English (C1), Dutch (native), German (A2).
+Publications
+○ “Testing freight data with dbt”, Data Engineering Weekly guest post, 2024
+Honors and Awards
+○ Engineering Excellence Award – Tidewater Logistics (2023).
+References
+○ Available upon request.
+
+$ python /w/tools/verify_layout.py /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf; python /w/tools/verify_pdf.py /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf --dump-text /tmp/cover_check2.txt >/dev/null 2>&1; tail -8 /tmp/cover_check2.txt
+/w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf: 2 page(s) (page count is verify_pdf.py's job, not checked here)
+  p1: text y 63..687 of 792pt | bottom 105pt (13%) | largest gap 37pt at y92
+  p2: text y 91..104 of 792pt | bottom 688pt (87%) | largest gap 0pt at y0
+
+LAYOUT PROBLEMS:
+  - p2 is the last page and 87% empty, which reads as an unfinished document; restore the highest-relevance content previously cut
+I trained 12 analysts on dbt at Marlow and reviewed their first 40 models. I push back on
+requirements that will not survive the data model, and I gave a talk on data contracts in
+practice at the Rotterdam Data Meetup.
+I am based in Copenhagen and can work four days a week in the HQ. I am available from 1
+February 2027 after my notice period. I look forward to hearing from you.
+Kind regards,
+Alex Fernsby
+Page 2
+
+$ python /w/tools/verify_layout.py /w/cv/main_too_good_to_go_senior_data_engineer.pdf
+Exit code 1
+/w/cv/main_too_good_to_go_senior_data_engineer.pdf: 2 page(s) (page count is verify_pdf.py's job, not checked here)
+  p1: text y 52..716 of 842pt | bottom 125pt (15%) | largest gap 48pt at y113
+  p2: text y 64..504 of 842pt | bottom 335pt (40%) | largest gap 26pt at y420
+
+LAYOUT PROBLEMS:
+  - p2 is the last page and 40% empty, which reads as an unfinished document; restore the highest-relevance content previously cut
+
+$ python /w/tools/verify_layout.py /w/cv/main_too_good_to_go_senior_data_engineer.pdf
+Exit code 1
+/w/cv/main_too_good_to_go_senior_data_engineer.pdf: 2 page(s) (page count is verify_pdf.py's job, not checked here)
+  p1: text y 52..716 of 842pt | bottom 125pt (15%) | largest gap 48pt at y113
+  p2: text y 64..528 of 842pt | bottom 311pt (37%) | largest gap 26pt at y443
+
+LAYOUT PROBLEMS:
+  - p2 is the last page and 37% empty, which reads as an unfinished document; restore the highest-relevance content previously cut
+
+$ cd /w/cv && lualatex -interaction=nonstopmode main_too_good_to_go_senior_data_engineer.tex >/tmp/cv_compile5.log 2>&1; lualatex -interaction=nonstopmode main_too_good_to_go_senior_data_engineer.tex >/tmp/cv_compile6.log 2>&1; tail -3 /tmp/cv_compile6.log; python /w/tools/verify_layout.py /w/cv/main_too_good_to_go_senior_data_engineer.pdf
+Exit code 1
+Output written on main_too_good_to_go_senior_data_engineer.pdf (2 pages, 50578 
+bytes).
+Transcript written on main_too_good_to_go_senior_data_engineer.log.
+/w/cv/main_too_good_to_go_senior_data_engineer.pdf: 2 page(s) (page count is verify_pdf.py's job, not checked here)
+  p1: text y 52..728 of 842pt | bottom 113pt (13%) | largest gap 48pt at y113
+  p2: text y 64..528 of 842pt | bottom 311pt (37%) | largest gap 26pt at y443
+
+LAYOUT PROBLEMS:
+  - p2 is the last page and 37% empty, which reads as an unfinished document; restore the highest-relevance content previously cut
+
+$ cd /w/cv && lualatex -interaction=nonstopmode main_too_good_to_go_senior_data_engineer.tex >/tmp/cv_compile7.log 2>&1; lualatex -interaction=nonstopmode main_too_good_to_go_senior_data_engineer.tex >/tmp/cv_compile8.log 2>&1; tail -3 /tmp/cv_compile8.log; python /w/tools/verify_layout.py /w/cv/main_too_good_to_go_senior_data_engineer.pdf
+Output written on main_too_good_to_go_senior_data_engineer.pdf (2 pages, 50563 
+bytes).
+Transcript written on main_too_good_to_go_senior_data_engineer.log.
+/w/cv/main_too_good_to_go_senior_data_engineer.pdf: 2 page(s) (page count is verify_pdf.py's job, not checked here)
+  p1: text y 52..731 of 842pt | bottom 110pt (13%) | largest gap 48pt at y113
+  p2: text y 64..549 of 842pt | bottom 290pt (35%) | largest gap 29pt at y409
+layout: clean
+
+$ lualatex -interaction=nonstopmode main_too_good_to_go_senior_data_engineer.tex >/tmp/cv_compile9.log 2>&1; lualatex -interaction=nonstopmode main_too_good_to_go_senior_data_engineer.tex >/tmp/cv_compile10.log 2>&1; tail -3 /tmp/cv_compile10.log; python /w/tools/verify_layout.py /w/cv/main_too_good_to_go_senior_data_engineer.pdf
+Exit code 1
+Output written on main_too_good_to_go_senior_data_engineer.pdf (2 pages, 50907 
+bytes).
+Transcript written on main_too_good_to_go_senior_data_engineer.log.
+/w/cv/main_too_good_to_go_senior_data_engineer.pdf: 2 page(s) (page count is verify_pdf.py's job, not checked here)
+  p1: text y 52..615 of 842pt | bottom 226pt (27%) | largest gap 48pt at y113
+  p2: text y 64..677 of 842pt | bottom 162pt (19%) | largest gap 29pt at y364
+
+LAYOUT PROBLEMS:
+  - p1 ends 226pt (27%) early although more pages follow, which reads as a broken page break
+
+$ lualatex -interaction=nonstopmode main_too_good_to_go_senior_data_engineer.tex >/tmp/cv_compile11.log 2>&1; lualatex -interaction=nonstopmode main_too_good_to_go_senior_data_engineer.tex >/tmp/cv_compile12.log 2>&1; tail -3 /tmp/cv_compile12.log; python /w/tools/verify_layout.py /w/cv/main_too_good_to_go_senior_data_engineer.pdf
+Output written on main_too_good_to_go_senior_data_engineer.pdf (2 pages, 50569 
+bytes).
+Transcript written on main_too_good_to_go_senior_data_engineer.log.
+/w/cv/main_too_good_to_go_senior_data_engineer.pdf: 2 page(s) (page count is verify_pdf.py's job, not checked here)
+  p1: text y 52..731 of 842pt | bottom 110pt (13%) | largest gap 48pt at y113
+  p2: text y 64..549 of 842pt | bottom 290pt (35%) | largest gap 29pt at y409
+layout: clean
+
+$ python /w/tools/verify_layout.py /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf; python /w/tools/verify_pdf.py /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf --pages 1; python /w/tools/verify_pdf.py /w/cv/main_too_good_to_go_senior_data_engineer.pdf --pages 2
+/w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf: 1 page(s) (page count is verify_pdf.py's job, not checked here)
+  p1: text y 63..686 of 792pt | bottom 106pt (13%) | largest gap 37pt at y92
+layout: clean
+Verified /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf (extractor: pypdf, pages: 1)
+Verified /w/cv/main_too_good_to_go_senior_data_engineer.pdf (extractor: pypdf, pages: 2)
+
+$ cd /w/cover_letters && xelatex -interaction=nonstopmode cover_too_good_to_go_senior_data_engineer.tex >/tmp/cover_compile5.log 2>&1; xelatex -interaction=nonstopmode cover_too_good_to_go_senior_data_engineer.tex >/tmp/cover_compile6.log 2>&1; tail -3 /tmp/cover_compile6.log; python /w/tools/verify_layout.py /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf; python /w/tools/verify_pdf.py /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf --pages 1
+Exit code 1
+ )
+Output written on cover_too_good_to_go_senior_data_engineer.pdf (2 pages).
+Transcript written on cover_too_good_to_go_senior_data_engineer.log.
+/w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf: 2 page(s) (page count is verify_pdf.py's job, not checked here)
+  p1: text y 63..711 of 792pt | bottom 81pt (10%) | largest gap 37pt at y92
+  p2: text y 78..91 of 792pt | bottom 701pt (89%) | largest gap 0pt at y0
+
+LAYOUT PROBLEMS:
+  - p2 is the last page and 89% empty, which reads as an unfinished document; restore the highest-relevance content previously cut
+Error: /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf: expected 1 page(s), found 2 (extractor: pypdf)
+
+$ cd /w/cover_letters && xelatex -interaction=nonstopmode cover_too_good_to_go_senior_data_engineer.tex >/tmp/cover_compile7.log 2>&1; xelatex -interaction=nonstopmode cover_too_good_to_go_senior_data_engineer.tex >/tmp/cover_compile8.log 2>&1; tail -3 /tmp/cover_compile8.log; python /w/tools/verify_layout.py /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf; python /w/tools/verify_pdf.py /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf --pages 1
+ )
+Output written on cover_too_good_to_go_senior_data_engineer.pdf (1 page).
+Transcript written on cover_too_good_to_go_senior_data_engineer.log.
+/w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf: 1 page(s) (page count is verify_pdf.py's job, not checked here)
+  p1: text y 63..686 of 792pt | bottom 106pt (13%) | largest gap 37pt at y92
+layout: clean
+Verified /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf (extractor: pypdf, pages: 1)
+
+$ python /w/tools/verify_pdf.py /w/cv/main_too_good_to_go_senior_data_engineer.pdf --ascii-dates --dump-text /w/cv/main_too_good_to_go_senior_data_engineer.txt; echo "exit=$?"
+Verified /w/cv/main_too_good_to_go_senior_data_engineer.pdf (extractor: pypdf, pages: 2)
+exit=0
+
+$ rm -f /w/cv/texput.log; python /w/tools/verify_pdf.py /w/cv/main_too_good_to_go_senior_data_engineer.pdf --pages 2 && python /w/tools/verify_pdf.py /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf --pages 1
+Verified /w/cv/main_too_good_to_go_senior_data_engineer.pdf (extractor: pypdf, pages: 2)
+Verified /w/cover_letters/cover_too_good_to_go_senior_data_engineer.pdf (extractor: pypdf, pages: 1)
+

@@ -1,0 +1,46 @@
+/apply # Senior Data Engineer
+Company: Too Good To Go
+Location: Copenhagen, Capital Region of Denmark, Denmark
+About Too Good To Go
+At Too Good To Go, we have an ambitious goal: to inspire and empower everyone to fight food waste together. 40% of all food produced in the world is wasted, contributing to 10% of global greenhouse gas emissions. We’re more than an app, we are a social impact company working across 20 countries to drive change through our marketplace app, educational tools, legislative work, and logistics initiatives.
+Our community of 118 million registered users and 246,000 active partners, have together already prevented 443+ million meals from going to waste - avoiding over 1.198.000 tonnes of CO2e!
+The Role
+Unlike our core local marketplace—where customers pick up "Surprise Bags" in-store—our Parcels business delivers ambient, shelf-stable surplus food directly from major FMCG manufacturers and wholesalers to the customer's door.
+In this role, you won't just sit in a central data team; you will be embedded directly alongside Product Managers, Tech Leads, and Software Engineers in the Parcels product domain. You will act as the dedicated data engineer for Parcels, designing the data pipelines and warehouse architecture needed to support direct-to-consumer logistics, inventory management, and manufacturer partner analytics—all while remaining connected to our overarching central data infrastructure.
+Tech Stack
+Our data stack consists of Airflow, Python, dlt, AWS (Redshift, Lambda, Kinesis, S3, Glue), dbt, Metaflow, and Terraform managed via GitOps principles.
+Key Responsibilities
+Product-Embedded Data Architecture: Design, build, and maintain real-time and batch data pipelines tailored specifically to logistics, inventory management, and operational warehouse processing.
+Operational Maturity: Drive the shift from manual processes to scalable, automated data solutions to support high-growth supply chain features.
+Cross-Functional Collaboration: Partner closely with Product Managers and Tech Leads within the Parcels domain to translate operational use cases into clear, robust technical requirements.
+Central Infrastructure Ownership: Serve as the primary link between the Parcels team and the central Data Platform team, balancing embedded tickets with overarching platform standards.
+Data Quality & SLAs: Ensure high data availability, lower latency (e.g., tracking how long parcels take to reach consumers), and strong data governance across warehouse and logistics workflows.
+Key Requirements
+Logistics & Ops Mindset: Experience working with operational, inventory, or supply-chain data systems (e.g., warehouse latency, logistics tracking, or order fulfillment).
+Technical Mastery: Strong proficiency in Python and SQL, with deep knowledge of modern data warehouse internals (preferably AWS Redshift).
+Pipeline & Infrastructure: Demonstrated experience with Airflow (or similar orchestrators), dbt, and Infrastructure-as-Code (Terraform).
+Data Ops & CI/CD: Experience applying DataOps, GitOps, and CI/CD tools (GitHub Actions, Docker) to streaming or batch data applications.
+Strong Communication & Stakeholder Management: Ability to push back on requirements, simplify complex operational needs, and thrive in a fast-paced, agile environment.
+What We Offer
+Opportunity to work at a scaling social impact company and directly reduce food waste globally.
+High-impact embedded product role with direct ownership over a strategic business priority.
+Work-life balance focus (no mandatory overtime or standard on-call duty).
+Hybrid work setup in our Copenhagen HQ (4 days in office).
+To be part of an international company, with over 1,300+ colleagues across 19 countries that are on the same important mission.
+An informal environment, working alongside 180+ passionate people within Tech & Product
+We celebrate our differences and our successes and have a strong values-driven team culture.
+Our values
+We win together: Food waste is a big beast to fight. We believe in a #oneteam.
+We raise the bar: We always push for more. We work smart, smash barriers and elevate one another.
+We keep it simple: Our ambitions are bold but our solutions are simple.
+We build a legacy: We’re proud of the change we’re driving.
+We care: We always look out for each other. Caring is also about the way we do business. We do the right thing.
+How To Apply
+We take recruitment very seriously, so please carefully read everything we have written above.
+Please also check our website and international media in order to get a good overview of Too Good To Go.
+Please submit your CV and Cover letter in English.
+Please note that we only accept applications coming through our platform. No CV or Cover Letter will be accepted by email or LinkedIn direct messaging.
+Show more
+Show less
+
+(Run notes from the user: the posting above is pasted text, the LinkedIn URL is not available. Answer yes to "Should I proceed with drafting": proceed to draft without asking any question. This is a non-interactive run, so do not wait for user input at any step; make reasonable choices and finish through Step 6.)

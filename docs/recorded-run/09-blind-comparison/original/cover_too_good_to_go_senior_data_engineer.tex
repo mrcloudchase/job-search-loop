@@ -1,0 +1,56 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Cover Letter - Too Good To Go, Senior Data Engineer (Parcels)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[]{cover}
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+\fancyhf{}
+
+\rfoot{Page \thepage \hspace{0pt}}
+\thispagestyle{empty}
+\renewcommand{\headrulewidth}{0pt}
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     TITLE NAME
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\namesection{}{\Huge{Alex Fernsby}}{  \href{mailto:alex.fernsby@example.com}{alex.fernsby@example.com} | +1 555 0100
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     MAIN COVER LETTER CONTENT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\currentdate{\today}
+\lettercontent{Dear Too Good To Go hiring team,}
+
+\lettercontent{I am applying for the Senior Data Engineer role in the Parcels domain. Since 2022 I have owned Tidewater Logistics' shipment-events pipeline: 40 million events a day from Kafka into PostgreSQL and BigQuery, orchestrated with Airflow. I want to bring that end-to-end ownership to a product team where parcel latency and inventory data shape the product.}
+
+\lettercontent{Parcels has delivered 300,000 parcels of surplus food from FMCG manufacturers in the UK with CEVA Logistics since 2024. That is a logistics data problem as much as a sustainability one, and it needs pipelines that operations, logistics partners and brands can trust. The food-waste mission is why I want to work here. The Parcels domain is where that experience can make delivery and partner data trustworthy.}
+
+\lettercontent{My work matches the role in five areas:}
+
+{\raggedright\fontspec[Path = OpenFonts/fonts/raleway/]{Raleway-Medium}\fontsize{11pt}{13pt}\selectfont
+\begin{itemize}
+    \item \textbf{Logistics and operations:} I cut the nightly rebuild of our delivery-performance mart from six hours to 55 minutes with incremental dbt models, and built a Looker explore so planners answer delivery-delay questions themselves.
+    \item \textbf{Data quality and SLAs:} Great Expectations tests on 30 core tables cut failed loads by 70 percent.
+    \item \textbf{Cross-functional collaboration:} I defined the shipment-events data contract with five producing teams and lead the weekly data-modelling review.
+    \item \textbf{Operational maturity:} I moved deployments to a Git-based workflow with GitHub Actions and Terraform, so a new environment takes 20 minutes instead of two days, and wrote the on-call runbook.
+    \item \textbf{Streaming and batch:} Kafka into BigQuery at 40 million events a day, Airflow orchestration, and Python ingestion handling about two million partner price-feed rows a day.
+\end{itemize}\par}
+\vspace{0pt}
+
+\lettercontent{My warehouse depth is in BigQuery, not Redshift, and I have not used dlt or Metaflow in production. I supported a PostgreSQL-to-BigQuery migration, validating 60 tables row by row, so I know what a platform migration demands. I would rather say that plainly than blur it.}
+
+\lettercontent{I trained 12 analysts on dbt at Marlow and reviewed their first 40 models. I push back on requirements that will not survive the data model, and I gave a talk on data contracts in practice at the Rotterdam Data Meetup.}
+
+\lettercontent{I am based in Copenhagen and can work four days a week in the HQ. I am available from 1 February 2027 after my notice period. I look forward to hearing from you.}
+
+\begin{flushright}
+\closing{Kind regards,}
+
+\signature{Alex Fernsby}
+\end{flushright}
+\end{document}
