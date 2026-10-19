@@ -572,6 +572,28 @@ def test_list_installed_boards(tmp_path, capsys):
     assert line.startswith("nordlys-jobs") and "off" in line and "terms" in line
 
 
+def test_generated_board_goes_to_user_config_not_core(tmp_path):
+    core = Path(ab.__file__).parent
+    before = sorted(str(p.relative_to(core)) for p in core.rglob("*.py"))
+    installed(tmp_path)
+    assert sorted(str(p.relative_to(core)) for p in core.rglob("*.py")) == before
+    from jobloop import boards
+    assert boards.BUILT_IN == ("freehire", "linkedin", "jobindex", "jobnet", "jobbank", "jobdanmark")
+    assert {"boards", "boards.json"} <= {p.name for p in tmp_path.iterdir()} <= {"boards", "boards.json", "boards.json.lock", "state"}
+
+
+def test_access_rules_are_surfaced_not_bypassed(tmp_path, capsys):
+    rig = Rig(FakeServer([{"files": {"REFUSED.txt": "The terms forbid automated access."}}] * 2))
+    assert ab.main(args(tmp_path), api=rig.api(), runner=good_runner) == 1
+    assert "The terms forbid automated access." in capsys.readouterr().out
+    parser = argparse.ArgumentParser()
+    ab.add_arguments(parser)
+    options = {o for a in parser._actions for o in a.option_strings}
+    assert not {"--force", "--override", "--ignore-robots", "--yes", "--enable", "--no-verify", "--skip-checks"} & options
+    assert ab.main(args(tmp_path), api=rig.api(), runner=good_runner) == 1          # asking again changes nothing
+    assert not (tmp_path / "boards.json").exists()
+
+
 def test_the_builders_role_prefers_a_json_api_forbids_following_pages_and_requires_a_refusal_on_robots_login_or_terms():
     role = ab.ROLE
     flat = " ".join(role.split())

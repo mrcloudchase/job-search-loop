@@ -243,3 +243,11 @@ def test_the_command_refuses_without_a_profile_or_a_plan(tmp_path, capsys):
     me = me_with(tmp_path, GOOD)
     assert Q.main(parse("--me", str(me), "--board", "jobindex")) == 1
     assert Q.main(parse("--me", str(me), "--language", "Danish", "--board", "freehire")) == 1
+
+
+def test_function_names_feed_experience_match():
+    from jobloop import fit
+    runs = Q.plan_queries(FIVE, ["freehire"], focus="broad", per_board=100)
+    assert set(functions(runs)) == set(P.parse_search_queries(FIVE)["English"])          # categories are named by function
+    assert "function and nature of the work" in fit.RUBRIC["experience"]                  # and the fit judges function, not title
+    assert all(label in FIVE for label in functions(runs))                               # the labels travel in the profile the fit reads

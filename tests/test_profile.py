@@ -747,3 +747,375 @@ def test_exactly_one_way_in_is_required():
         parser.parse_args(["--docs", "d", "--interview"])
     args = parser.parse_args(["--interview"])
     assert args.me == "me" and P.HARNESS is True
+
+
+# ── eligibility: employment status, hours and a start date the fit gates can compare ──
+def test_profile_has_status():
+    assert P.parse_eligibility(GOOD).employment_status.startswith("employed")
+    text = edit("- Employment status: employed, serving a three months notice period if I leave\n", "")
+    with pytest.raises(ValueError, match="Employment status"):
+        P.parse_eligibility(text)
+    assert "Eligibility:" in failing(text)
+
+
+@pytest.mark.parametrize("hours", ["full-time", "flexible"])
+def test_hours_without_a_number_are_rejected_so_a_hours_cap_can_be_compared(hours):
+    assert "Hours" in failing(edit("full-time, at most 40 hours per week", hours))
+
+
+@pytest.mark.parametrize("start", ["three months notice", "1 February 2027", "2027-13-40"])
+def test_a_start_date_that_is_not_an_iso_date_is_rejected_so_it_can_be_compared(start):
+    assert "Start date" in failing(edit("three months notice, earliest start 2027-02-01", start))
+
+
+def test_an_immediate_or_unstated_start_is_allowed():
+    for start in ("immediately", "not stated"):
+        assert P.parse_eligibility(edit("three months notice, earliest start 2027-02-01", start)).start_date == start
+
+
+def test_an_iso_date_must_be_a_date_a_source_gives_in_any_written_form():
+    assert "date 2027-03-01 is not in the sources" in failing(edit("2027-02-01", "2027-03-01"))
+    assert failing(edit("2027-02-01", "2027-02-01"), {**SOURCES, "x.txt": "Available from February 1, 2027."}) == ""
+    assert "numbers or dates" not in failing(edit("2027-02-01", "2027-03-01"))     # the parts of a date are not numbers
+
+
+def test_ineligible_posting_gated():
+    from jobloop import fit
+    held = fit.read_eligibility(GOOD)
+    item = lambda kind, value: {"kind": kind, "stance": "requires", "value": value, "scope": "role", "text": "the posting"}
+    assert fit.permit_gate([item("hours", "45 hours per week")], held).verdict == "FAIL"          # above the cap
+    assert fit.permit_gate([item("start_date", "2027-01-01")], held).verdict == "FAIL"            # before the person can start
+    assert fit.permit_gate([item("start_date", "2027-03-01")], held).verdict == "PASS"
+    assert fit.eligibility_gate([item("citizenship", "US citizen")], held).verdict == "FAIL"
+    assert held["employment status"].startswith("employed")
+
+
+# ── settings: the CV language and the places ──
+def test_a_profile_without_settings_writes_the_cv_in_english_and_has_no_places():
+    bare = re.sub(r"(?s)## Settings.*?(?=## Search queries)", "", GOOD)
+    assert P.parse_settings(bare) == P.Settings() and P.Settings().cv_language == "en"
+    assert failing(bare) == ""
+
+
+def test_settings_read_the_cv_language_as_a_code_the_letter_checks_understand():
+    from jobloop import letter
+    for name, code in (("English", "en"), ("Dutch", "nl"), ("german", "de"), ("da", "da")):
+        assert P.parse_settings(edit("CV language: English", f"CV language: {name}")).cv_language == code
+    assert set(P.LANGUAGE_CODES.values()) == set(letter.STOPWORDS)
+
+
+def test_a_cv_language_the_loop_cannot_verify_is_rejected():
+    assert "CV language 'French'" in failing(edit("CV language: English", "CV language: French"))
+
+
+def test_a_cv_language_the_person_does_not_declare_is_rejected():
+    text = edit("| German | A2 |\n", "").replace("CV language: English", "CV language: German")
+    assert "not in the Languages table" in failing(text, {**SOURCES, "x": "German"})
+
+
+def test_a_place_cannot_sit_in_two_tiers():
+    with pytest.raises(ValueError, match="both the ideal and the borderline"):
+        P.parse_settings(edit("- Borderline locations: Amsterdam", "- Borderline locations: Delft"))
+
+
+# ── education ──
+def test_education_fields():
+    first, second = P.parse_education(GOOD)
+    assert first == P.Education("MSc Computer Science (data systems)", "Delft University of Technology", "2016")
+    assert second.degree == "BSc Computer Science" and second.period == "2014"
+    text = edit("- BSc Computer Science, Delft University of Technology, 2014",
+                "- BSc Computer Science, Delft University of Technology, 2012 - 2014\n  - Key topics: databases\n"
+                "  - Thesis: query planners\n  - Grade: cum laude")
+    entry = P.parse_education(text)[1]
+    assert (entry.period, entry.topics, entry.thesis, entry.grade) == ("2012 - 2014", "databases", "query planners", "cum laude")
+
+
+@pytest.mark.parametrize("line", ["- MSc Computer Science", "- MSc, Delft", "MSc, Delft, 2016", "- MSc, Delft, last year"])
+def test_an_education_entry_without_degree_institution_and_period_is_rejected(line):
+    assert "Education:" in failing(edit("- BSc Computer Science, Delft University of Technology, 2014", line))
+
+
+# ── projects, certifications, publications, awards, references ──
+PROJECT_DOC = {"projects/airflow-lint.md": "Airflow-lint is a linter for Airflow DAGs written in Python with pytest; it "
+                                            "found 14 broken DAGs in the first week."}
+PROJECTS = "\n## Projects\n### Airflow-lint\n- Description: a linter for Airflow DAGs\n- Stack: Python, pytest\n" \
+           "- Outcome: found 14 broken DAGs in the first week\n"
+
+
+def test_projects_ingested_into_independent_projects():
+    text = GOOD.replace("\n## Preferences", PROJECTS + "\n## Preferences")
+    sources = {**SOURCES, **PROJECT_DOC}
+    assert P.parse_projects(text) == (P.Project("Airflow-lint", "a linter for Airflow DAGs", ("Python", "pytest"),
+                                                "found 14 broken DAGs in the first week"),)
+    assert failing(text, sources) == ""
+
+
+def test_a_project_no_source_describes_or_with_a_tool_no_source_names_is_rejected():
+    text = GOOD.replace("\n## Preferences", PROJECTS + "\n## Preferences")
+    assert "the name 'Airflow-lint' is not in the sources" in failing(text, SOURCES)
+    assert "the tool 'Rust' is not in the sources" in failing(text.replace("Python, pytest", "Python, Rust"), {**SOURCES, **PROJECT_DOC})
+
+
+def test_a_project_without_a_measurable_outcome_or_a_stack_is_rejected():
+    sources = {**SOURCES, **PROJECT_DOC}
+    text = GOOD.replace("\n## Preferences", PROJECTS + "\n## Preferences")
+    assert "measurable" in failing(text.replace("found 14 broken DAGs in the first week", "it works well"), sources)
+    assert "missing '- Stack:'" in failing(text.replace("- Stack: Python, pytest\n", ""), sources)
+
+
+def test_a_project_folder_document_reaches_the_drafter_as_a_source(tmp_path):
+    docs = tmp_path / "docs"
+    (docs / "cv").mkdir(parents=True)
+    (docs / "cv" / "cv.txt").write_text(CV)
+    (docs / "projects").mkdir()
+    (docs / "projects" / "airflow-lint.md").write_text(PROJECT_DOC["projects/airflow-lint.md"])
+    assert P.ingest_folder(docs).sources["projects/airflow-lint.md"] == PROJECT_DOC["projects/airflow-lint.md"]
+
+
+EXTRAS = """
+## Certifications
+- AWS Certified Data Analytics, 2021
+
+## Publications
+- None yet.
+
+## Awards
+- Engineer of the year, Tidewater Logistics, 2023
+
+## References
+### Maria Jansen
+- Relationship: line manager at Tidewater Logistics
+- Email: maria.jansen@example.com
+- Quote: "Alex is the most reliable engineer I have managed."
+- Title: Head of Data
+- Organisation: Tidewater Logistics
+"""
+EXTRA_SOURCES = {**SOURCES, "references/jansen.txt": 'Maria Jansen, Head of Data, Tidewater Logistics, maria.jansen@example.com. '
+                 '"Alex is the most reliable engineer I have managed." Alex won engineer of the year in 2023. '
+                 "AWS Certified Data Analytics, 2021."}
+
+
+def test_certs_publications_awards_references_roundtrip():
+    text = GOOD.replace("\n## Preferences", EXTRAS + "\n## Preferences")
+    assert P.parse_list(text, "Certifications") == ("AWS Certified Data Analytics, 2021",)
+    assert P.parse_list(text, "Publications") == () and P.parse_list(GOOD, "Awards") == ()
+    assert P.parse_list(text, "Awards") == ("Engineer of the year, Tidewater Logistics, 2023",)
+    ref = P.parse_references(text)[0]
+    assert (ref.name, ref.email, ref.phone, ref.relationship) == ("Maria Jansen", "maria.jansen@example.com", "",
+                                                                   "line manager at Tidewater Logistics")
+    assert failing(text, EXTRA_SOURCES) == ""
+
+
+def test_a_reference_needs_a_relationship_and_a_way_to_reach_them():
+    text = GOOD.replace("\n## Preferences", EXTRAS + "\n## Preferences")
+    assert "needs '- Relationship:'" in failing(text.replace("- Relationship: line manager at Tidewater Logistics\n", ""), EXTRA_SOURCES)
+    assert "needs '- Relationship:'" in failing(text.replace("- Email: maria.jansen@example.com\n", ""), EXTRA_SOURCES)
+
+
+def test_reference_quotes_carry_attribution():
+    text = GOOD.replace("\n## Preferences", EXTRAS + "\n## Preferences")
+    assert "a quote needs the referee's '- Title:' and '- Organisation:'" in failing(
+        text.replace("- Title: Head of Data\n", ""), EXTRA_SOURCES)
+    assert "a quote needs the referee's" in failing(text.replace("- Organisation: Tidewater Logistics\n", ""), EXTRA_SOURCES)
+
+
+def test_a_referee_quote_that_is_not_word_for_word_in_a_reference_letter_is_rejected():
+    text = GOOD.replace("\n## Preferences", EXTRAS + "\n## Preferences").replace("most reliable engineer", "best engineer")
+    assert "the quote is not word for word in the sources" in failing(text, EXTRA_SOURCES)
+
+
+def test_a_list_section_that_is_not_bullets_is_rejected():
+    assert "Certifications:" in failing(GOOD.replace("\n## Preferences", "\n## Certifications\nAWS 2021\n\n## Preferences"),
+                                        EXTRA_SOURCES)
+
+
+# ── diplomas ──
+DIPLOMA = {"diplomas/msc.txt": "Delft University of Technology confers upon Alex Fernsby the degree of MSc Computer Science "
+                               "(data systems), awarded in 2016, with the grade cum laude."}
+
+
+def test_diploma_used_to_check_education_entries():
+    sources = {**SOURCES, **DIPLOMA}
+    assert failing(GOOD, sources) == ""
+    assert "the degree title 'Master of Science in Computer Science' is not what the diploma" in failing(
+        edit("MSc Computer Science (data systems)", "Master of Science in Computer Science"), sources)
+    assert "graduation year '2015'" in failing(edit("Technology, 2016", "Technology, 2015"), {**sources, "x.txt": "2015"})
+
+
+def test_a_diploma_that_matches_no_education_entry_is_a_finding():
+    sources = {**SOURCES, "diplomas/x.txt": "University of Leiden confers the degree of MA History in 2010."}
+    assert "diplomas/x.txt matches no Education entry" in failing(GOOD, sources)
+
+
+def test_a_grade_the_diploma_does_not_give_is_rejected():
+    sources = {**SOURCES, **DIPLOMA}
+    text = edit("- MSc Computer Science (data systems), Delft University of Technology, 2016",
+                "- MSc Computer Science (data systems), Delft University of Technology, 2016\n  - Grade: cum laude")
+    assert failing(text, sources) == ""
+    assert "the grade 'summa cum laude'" in failing(text.replace("cum laude", "summa cum laude"), sources)
+
+
+# ── writing style: observed patterns are additive ──
+LETTERS = {"applications/acme/cover_letter.md": "Dear team, I start with the result. Best, Alex",
+           "applications/beta/cover_letter.md": "Dear team, results come first here too. Best, Alex"}
+PATTERN = "\n### Patterns observed\n- Opens with the result before the context (seen in: applications/acme/cover_letter.md, " \
+          "applications/beta/cover_letter.md)\n"
+
+
+def test_style_pattern_requires_two_letters():
+    sources = {**SOURCES, **LETTERS}
+    text = GOOD.replace("- Lead with the result.\n", "- Lead with the result.\n" + PATTERN)
+    assert P.parse_patterns(text) == (("Opens with the result before the context",
+                                       ("applications/acme/cover_letter.md", "applications/beta/cover_letter.md")),)
+    assert failing(text, sources) == ""
+    one = text.replace(", applications/beta/cover_letter.md", "")
+    assert "seen in 1 cover letter(s)" in failing(one, sources)
+    twice = text.replace("beta/cover_letter.md", "acme/cover_letter.md")
+    assert "seen in 1 cover letter(s)" in failing(twice, sources)
+
+
+def test_a_pattern_may_cite_only_cover_letters_that_are_among_the_sources():
+    text = GOOD.replace("- Lead with the result.\n", "- Lead with the result.\n" + PATTERN)
+    assert "not a cover letter among the sources" in failing(text, SOURCES)
+    cv_draft = text.replace("beta/cover_letter.md", "beta/cv_draft.md")
+    assert "applications/beta/cv_draft.md, which is not a cover letter" in failing(cv_draft, {**SOURCES, **LETTERS,
+                                                                                            "applications/beta/cv_draft.md": "x"})
+
+
+def test_a_pattern_line_without_its_letters_is_rejected():
+    text = GOOD.replace("- Lead with the result.\n", "- Lead with the result.\n### Patterns observed\n- Opens with the result\n")
+    assert "must be '- pattern (seen in: file, file)'" in failing(text)
+
+
+def test_observed_patterns_additive_only(tmp_path):
+    sources = {**SOURCES, **LETTERS}
+    added = GOOD.replace("- Lead with the result.\n", "- Lead with the result.\n" + PATTERN)
+    assert P.rules_failures(GOOD, added) == []
+    dropped = edit("- Plain sentences, active voice.\n", "", added)
+    assert "writing rule '- Plain sentences, active voice.' from current-profile.md is missing" in "\n".join(P.rules_failures(GOOD, dropped))
+    reworded = edit("- Plain sentences, active voice.", "- Short sentences.", added)
+    assert P.rules_failures(GOOD, reworded)
+    me = tmp_path / "me"
+    me.mkdir()
+    (me / "profile.md").write_text(GOOD)
+    written, server, seen = run(tmp_path, [{"files": {"profile.md": reworded}}, {"files": {"profile.md": added}}], sources=sources)
+    assert "keep every rule word for word" in server.requests[1]["input"][0]["text"]
+    assert "Opens with the result" in written.read_text() and "- Plain sentences, active voice." in written.read_text()
+
+
+# ── behavioural signals ──
+SIGNALS = ("\n## Behavioural signals\n- Fit keywords: end to end ownership; data platform\n"
+           "- Friction keywords: round-the-clock on-call; constant context switching\n"
+           "- Growth areas: public speaking -> practised at the weekly data-modelling review; Scala -> learning it through "
+           "side projects\n")
+
+
+def test_friction_keywords_flag_not_veto():
+    text = GOOD.replace("\n## Writing style", SIGNALS + "\n## Writing style")
+    signals = P.parse_signals(text)
+    seen = P.posting_signals("We offer end to end ownership of our data platform. <!-- round-the-clock on-call --> Some constant "
+                             "context switching is normal.", signals)
+    assert seen.fit == ("end to end ownership", "data platform") and seen.friction == ("constant context switching",)
+    lines = seen.lines()
+    assert "potential friction (not a deal-breaker): the posting says 'constant context switching'" in lines
+    assert not [f for f in vars(seen) if "veto" in f or "block" in f] and not any("round-the-clock" in l for l in lines)   # comments are no text
+    assert failing(text) == ""
+
+
+def test_growth_area_framing_present():
+    text = GOOD.replace("\n## Writing style", SIGNALS + "\n## Writing style")
+    assert P.parse_signals(text).growth[0] == ("public speaking", "practised at the weekly data-modelling review")
+    assert "Behavioural signals:" in failing(text.replace(" -> practised at the weekly data-modelling review", ""))
+    assert "Behavioural signals:" in failing(text.replace("-> practised at the weekly data-modelling review", "-> never"))
+    assert P.parse_signals(GOOD) == P.Signals((), (), ())
+
+
+# ── search queries: adjacent roles ──
+def test_adjacent_roles_suggested():
+    assert "add a '- Adjacent roles:' line" in failing(edit("- Adjacent roles: machine learning platform engineer; data architect\n", "")
+                                                       .replace("- Adjacent roles: Datenarchitekt; ML-Plattform Ingenieur", ""))
+    held = edit("- Adjacent roles: machine learning platform engineer; data architect\n### Dutch",
+                "- Adjacent roles: senior data engineer\n### Dutch")
+    assert "the Adjacent roles query 'senior data engineer' is a role the person already holds" in failing(held)
+    again = edit("data architect\n### Dutch", "airflow engineer\n### Dutch")
+    assert "or searches for elsewhere" in failing(again)
+    assert P.ADJACENT in P.DRAFTER and "never a title they held" in P.DRAFTER
+
+
+# ── updating one section ──
+def seeded(tmp_path):
+    me = tmp_path / "me"
+    me.mkdir()
+    (me / "profile.md").write_text(GOOD)
+    return me
+
+
+def test_section_flag_skips_path_choice_and_updates_only_that_section(tmp_path):
+    me = seeded(tmp_path)
+    drafted = edit("- Plain sentences, active voice.", "- Short sentences, no passive voice.")
+    ask, asked = scripted()
+    code, server = run_main(tmp_path, "--section", "style", ask=ask, replies=[{"files": {"profile.md": drafted}}])
+    assert code == 0 and asked == [next(q.text for q in P.QUESTIONS if q.key == "writing_style")]
+    new = (me / "profile.md").read_text()
+    assert "Short sentences, no passive voice." in new and new != GOOD
+    assert "change only the section(s) Writing style" in server.requests[0]["input"][0]["text"]
+    assert P.sections(new).keys() == P.sections(GOOD).keys()
+
+
+def test_section_search_touches_only_queries(tmp_path):
+    me = seeded(tmp_path)
+    drafted = (GOOD.replace("Data engineer with 7 years", "Someone with 7 years")
+               .replace("- Ideal locations: Rotterdam; Delft", "- Ideal locations: Delft")
+               .replace("data platform engineer\n- Pipeline", "data platform engineer; etl engineer\n- Pipeline", 1)
+               .replace("Lead with the result.", "Lead with something else.").replace("Senior Data Engineer, Tidewater", "Lead, Tidewater"))
+    ask, asked = scripted()
+    code, _ = run_main(tmp_path, "--section", "search", ask=ask, replies=[{"files": {"profile.md": drafted}}])
+    assert code == 0
+    new = (me / "profile.md").read_text()
+    before, after = P.sections(GOOD), P.sections(new)
+    changed = {t for t in before if before[t] != after.get(t)}
+    assert changed == {"Search queries", "Settings"}
+    assert "etl engineer" in new and "Ideal locations: Delft\n" in new
+    assert [q for q in asked if q.startswith("What do you do day to day") or q.startswith("Which language should")] == asked
+    assert len(asked) == 2 and "Someone with 7 years" not in new and "Lead, Tidewater" not in new
+
+
+def test_a_section_update_changes_no_byte_outside_the_named_sections():
+    drafted = GOOD.replace("Data engineer with 7 years", "Someone with 7 years").replace("- Too far: Groningen", "- Too far: Leiden")
+    out = P.splice(GOOD, drafted, ("Settings",))
+    assert out == GOOD.replace("- Too far: Groningen", "- Too far: Leiden")
+    assert P.splice(GOOD, drafted, ("Settings",)).count("Someone") == 0
+    assert P.splice(GOOD, "# A\n\n## Projects\nx\n", ("Projects",)).endswith("## Projects\nx\n")
+    assert P.splice(GOOD, "# A\n", ("Settings",)) == GOOD
+
+
+def test_a_section_update_needs_an_existing_profile_and_asks_nothing_without_one(tmp_path):
+    code, server = run_main(tmp_path, "--section", "search", ask=lambda q: pytest.fail(f"asked {q}"))
+    assert code == 2 and server.requests == [] and not (tmp_path / "me" / "profile.md").exists()
+
+
+def test_a_section_update_that_breaks_a_check_is_sent_back_and_never_written(tmp_path):
+    me = seeded(tmp_path)
+    bad = edit("- CV language: English", "- CV language: French")
+    ask, _ = scripted()
+    code, server = run_main(tmp_path, "--section", "search", ask=ask, replies=[{"files": {"profile.md": bad}}] * 4)
+    assert code == 1 and (me / "profile.md").read_text() == GOOD
+    assert "CV language 'French'" in server.requests[1]["input"][0]["text"]
+
+
+def test_a_draft_that_leaves_out_the_section_asked_for_is_sent_back(tmp_path):
+    seeded(tmp_path)
+    ask, _ = scripted()
+    code, server = run_main(tmp_path, "--section", "style", ask=ask,
+                            replies=[{"files": {"profile.md": re.sub(r"(?s)## Writing style.*?(?=## STAR)", "", GOOD)}}] * 4)
+    assert code == 1 and "must hold the '## Writing style' section" in server.requests[1]["input"][0]["text"]
+
+
+def test_a_section_is_one_more_way_in_and_exactly_one_is_required():
+    parser = argparse.ArgumentParser()
+    P.add_arguments(parser)
+    assert parser.parse_args(["--section", "search"]).section == "search"
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--section", "search", "--interview"])
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--section", "everything"])

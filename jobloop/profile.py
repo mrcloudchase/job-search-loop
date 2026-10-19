@@ -430,7 +430,7 @@ def parse_list(md: str, title: str) -> tuple[str, ...]:
     lines = [l for l in body.splitlines() if l.strip()]
     if not all(l.startswith("- ") for l in lines):
         raise ValueError(f"'## {title}' must be bullets (or 'None yet.')")
-    return tuple(l[2:].strip() for l in lines)
+    return tuple(l[2:].strip() for l in lines if l[2:].strip().lower().rstrip(".") not in ("none yet", "none"))
 
 
 @dataclass(frozen=True)
@@ -700,17 +700,22 @@ def diploma_failures(profile: str, sources: dict[str, str]) -> list[str]:
     out = []
     for name, text in diplomas.items():
         seen = flat(text)
-        matched = [e for e in entries if flat(e.institution) in seen]
-        if not matched:
+        candidates = [e for e in entries if flat(e.institution) in seen]
+        if not candidates:
             out.append(f"The diploma {name} matches no Education entry: write the institution exactly as the diploma spells it.")
-        for e in matched:
-            year = YEAR.findall(e.period)[-1]
-            for what, value, ok in (("degree title", e.degree, flat(e.degree) in seen), ("graduation year", year, year in seen),
-                                    ("grade", e.grade, not e.grade or flat(e.grade) in seen)):
-                if not ok:
-                    out.append(f"Education '{e.degree}': the {what} '{value}' is not what the diploma {name} says. "
-                               "Use the diploma's official wording.")
+            continue
+        problems = [_diploma_problems(e, name, seen) for e in candidates]
+        if all(problems):
+            out += min(problems, key=len)
     return out
+
+
+def _diploma_problems(entry: Education, name: str, seen: str) -> list[str]:
+    year = YEAR.findall(entry.period)[-1]
+    checks = (("degree title", entry.degree, flat(entry.degree) in seen), ("graduation year", year, year in seen),
+              ("grade", entry.grade, not entry.grade or flat(entry.grade) in seen))
+    return [f"Education '{entry.degree}': the {what} '{value}' is not what the diploma {name} says. "
+            "Use the diploma's official wording." for what, value, ok in checks if not ok]
 
 
 def parse_patterns(md: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
@@ -1252,8 +1257,9 @@ def build(sources: dict[str, str], *, me: Path, turns: Turns, model: str, confir
             if absent:
                 return [f"profile.md must hold the '## {t}' section you were asked to update." for t in absent]
             text = splice(existing, text, only)
-        failures = (profile_failures(text, files) + (_dropped_traits(existing, text) + rules_failures(existing, text)
-                                                     if existing else []))
+        failures = profile_failures(text, files)
+        if existing:
+            failures += _dropped_traits(existing, text) + ([] if "Writing style" in only else rules_failures(existing, text))
         if not failures:
             best[:] = [text]
         return failures
