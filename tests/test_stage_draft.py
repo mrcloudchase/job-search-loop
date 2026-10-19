@@ -84,6 +84,8 @@ def world(tmp_path, monkeypatch, replies=(), specs=None, *, rounds=1, research="
         (me / "postings").mkdir(exist_ok=True)
         (me / "postings" / f"{rank.fit_key(p['key'])}.txt").write_text(text or f"{p['title']} at {p['company']}\n\nWe need Python and SQL. Reference: NW-1\n")
         app = archive.key(p["company"], p["title"])
+        (me / "locate").mkdir(exist_ok=True)                                         # the locate stage has already looked, and found nothing
+        (me / "locate" / f"{app}.json").write_text(json.dumps({"found": False, "tried": [], "date": "2026-10-19"}))
         if has_research and research:
             (me / "research").mkdir(exist_ok=True)
             claims = [CLAIM] if research == "claims" else []
@@ -557,3 +559,31 @@ def test_an_accepted_host_does_not_waive_a_failing_verifier(tmp_path, monkeypatc
     ctx, _, _ = world(tmp_path, monkeypatch, [draft("BAD"), draft("BAD")], **dpg("https://vacatures.dpgmedia.nl/1"), rounds=1)
     out = stage.STAGE.run(one(ctx, DPG), ctx)
     assert out.terminal == "stalled" and statuses(ctx) == [] and not (ctx.me / "applications" / DPG / "draft.json").exists()
+
+
+# ── the employer's own posting (locate) ───────────────────────────────────────────────────────────
+ATS_URL = "https://boards.greenhouse.io/northwind/jobs/7"
+
+
+def test_an_unlocated_aggregator_posting_waits_for_the_locate_stage(tmp_path, monkeypatch):
+    ctx, _, _ = world(tmp_path, monkeypatch, specs=[spec(url="https://nl.whatjobs.com/job/1")])
+    (ctx.me / "locate" / f"{APP}.json").unlink()
+    assert stage.STAGE.propose(ctx.snapshot) == []                                 # not parked, not blocked: it is waiting
+
+
+def test_a_located_posting_is_drafted_from_the_employers_ats_page_and_its_link_is_the_apply_link(tmp_path, monkeypatch):
+    ctx, server, _ = world(tmp_path, monkeypatch, [draft(), REVIEW_REPLY, draft("cv final")], best_of=1, judge_drafts=False,
+                           specs=[spec(url="https://nl.whatjobs.com/job/1")])
+    (ctx.me / "locate" / f"{APP}.json").write_text(json.dumps({
+        "found": True, "url": ATS_URL, "ats": "greenhouse", "title": "Data Engineer", "why": "x",
+        "description": "Data Engineer at Northwind Analytics\n\nWe need Python and SQL. Reference: NW-1\n"}))
+    out = stage.STAGE.run(one(ctx), ctx)
+    assert out.terminal == "success", out.failures
+    assert draft_json(ctx)["url"] == ATS_URL and ctx.store.queue_item(APP) is None
+
+
+def test_a_record_that_points_off_an_ats_is_not_used(tmp_path, monkeypatch):
+    from jobloop.stages import locate
+    ctx, _, _ = world(tmp_path, monkeypatch, specs=[spec(url="https://nl.whatjobs.com/job/1")])
+    (ctx.me / "locate" / f"{APP}.json").write_text(json.dumps({"found": True, "url": "https://evil.example/job", "ats": "lever"}))
+    assert locate.located(ctx.me, APP) is None

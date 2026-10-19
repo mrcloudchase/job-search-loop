@@ -61,6 +61,7 @@ from ..engine import judge, playbook as playbooks, policy, queue as queue_helper
 from ..engine.spec import Action, Brakes, Outcome, Spec, Trigger
 from ..engine.stage import Context
 from ..guards import hosts as host_check
+from . import locate as locating
 from ..research import Claim
 from ..text import flat, visible
 
@@ -183,6 +184,8 @@ class Draft:
             total = fit_total(stored or {}, entry)
             if stored is None or stored.get("vetoes") or total < floor:
                 continue
+            if locating.needs_locating(snap, entry, app) and not locating.record_path(snap.me, app).exists():
+                continue                                    # the locate stage looks for the employer's own posting first
             parked = snap.store.queue_item(app)
             if parked is not None and parked["status"] == "done":                              # the person has said they dealt with it
                 continue
@@ -200,6 +203,16 @@ class Draft:
         return [a for _, _, a in found[:room]]
 
     @staticmethod
+    def _located(me, app: str, entry: dict) -> dict:
+        """The posting as the employer's own ATS page has it, when the locate stage found one: its URL (the person's apply link)
+        and its text replace the aggregator's; the aggregator's URL is kept as `listed_at`."""
+        found = locating.located(me, app)
+        if found is None:
+            return entry
+        return {**entry, "url": found["url"], "listed_at": entry.get("url"), "located_on": found.get("ats"),
+                "description": found.get("description") or entry.get("description")}
+
+    @staticmethod
     def _host_now_trusted(snap, parked, entry) -> bool:
         """A posting parked for its source host is looked at again when the employer's-own-site rule or `trusted_hosts` now covers it."""
         try:
@@ -208,6 +221,8 @@ class Draft:
             return False
         if data.get("kind") != "unverified_source_host":
             return False
+        if locating.located(snap.me, snap.application_key(entry)) is not None:
+            return True                                                                        # the employer's own ATS page was found
         kind, _ = host_check.trust(str(entry.get("url") or ""), str(entry.get("company") or ""), snap.config.company_domains,
                                    snap.config.trusted_hosts, False)
         return bool(kind)
@@ -272,6 +287,7 @@ class Draft:
         app = action.key
         if app in snap.row_by_key:
             return Outcome("no_op", notes=[f"{app} is already in the tracker"])
+        entry = self._located(ctx.me, app, entry)
         if rankstate.vetoes(entry):
             return Outcome("blocked", failures=["vetoed: " + "; ".join(rankstate.vetoes(entry))])
         stored = snap.fit(pkey)

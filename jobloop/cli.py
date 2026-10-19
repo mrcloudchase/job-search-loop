@@ -58,8 +58,7 @@ def cmd_run(args) -> int:
         return _dry_run(me, stages, config)
     code = 0
     while True:
-        result = runner.run_pass(me, stages, config=config, mode="watch" if args.watch else "once", playbook_loader=lambda me_, store: playbook.load(me_, store, defaults=_strategy(config), now=CLOCK() if CLOCK else None),
-                                 transport=TRANSPORT, now=CLOCK)
+        result = one_pass(me, stages, config, "watch" if args.watch else "once")
         code = 2 if result.terminal == "blocked" else 0
         if not args.watch:
             return code
@@ -68,6 +67,12 @@ def cmd_run(args) -> int:
             time.sleep(_every(args.every))
         except KeyboardInterrupt:
             return code
+
+
+def one_pass(me: Path, stages, config, mode: str = "once"):
+    """One pass of the loop; the runner's PassResult."""
+    return runner.run_pass(me, stages, config=config, mode=mode, transport=TRANSPORT, now=CLOCK,
+                           playbook_loader=lambda me_, store: playbook.load(me_, store, defaults=_strategy(config), now=CLOCK() if CLOCK else None))
 
 
 def _strategy(config) -> dict:

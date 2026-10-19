@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import importlib
 
-ORDER = ("onboard", "boards", "discover", "triage", "research", "draft", "package", "followup", "interview", "offer",
+ORDER = ("onboard", "boards", "discover", "triage", "locate", "research", "draft", "package", "followup", "interview", "offer",
          "learn", "upskill", "maintain")
 
 
