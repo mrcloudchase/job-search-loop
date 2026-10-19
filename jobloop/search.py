@@ -221,7 +221,7 @@ def degraded(rows: list[dict], stored_from_board: int = 0) -> tuple[str, ...]:
 def _posting(row: dict, board: str) -> dict:
     return {"key": jobkey.make_key(row["company"], row["title"], row["url"]), "title": row["title"], "company": row["company"] or "",
             "url": row["url"], "board": board, "source": "board", "posted_date": _day(row["date"]), "deadline": _day(row["deadline"]),
-            "locations": [row["location"]] if row["location"] else []}
+            "locations": [row["location"]] if row["location"] else [], "description": row.get("description") or ""}
 
 
 def _day(text: str | None) -> str | None:

@@ -918,3 +918,10 @@ def test_a_bad_query_makes_no_request_because_the_query_is_refused_first(tmp_pat
     with pytest.raises(BoardError):
         run([board("alpha", lambda q, h: called.append(1) or [])], tmp_path, queries=["--help"])
     assert called == []
+
+
+def test_the_boards_description_reaches_the_posting_store_for_postings_whose_page_cannot_be_read(tmp_path):
+    row = dict(ROWS[0], description="The full description the board returned. " * 8)
+    stored = search._posting(row, "alpha")
+    assert stored["description"].startswith("The full description")
+    assert search._posting(dict(ROWS[0], description=None), "alpha")["description"] == ""
