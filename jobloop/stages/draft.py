@@ -184,15 +184,33 @@ class Draft:
             if stored is None or stored.get("vetoes") or total < floor:
                 continue
             parked = snap.store.queue_item(app)
-            if parked is not None and parked["status"] in ("needs_decision", "done"):          # asked, or the person has said they dealt with it
+            if parked is not None and parked["status"] == "done":                              # the person has said they dealt with it
                 continue
+            revisit = parked is not None and parked["status"] == "needs_decision" and self._host_now_trusted(snap, parked, entry)
+            if parked is not None and parked["status"] == "needs_decision" and not revisit:
+                continue                                                                       # asked, and nothing has changed the answer
+            tries = snap.store.attempts("draft", app)
+            approved_since = bool(tries) and any(e["at"] > tries[-1]["finished"] for e in snap.store.events(queue_helpers.APPROVED, app))
             deadline = str(entry.get("deadline") or "")
             action = Action("draft", app, f"shortlisted, fit {total}, researched, not yet drafted", priority=float(total),
-                            payload={"posting_key": pkey, "fit": total}, deadline=deadline if deadline[:1].isdigit() else None)
+                            payload={"posting_key": pkey, "fit": total, **({"retry_now": True} if revisit or approved_since else {})}, deadline=deadline if deadline[:1].isdigit() else None)
             if policy.allowed(action, self.spec, snap.store, snap.now)[0]:
                 found.append((total, app, action))
         found.sort(key=lambda t: (policy.urgency(t[2], snap.today), -t[0], t[1]))      # a deadline within days outranks a better fit for the few slots
         return [a for _, _, a in found[:room]]
+
+    @staticmethod
+    def _host_now_trusted(snap, parked, entry) -> bool:
+        """A posting parked for its source host is looked at again when the employer's-own-site rule or `trusted_hosts` now covers it."""
+        try:
+            data = json.loads(parked["data"]) if isinstance(parked["data"], str) else dict(parked["data"] or {})
+        except (TypeError, ValueError):
+            return False
+        if data.get("kind") != "unverified_source_host":
+            return False
+        kind, _ = host_check.trust(str(entry.get("url") or ""), str(entry.get("company") or ""), snap.config.company_domains,
+                                   snap.config.trusted_hosts, False)
+        return bool(kind)
 
     # ── one action ─────────────────────────────────────────────────────────────────────────────
     def _entry(self, action: Action, ctx: Context) -> tuple[str, dict | None]:

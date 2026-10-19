@@ -85,6 +85,8 @@ def test_approve_is_for_a_held_back_host_only_and_says_what_happens_next(tmp_pat
         message = queue.approve(tmp_path, store, "acme__dev")
         assert "the next pass drafts it" in message and store.queue_item("acme__dev") is None
         assert [json.loads(e["data"]) for e in store.events(queue.APPROVED, "acme__dev")] == [{"host": "it.whatjobs.com"}]
+        last = store.attempts("draft", "acme__dev")[-1]
+        assert last["terminal"] == "no_op" and "approved" in last["reason"]
         with pytest.raises(queue.QueueError, match="ready__dev is an application that is ready for you"):
             queue.approve(tmp_path, store, "ready__dev")
         with pytest.raises(queue.QueueError, match="no queue entry 'x__y'"):

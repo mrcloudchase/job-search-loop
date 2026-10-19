@@ -376,6 +376,14 @@ def test_an_unverified_host_is_blocked_with_a_needs_decision_entry_and_nothing_i
     assert stage.STAGE.propose(ctx.snapshot) == []                                                       # and not offered again while it waits
 
 
+def test_a_parked_host_is_looked_at_again_once_trusted_hosts_covers_it(tmp_path, monkeypatch):
+    ctx, server, _ = world(tmp_path, monkeypatch, specs=[spec(url="https://jobs.evil.example/123")])
+    stage.STAGE.run(one(ctx), ctx)
+    assert stage.STAGE.propose(ctx.snapshot) == []
+    ctx.snapshot.config.trusted_hosts = ["evil.example"]
+    assert [a.key for a in stage.STAGE.propose(ctx.snapshot)] == [APP]
+
+
 def test_a_posting_text_read_from_an_unverified_host_is_not_drafted_either(tmp_path, monkeypatch):
     from jobloop import fetch
     from jobloop.guards import hosts

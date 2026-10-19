@@ -13,7 +13,7 @@ from pathlib import Path
 from .. import archive
 from ..guards import hosts as host_check
 from . import config as config_module
-from .store import Store
+from .store import now_stamp, Store
 
 APPROVED = "human:approve_host"     # engine event: the person approved this application's source host (item = key, data {host})
 HOST_KIND = "unverified_source_host"
@@ -141,6 +141,8 @@ def approve(me: Path | str, store: Store, key: str, host_too: bool = False, now=
         _trust_host(Path(me) / config_module.NAME, host)
     store.add_event(APPROVED, key, {"host": host}, now)
     store.queue_delete(key)
+    stamp = now_stamp(now)                     # the person's yes ends the rest the blocked attempt put on this application
+    store.record_attempt(0, "draft", key, "approved by the person", "", stamp, stamp, "no_op", 0.0, 0, [], ["approved by you: try again now"])
     return (f"{key}: you approved this application{(' on ' + host) if host else ''}. "
             + (f"{host} is now in trusted_hosts in loop.json. " if host_too else "")
             + "Nothing was drafted yet: the next pass drafts it (every check still runs). The tracker is untouched.")

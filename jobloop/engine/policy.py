@@ -25,7 +25,7 @@ def _when(stamp: str) -> datetime:
 def allowed(action: Action, spec: Spec, store: Store, now: datetime) -> tuple[bool, str]:
     """Whether the attempt history lets this action run now, and why not."""
     tries = store.attempts(action.stage, action.key)
-    if not tries:
+    if not tries or action.payload.get("retry_now"):        # a stage that knows its blocker was lifted (a person's answer) ends the rest
         return True, ""
     last = tries[-1]
     failures = []                                           # the failures since the last success: an old run of bad luck does not count against today's

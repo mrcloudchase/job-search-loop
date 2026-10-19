@@ -322,3 +322,16 @@ def test_the_digest_and_status_tell_the_person_the_exact_command_for_a_host_held
                         {"kind": "unverified_source_host", "title": "Acme: Dev", "fit": 80, "host": "startup.jobs"})
         text = digest.status(me, store, snapshot.take(me, store, cfgmod.Config().validate()))
     assert "jobloop queue approve acme__dev" in text and "if you checked the employer and the link" in text
+
+
+def test_an_action_marked_retry_now_skips_the_rest_after_a_block(tmp_path):
+    from jobloop.engine import policy
+    from jobloop.engine.spec import Action
+    from jobloop.engine.store import Store, now_stamp
+    from jobloop.stages import draft
+    now = datetime.now(timezone.utc)
+    with Store(tmp_path) as store:
+        stamp = now_stamp(now)
+        store.record_attempt(0, "draft", "a__b", "x", "", stamp, stamp, "blocked", 0.0, 0, ["held"], [])
+        assert not policy.allowed(Action("draft", "a__b", "r"), draft.STAGE.spec, store, now)[0]
+        assert policy.allowed(Action("draft", "a__b", "r", payload={"retry_now": True}), draft.STAGE.spec, store, now)[0]
